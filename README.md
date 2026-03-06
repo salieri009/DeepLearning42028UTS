@@ -1,105 +1,117 @@
-# DeepLearning42028UTS
+# UTS Deep Learning 42028 — Assignment 3
 
-UTS Deep Learning 42028 — Team Projects
+**Subject:** 42028 Deep Learning  
+**Semester:** 2026 Semester 1  
+**University:** University of Technology Sydney (UTS)
 
 ---
 
-## Assignment-3 (Project)
+## 🚀 Project: Crowd Detection and Accessibility Navigation
 
-### File Naming Convention for Submission
+> A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time crowd density mapping and obstacle detection.
+
+### Team Members
+
+| Name | Student ID |
+|------|-----------|
+| Jungowok | 25167747 |
+| Phoi Gia Vuong | 25736012 |
+| *(TBD — 3rd member to be assigned)* | — |
+
+### Project Abstract
+
+Navigating through crowded transport hubs and public spaces can be highly challenging for individuals with disabilities. This project develops a **CNN-based crowd detection and analysis system** that provides real-time insights into crowd density, directional flow, and accessibility obstacles. The system identifies optimal accessible routes and alerts users to congested areas, enhancing safety, mobility, and independence while travelling.
+
+**Approach:**
+- **Object Detection:** YOLO (v8/v10) via transfer learning — people, wheelchairs, obstacles
+- **Crowd Density Estimation:** CSRNet for density maps in heavily occluded scenes
+- **Datasets:** ShanghaiTech / UCF-QNRF (crowd), COCO (obstacles)
+- **Output:** Accessible GUI (Mobile/Web App) with visual and audio feedback
+
+---
+
+## Assignment-3 Structure
+
+### Repository Layout
 
 ```
-Assignment-3-PartA-<StudentName>-<StudentID>.doc/pdf
+Assignment-3/
+├── Part-A/    # Project Proposal (submit individually)
+│   ├── README.md
+│   └── Assignment-3-PartA-Draft.md
+├── Part-B/    # Intermediate Deliverable 1 — Dataset & Architecture
+├── Part-C/    # Intermediate Deliverable 2 — Initial Results
+├── Part-D/    # Intermediate Deliverable 3 — GUI Design
+├── Part-E/    # Final Project Report (submit individually)
+└── Part-G/    # Oral Defense Materials
+```
+
+### Submission Summary
+
+| Part | Description | Submitted By |
+|------|-------------|--------------|
+| **Part-A** | Project Proposal | **Every student individually** |
+| **Part-B** | Intermediate Deliverable 1 | One per team |
+| **Part-C** | Intermediate Deliverable 2 | One per team |
+| **Part-D** | Intermediate Deliverable 3 | One per team |
+| **Part-E** | Final Project Report | **Every student individually** |
+| **Part-G** | Oral Defense | **Every student individually** |
+
+### File Naming Convention
+
+```
+Assignment-3-<Part>-<StudentName>-<StudentID>.doc/pdf
 ```
 
 **Example:** `Assignment-3-PartA-NabinSharma-12345678.pdf`
 
 ---
 
-### Submission Requirements
+## Key Rules
 
-| Part | Who Submits | Notes |
-|------|-------------|-------|
-| **Part-A** (Project Proposal) | **Every student individually** | Document can be the same for all team members |
-| **Part-B** (Intermediate) | One per team (optional for others) | Recommended to follow intermediate deadlines |
-| **Part-C** (Intermediate) | One per team (optional for others) | Recommended to follow intermediate deadlines |
-| **Part-D** (Intermediate) | One per team (optional for others) | Recommended to follow intermediate deadlines |
-| **Part-E** (Final Report) | **Every student individually** | Individual Contribution section must differ per student |
-| **Part-G** (Oral Defense) | **Every student individually** | Project is INCOMPLETE without oral defense |
+- Group size: **exactly 3 students** (min and max)
+- Groups can include students from **different tutorial/lab sessions**
+- Network **training is required** — pre-trained model alone is not accepted (transfer learning is permitted)
+- Oral Defense (Part-G) is **mandatory** for every student — project is **INCOMPLETE** without it
+- Intermediate deadlines (Part-B, C, D) have **no late penalties**, but all work must be submitted before the **final deadline**
+- Part-E **Individual Contribution** section must be unique per student
 
 ---
 
-### Frequently Asked Questions (FAQ)
+## FAQ
 
-**Are the intermediate deadlines (Part-B, C, D) strict? Will there be penalties if I miss them?**
-> The intermediate deliverables/deadlines are for reference and we recommend everyone to follow them to ensure good progress. If you miss any intermediate deadlines there will be **no late penalties**, but **everything must be submitted before the final project submission deadline**.
+<details>
+<summary><strong>Are intermediate deadlines (Part-B, C, D) strict?</strong></summary>
 
----
+No late penalties for intermediate parts, but **everything must be submitted before the final project deadline**. Reference deadlines are on the Week-1 Introduction slides (slide-7).
+</details>
 
-**Where can I find the reference intermediate deadlines?**
-> Reference intermediate deadlines were discussed in Week-1. Details are available on the Week-1 Introduction slides (slide-7). Submission links will be made available with appropriate extensions based on the overall progress of the class.
+<details>
+<summary><strong>Can I use YOLO or other frameworks?</strong></summary>
 
----
+Yes. Any object detection or image classification framework is allowed. **Training of the network is required** — transfer learning is permitted, but you must train the network.
+</details>
 
-**How many students can be in a group?**
-> **Minimum and maximum of three (3) students per group.**
+<details>
+<summary><strong>What if I can't find a team?</strong></summary>
 
----
+Still submit Part-A individually. The teaching team will assist in forming groups after Part-A submissions.
+</details>
 
-**Can I do the project individually if I can't find a team?**
-> Assignment-3 is a group project and must be completed as a team. If you are unable to form a group, the teaching team will help form a group after Part-A submissions. You can still submit an abstract individually to complete the Part-A submission.
+<details>
+<summary><strong>Does Part-E require separate reports per student?</strong></summary>
 
----
+Yes. All members submit individually. Content and results can match, but the **Individual Contribution (Appendix A)** section must reflect each student's personal contribution.
+</details>
 
-**Do all team members need to submit Assignment-3 Part-A?**
-> **Yes.** Everyone must submit Part-A individually. The submission document can be the same for all team members.
+<details>
+<summary><strong>What is assessed in the Oral Defense (Part-G)?</strong></summary>
 
----
-
-**Do all team members need to submit Assignment-3 (Part-B, C, D)?**
-> **No.** Only one team member needs to submit the report for Part-B, C, and D. All team members are welcome to submit if they choose.
-
----
-
-**Can I use YOLO or any other model/framework?**
-> **Yes.** You can use any object detection or image classification framework. **Training of the network is required** — use of a pre-trained model alone is not allowed. Transfer learning is permitted, but the network must be trained.
+Content from **Week-1 to Week-11** plus your project. The oral defense is mandatory — the project is incomplete without it.
+</details>
 
 ---
 
-**I am unable to form a group — should I still submit Part-A?**
-> **Yes.** Submit Part-A with your project idea as per the template. After all students have submitted Part-A, the teaching team will assist/assign remaining students into groups.
+## Contact
 
----
-
-**Can I form a group with students from different tutorial/lab sessions?**
-> **Yes.** You can form a team with students from other tutorial sessions.
-
----
-
-**What content will be assessed in the Oral Defense (Part-G)?**
-> Content from **Week-1 to Week-11**, and your project. Your project/Assignment-3 is **INCOMPLETE without the Oral Defense**.
-
----
-
-**About Part-E (Final Report): Does every member need to submit a separate report?**
-> **Yes.** Every member must submit the Assignment-3 Part-E final project report individually. Content and results can be the same, but the **Appendices: A. Individual Contribution** section must reflect each student's personal contribution. All team members must add their contribution percentage and sign the table after discussion. If team members cannot agree on contributions, each can submit with their own perspective and the subject coordinator will investigate and decide.
-
----
-
-### Repository Structure
-
-```
-Assignment-3/
-├── Part-A/    # Project Proposal (submit individually)
-├── Part-B/    # Intermediate deliverable 1
-├── Part-C/    # Intermediate deliverable 2
-├── Part-D/    # Intermediate deliverable 3
-├── Part-E/    # Final Project Report (submit individually)
-└── Part-G/    # Oral Defense materials
-```
-
----
-
-### Contact
-
-For specific questions, please contact the **subject coordinator via email** as soon as possible.
+For specific questions, contact the **subject coordinator via email** as soon as possible.
