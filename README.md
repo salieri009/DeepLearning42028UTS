@@ -16,7 +16,7 @@
 |------|-----------|
 | Jungowok | 25167747 |
 | Phoi Gia Vuong | 25736012 |
-| *(TBD — 3rd member to be assigned)* | — |
+| Chihyun | 14707133 |
 
 ### Project Abstract
 
