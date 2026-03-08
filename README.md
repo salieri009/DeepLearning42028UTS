@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Abblix/Oidc.Server/main/logo.png" alt="Logo" width="120" style="display: none;" />
+  <img src="./project_logo.svg" alt="Project Logo" width="120" />
   <h1 align="center">Crowd Detection and Accessibility Navigation</h1>
   <p align="center">
     <strong>Computer vision system for navigating crowded transport hubs.</strong>
