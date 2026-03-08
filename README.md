@@ -58,28 +58,6 @@ Navigating through crowded transport hubs and public spaces can be highly challe
 
 ---
 
-## Team Members
-
-| Name | Student ID | Role |
-|------|------------|------|
-| **Jungowok** | 25167747 | TBD |
-| **Phoi Gia Vuong** | 25736012 | TBD |
-| *(TBD — 3rd member)* | — | TBD |
-
----
-
-## Project Abstract
-
-Navigating through crowded transport hubs and public spaces can be highly challenging for individuals with disabilities. This project develops a **CNN-based crowd detection and analysis system** that provides real-time insights into crowd density, directional flow, and accessibility obstacles. The system identifies optimal accessible routes and alerts users to congested areas, enhancing safety, mobility, and independence while travelling.
-
-### Approach
-*   **Object Detection:** YOLO (v8/v10) via transfer learning — targeting people, wheelchairs, and localized obstacles.
-*   **Crowd Density Estimation:** CSRNet for generating continuous density maps in heavily occluded scenes.
-*   **Datasets:** ShanghaiTech / UCF-QNRF (crowd patterns), COCO (obstacles).
-*   **Output:** Accessible GUI (Mobile/Web App) providing visual and audio feedback.
-
----
-
 ## Repository Layout
 
 The project follows a structured directory format to align with the assignment deliverables:
