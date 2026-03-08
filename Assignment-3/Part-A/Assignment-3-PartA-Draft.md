@@ -6,7 +6,7 @@ Crowd Detection and Accessibility Navigation for Disabilities While Travelling
 ## 2. Team Members
 - Jungowok (25167747)
 - Phoi Gia Vuong (25736012)
-- *(Note: Minimum group size is 3. A third member will be assigned by the teaching team after Part-A submission if needed.)*
+- Chihyun (14707133)
 
 ## 3. Project Abstract / Summary
 Navigating through crowded transport hubs (e.g., airports, train stations) and public spaces can be highly challenging and overwhelming for individuals with disabilities. This project aims to develop a computer vision-based crowd detection and analysis system that provides real-time insights into crowd density, directional flow, and potential accessibility obstacles. By processing video feeds or live camera data, the system will identify optimal, accessible routes and alert users to highly congested areas, thereby enhancing their safety, mobility, and independence while travelling.
