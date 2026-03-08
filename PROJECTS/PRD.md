@@ -7,7 +7,7 @@
 **Team Members:**
 - Jungowok (25167747)
 - Phoi Gia Vuong (25736012)
-- *(TBD - 3rd member)*
+- Chihyun (14707133)
 
 ## 2. Problem Statement
 Navigating crowded transport hubs (airports, train stations) and public spaces can be overwhelming, challenging, and sometimes unsafe for individuals with disabilities. Existing navigation apps lack real-time crowd density awareness and rarely detect temporary accessibility obstacles (e.g., luggage, unattended carts) that impede mobility.
