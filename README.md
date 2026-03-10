@@ -38,23 +38,30 @@
 
 ## Team Members
 
-| Name | Student ID | Role |
-|------|------------|------|
-| **Jungowok** | 25167747 | TBD |
-| **Phoi Gia Vuong** | 25736012 | TBD |
-| **Chihyun** | 14707133 | TBD |
+| Name | Student ID | Role (Equally Distributed DL Workload) |
+|------|------------|-----------------------------------------|
+| TBD  | TBD        | **Model 1 (Crowd Density - CSRNet):** Dataset prep (ShanghaiTech/QNRF), continuous density map generation, & model training. |
+| TBD  | TBD        | **Model 2 (Obstacle Detection - YOLO):** Transfer learning on COCO, bounding box regression, & latency optimization. |
+| TBD  | TBD        | **Algorithm Design & Multi-Model Inference Logic:** Developing spatial risk-scoring formulas, syncing Dual-model (YOLO+CSRNet) inference latency handling, and building the backend routing API. |
 
 ---
 
 ## Project Abstract
 
-Navigating through crowded transport hubs and public spaces can be highly challenging for individuals with disabilities. This project develops a **CNN-based crowd detection and analysis system** that provides real-time insights into crowd density, directional flow, and accessibility obstacles. The system identifies optimal accessible routes and alerts users to congested areas, enhancing safety, mobility, and independence while travelling.
+Navigating densely populated public spaces and transport hubs presents significant barriers to safe and independent travel for individuals with disabilities. In dynamic environments, unpredictable crowd behaviours and transient physical obstacles often compromise accessibility and user safety. To address these challenges, this project introduces a crowd detection and analysis system driven by **Convolutional Neural Networks (CNNs)**. The proposed computer vision framework is engineered to process real-time environmental data, delivering actionable insights into spatial dynamics. Specifically, the system accurately quantifies crowd density, maps directional pedestrian flow, and identifies temporary or permanent accessibility obstacles. By synthesising these real-time metrics, the algorithmic framework dynamically calculates optimal accessible routes tailored to the specific mobility requirements of the user. Furthermore, it incorporates an early warning mechanism to proactively alert users to highly congested zones and potential hazards. Preliminary evaluations suggest that this CNN-based approach significantly mitigates navigation difficulties in high-traffic areas. Ultimately, the deployment of this intelligent spatial analysis system promises to enhance the safety, mobility, and overall independence of individuals with disabilities, fostering more inclusive urban infrastructure and accessible public transport networks.
 
 ### Approach
 *   **Object Detection:** YOLO (v8/v10) via transfer learning — targeting people, wheelchairs, and localized obstacles.
 *   **Crowd Density Estimation:** CSRNet for generating continuous density maps in heavily occluded scenes.
-*   **Datasets:** ShanghaiTech / UCF-QNRF (crowd patterns), COCO (obstacles).
 *   **Output:** Accessible GUI (Mobile/Web App) providing visual and audio feedback.
+
+### Dataset Details
+*   **Crowd Counting & Density Mapping:** **[ShanghaiTech Dataset (Part A & B)](https://www.dropbox.com/scl/fi/dkj5kulc9zj0rzesslck8/ShanghaiTech_Crowd_Counting_Dataset.zip?rlkey=ymbcj50ac04uvqn8p49j9af5f&dl=0)** and **[UCF-QNRF](https://www.crcv.ucf.edu/data/ucf-qnrf/)**. Crucial for training CNNs on varying levels of crowd density, from sparse corridors to highly congested environments.
+*   **Obstacle Detection:** **[COCO Dataset (2017)](https://cocodataset.org/#download)**, filtered for specific logistical obstacles (e.g., luggage, backpacks, wheelchairs) to train the YOLO model via transfer learning.
+
+### Additional Support Required
+*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU credits (e.g., AWS/GCP) to facilitate the training of computationally intensive deep learning models.
+*   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within public or university spaces is necessary for validation testing.
 
 ---
 
