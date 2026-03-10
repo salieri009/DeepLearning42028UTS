@@ -26,6 +26,7 @@
 
 - [Team Members](#team-members)
 - [Project Abstract](#project-abstract)
+- [Additional Support Required](#additional-support-required)
 - [Repository Layout](#repository-layout)
 - [Submission Summary](#submission-summary)
 - [File Naming Convention](#file-naming-convention)
@@ -44,6 +45,8 @@
 | TBD  | TBD        | **Model 2 (Obstacle Detection - YOLO):** Transfer learning on COCO, bounding box regression, & latency optimization. |
 | TBD  | TBD        | **Algorithm Design & Multi-Model Inference Logic:** Developing spatial risk-scoring formulas, syncing Dual-model (YOLO+CSRNet) inference latency handling, and building the backend routing API. |
 
+> **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
+
 ---
 
 ## Project Abstract
@@ -59,9 +62,12 @@ Navigating densely populated public spaces and transport hubs presents significa
 *   **Crowd Counting & Density Mapping:** **[ShanghaiTech Dataset (Part A & B)](https://www.dropbox.com/scl/fi/dkj5kulc9zj0rzesslck8/ShanghaiTech_Crowd_Counting_Dataset.zip?rlkey=ymbcj50ac04uvqn8p49j9af5f&dl=0)** and **[UCF-QNRF](https://www.crcv.ucf.edu/data/ucf-qnrf/)**. Crucial for training CNNs on varying levels of crowd density, from sparse corridors to highly congested environments.
 *   **Obstacle Detection:** **[COCO Dataset (2017)](https://cocodataset.org/#download)**, filtered for specific logistical obstacles (e.g., luggage, backpacks, wheelchairs) to train the YOLO model via transfer learning.
 
-### Additional Support Required
-*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU credits (e.g., AWS/GCP) to facilitate the training of computationally intensive deep learning models.
-*   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within public or university spaces is necessary for validation testing.
+## Additional Support Required
+
+To successfully achieve the project outcomes, the team anticipates requiring the following support:
+
+*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models (such as YOLO and CSRNet) within the project timeframe.
+*   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
 
 ---
 
