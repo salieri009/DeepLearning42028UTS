@@ -37,10 +37,10 @@ The pipeline utilizes a single-stage object detector optimized for real-time inf
 ### 4.2 Preprocessing Pipeline
 1.  **Resizing and Normalization:** Standardize input frames to model-specific dimensions (e.g., $640 \times 640$ for YOLO).
 2.  **Data Augmentation:** Apply random cropping, horizontal flipping, brightness/contrast adjustments, and mosaic augmentation to improve model robustness across various lighting and camera angles.
-3.  **Density Map Generation (for CSRNet):** Apply Gaussian kernels to point-level annotations to generate ground-truth continuous density maps.
+3.  **Proximity Calibration:** Use custom POV data to calibrate bounding-box size thresholds against known physical distances.
 
 ## 5. Software Stack & Dependencies
-*   **Deep Learning Framework:** PyTorch (preferred for CSRNet and YOLOv8/v10 implementation).
+*   **Deep Learning Framework:** PyTorch (preferred for YOLO implementation).
 *   **Computer Vision Libraries:** OpenCV (frame extraction, preprocessing).
 *   **Backend Server:** FastAPI or Flask (Python) to expose the model via REST/WebSocket APIs for real-time inference.
 *   **Frontend Technologies:** React Native (if Mobile) or React.js (if Web app) to build the accessible interface.

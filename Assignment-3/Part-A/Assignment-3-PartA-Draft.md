@@ -19,7 +19,7 @@ For object detection and proximity calibration from a wheelchair perspective, we
 
 ## 5. Additional Support Required
 To successfully achieve the project outcomes, the team may require:
-- **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models like YOLO and CSRNet within the project timeframe.
+- **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models like YOLO within the project timeframe.
 - **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
 
 ## 6. Proposed Method / Model
