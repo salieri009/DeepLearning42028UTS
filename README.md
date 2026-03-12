@@ -19,7 +19,7 @@
 ![Subject](https://img.shields.io/badge/Subject-Deep_Learning_42028-blue?style=flat-square)
 ![University](https://img.shields.io/badge/University-UTS_2026-002366?style=flat-square)
 
-> A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time crowd density mapping and obstacle detection.
+> A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time obstacle detection and proximity logic.
 
 <details>
 <summary><strong>Table of Contents</strong></summary>
@@ -67,7 +67,7 @@ Navigating densely populated transport hubs presents significant barriers to saf
 
 To successfully achieve the project outcomes, the team anticipates requiring the following support:
 
-*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models (such as YOLO and CSRNet) within the project timeframe.
+*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models (such as YOLO) within the project timeframe.
 *   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
 
 ---

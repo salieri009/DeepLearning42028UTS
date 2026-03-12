@@ -25,13 +25,13 @@ Develop a computer vision-based crowd analysis and navigation system. The system
 
 ### 5.1 Deep Learning Pipeline
 - **Real-time Object Detection:** Detect individuals, wheelchairs, and specific logistical obstacles (e.g., luggage, vehicles) using state-of-the-art models (YOLO v8/v10).
-- **Crowd Density Estimation:** In heavily occluded areas where object detection struggles, the system will use density estimation models (e.g., CSRNet) to generate accurate crowd heatmaps.
+- **Proximity Analysis Logic:** Develop a heuristic layer that calculates collision risk based on bounding-box vertical scaling, optimized for low-vantage perspectives.
 - **Model Training & Integration:** Models will be fine-tuned via transfer learning on selected datasets and act as a backend for real-time inference.
 
 ### 5.2 User Interface (GUI - Web/Mobile App)
 - **Accessible Design:** High contrast, large fonts, simple layouts, and compatibility with screen readers.
-- **Visual Feedback:** Heatmap overlay indicating crowd density levels (low, medium, high).
-- **Route Querying:** Users can input their destination and receive an accessible route avoiding high crowd density and identified obstacles.
+- **Visual Feedback:** Color-coded bounding boxes or HUD indicators signifying proximity risk (Low/Warning/Critical).
+- **Route Selection:** Simple path-clearance markers indicating the safest immediate route through identified obstacles.
 - **Audio/Haptic Alerts:** Proximity alerts for highly congested areas or immediate obstacles.
 
 ### 5.3 System Performance
@@ -39,21 +39,21 @@ Develop a computer vision-based crowd analysis and navigation system. The system
 - **Accuracy:** High confidence in detecting obstacles that impede mobility with robust crowd estimation, minimizing false negatives for obstacles.
 
 ## 6. Datasets
-- **Crowd Density Estimation:** ShanghaiTech Dataset or UCF-QNRF.
+- **Accessibility Targets:** Open Images (Targeting 'Wheelchair' class).
 - **Object/Obstacle Detection:** COCO (Common Objects in Context), specifically targeting classes relevant to accessibility obstacles.
 - **Custom Additions:** Potential custom datasets or subsets of travel/surveillance datasets focusing on accessibility pinch-points.
 
 ## 7. Development Timeline
 - **Phase 1 (Part-B):** Dataset acquisition, exploratory data analysis, data preprocessing pipeline setup, and definition of initial model architecture.
-- **Phase 2 (Part-C):** Baseline model training, hyperparameter tuning, generation of initial results/metrics, and comparison of algorithms (e.g., YOLO detection vs. density mapping).
+- **Phase 2 (Part-C):** Baseline model training, hyperparameter tuning, generation of initial results/metrics, and calibration of proximity heuristics.
 - **Phase 3 (Part-D):** GUI design, usability considerations for the accessibility interface, and integration with the deep learning model inference pipeline.
 - **Phase 4 (Part-E, F, G):** Final evaluation, comprehensive project report drafting, and preparation for oral defense demonstrations.
 
 ## 8. Success Metrics
 - **Technical Metrics:**
-  - Stable Frames Per Second (FPS) target during inference.
-  - Low Crowd Counting Mean Absolute Error (MAE).
-  - High Object Detection Precision and Recall metrics for selected classes.
+  - Stable Frames Per Second (FPS) target during inference on mobile-grade hardware.
+  - Proximity Alert Accuracy (True Positive Rate for critical hazards).
+  - High Object Detection Precision and Recall metrics for selected classes (Person, Wheelchair, Luggage).
 - **User Experience:**
   - System successfully identifies an alternate accessible route when the primary path is heavily crowded or blocked.
   - Accessible UI meets key usability standards and supports assistive technologies securely.
