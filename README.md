@@ -42,7 +42,7 @@
 | Name | Student ID | Role (Equally Distributed DL Workload) |
 |------|------------|-----------------------------------------|
 | TBD  | TBD        | **Data Engineering & Preprocessing:** Dataset curation (COCO/Open Images), POV filtering, and augmentation strategies for wheelchair perspective. |
-| TBD  | TBD        | **YOLO Transfer Learning:** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
+| Jungwook Van | 25167747 | **YOLO Transfer Learning (Team Lead):** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
 | TBD  | TBD        | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
 
 > **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
