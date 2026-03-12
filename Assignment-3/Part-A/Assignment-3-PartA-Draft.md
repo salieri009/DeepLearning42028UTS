@@ -4,14 +4,14 @@
 Crowd Detection and Accessibility Navigation for Disabilities While Travelling
 
 ## 2. Team Members
-- Jungowok (25167747)
+- Jungwook Van (25167747) — **Team Lead**
 - Phoi Gia Vuong (25736012)
 - Chihyun (14707133)
 
 ## 3. Project Abstract / Summary
 Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Object Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and localized logistical obstacles. Utilizing transfer learning on datasets like COCO and Open Images, the model is fine-tuned to recognize critical elements within crowded transport environments. Crucially, rather than relying on computationally heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing object scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, fostering greater independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
 
-## 4. Dataset Details
+## 4. Dataset   Details
 For object detection and proximity calibration from a wheelchair perspective, we plan to utilize the following datasets:
 - **COCO (Common Objects in Context):** Used via transfer learning for general obstacle detection, specifically filtering classes like `person`, `backpack`, and `suitcase` that often obstruct accessible paths.
 - **Open Images:** Specifically utilized for the `Wheelchair` class data to ensure the model recognizes mobility aid users, improving peer-to-peer safety in transit hubs.
