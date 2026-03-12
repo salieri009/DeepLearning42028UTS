@@ -11,27 +11,28 @@ The system is divided into three primary components:
 3. **Deep Learning Inference Pipeline:** The core engine executing Object Detection and Crowd Density Estimation models.
 
 ## 3. Deep Learning Pipeline
-The pipeline adopts a hybrid approach to handle both precise obstacle identification and general crowdedness in heavily occluded scenes.
+The pipeline utilizes a single-stage object detector optimized for real-time inference on edge devices, coupled with a depth-heuristic logic layer.
 
-### 3.1 Object Detection Model
-*   **Architecture:** YOLOv8 or YOLOv10
-*   **Purpose:** To detect individuals, wheelchairs, and specific logistical obstacles (e.g., unattended luggage, service carts).
-*   **Training Strategy:** Transfer learning using a pre-trained base model. The final layers will be fine-tuned to recognize the custom target classes.
-*   **Inputs:** RGB frames ($H \times W \times 3$).
-*   **Outputs:** Bounding boxes, class labels, and confidence scores.
+### 3.1 Object Detection & Proximity Model
+*   **Architecture:** YOLOv8 or YOLOv10 (Small/Nano variants for low latency).
+*   **Purpose:** To detect individuals, wheelchairs, and navigational obstacles (e.g., luggage) from a low-vantage POV.
+*   **Training Strategy:** Transfer learning using a pre-trained base model. Fine-tuning on a curated set of pedestrian and mobility aid images.
+*   **Inputs:** RGB frames ($640 \times 640$).
+*   **Outputs:** Bounding boxes, class labels, and proximity risk estimations.
 
-### 3.2 Crowd Density Estimation Model
-*   **Architecture:** CSRNet (Congested Scene Recognition Network) or similar CNN-based density estimator.
-*   **Purpose:** To generate a continuous density map mapping the distribution of people in scenes where traditional bounding box detection fails due to severe overlap and occlusion.
-*   **Training Strategy:** Training on high-density datasets (e.g., ShanghaiTech or UCF-QNRF) to regress a density map where the integral over an area yields the estimated count.
-*   **Inputs:** RGB frames.
-*   **Outputs:** Heatmap of crowd distribution.
+### 3.2 Proximity & Alerting Logic
+*   **Mechanism:** Bounding-Box Scaling Heuristic.
+*   **Logic:** Instead of complex depth mapping, the system calculates the area of detected bounding boxes relative to the total frame area.
+*   **Thresholding:**
+    *   **Level 1 (Warning):** Target box height > 40% of frame height.
+    *   **Level 2 (Critical):** Target box height > 60% of frame height.
+*   **Justification:** For a fixed wheelchair POV, the vertical scale of a pedestrian correlates strongly with physical proximity.
 
 ## 4. Data Processing & Pipeline
 ### 4.1 Data Sources
-*   **Crowd Data:** ShanghaiTech Dataset (Part A for highly congested, Part B for sparse), UCF-QNRF.
-*   **Obstacle Data:** COCO Dataset (filtering classes like `person`, `backpack`, `suitcase`, `bench`, `chair`).
-*   **Custom Data:** Supplemental frames collected or extracted from public CCTV feeds (if needed) for transfer learning evaluation.
+*   **Obstacle & Pedestrian Data:** COCO Dataset (filtering classes like `person`, `backpack`, `suitcase`, `bench`, `chair`).
+*   **Mobility Aid Data:** Open Images (Targeting 'Wheelchair' class).
+*   **Custom POV Data:** Targeted collection of video from wheelchair height to calibrate proximity thresholds.
 
 ### 4.2 Preprocessing Pipeline
 1.  **Resizing and Normalization:** Standardize input frames to model-specific dimensions (e.g., $640 \times 640$ for YOLO).
@@ -50,9 +51,8 @@ The pipeline adopts a hybrid approach to handle both precise obstacle identifica
 *   **Optimization:** Convert PyTorch models to TensorRT or ONNX for accelerated inference on deployment endpoints.
 
 ## 7. API Design Outline (Draft)
-*   `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and an aggregated density score.
-*   `GET /api/v1/route-status?path={path_id}`: Polls the current crowdedness metric of predefined hub zones.
-*   **Response Format:** JSON containing `obstacles: []`, `crowd_density_level: "HIGH|MEDIUM|LOW"`, and `recommendation: "RE-ROUTE|SAFE"`.
+*   `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and proximity risk scores.
+*   **Response Format:** JSON containing `obstacles: []`, `max_proximity_risk: "CRITICAL|WARNING|SAFE"`, and `recommendation: "STOP|CAUTION|PROCEED"`.
 
 ## 8. Development & Evaluation Plan
 *   **Metrics:** 

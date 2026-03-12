@@ -9,13 +9,13 @@ Crowd Detection and Accessibility Navigation for Disabilities While Travelling
 - Chihyun (14707133)
 
 ## 3. Project Abstract / Summary
-Navigating densely populated public spaces and transport hubs presents significant barriers to safe and independent travel for individuals with disabilities. In dynamic environments, unpredictable crowd behaviours and transient physical obstacles often compromise accessibility and user safety. To address these challenges, this project introduces a crowd detection and analysis system driven by Convolutional Neural Networks (CNNs). The proposed computer vision framework is engineered to process real-time environmental data, delivering actionable insights into spatial dynamics. Specifically, the system accurately quantifies crowd density, maps directional pedestrian flow, and identifies temporary or permanent accessibility obstacles. By synthesising these real-time metrics, the algorithmic framework dynamically calculates optimal accessible routes tailored to the specific mobility requirements of the user. Furthermore, it incorporates an early warning mechanism to proactively alert users to highly congested zones and potential hazards. Preliminary evaluations suggest that this CNN-based approach significantly mitigates navigation difficulties in high-traffic areas. Ultimately, the deployment of this intelligent spatial analysis system promises to enhance the safety, mobility, and overall independence of individuals with disabilities, fostering more inclusive urban infrastructure and accessible public transport networks.
+Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Object Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and localized logistical obstacles. Utilizing transfer learning on datasets like COCO and Open Images, the model is fine-tuned to recognize critical elements within crowded transport environments. Crucially, rather than relying on computationally heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing object scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, fostering greater independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
 
 ## 4. Dataset Details
-For the core functionality of crowd counting, density mapping, and obstacle detection, we plan to utilize the following datasets:
-- **ShanghaiTech Dataset (Part A & B):** Crucial for training CNNs on varying levels of crowd density. Part A provides highly congested scenes, while Part B offers sparser distributions typical of transport hub corridors.
-- **UCF-QNRF:** A massive crowd counting dataset containing extremely dense and challenging scenes, necessary for achieving high accuracy in robust density map generation.
-- **COCO (Common Objects in Context):** Used via transfer learning for general obstacle detection, specifically filtering classes like `person`, `backpack`, `suitcase`, `chair`, and vehicles that often obstruct accessible paths.
+For object detection and proximity calibration from a wheelchair perspective, we plan to utilize the following datasets:
+- **COCO (Common Objects in Context):** Used via transfer learning for general obstacle detection, specifically filtering classes like `person`, `backpack`, and `suitcase` that often obstruct accessible paths.
+- **Open Images:** Specifically utilized for the `Wheelchair` class data to ensure the model recognizes mobility aid users, improving peer-to-peer safety in transit hubs.
+- **Custom POV Dataset:** A targeted collection of first-person video recorded at wheelchair height (simulated or real-world) to calibrate and validate the bounding-box proximity heuristics.
 
 ## 5. Additional Support Required
 To successfully achieve the project outcomes, the team may require:
@@ -23,16 +23,16 @@ To successfully achieve the project outcomes, the team may require:
 - **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
 
 ## 6. Proposed Method / Model
-We will design and implement a Convolutional Neural Network (CNN) pipeline that combines:
-- **Object Detection:** Using state-of-the-art models like **YOLO (v8 or v10)** via transfer learning to detect people, wheelchairs, and specific obstacles in real-time.
-- **Crowd Density Estimation:** Employing models like **CSRNet** to estimate crowd density maps in areas where individual object detection struggles due to heavy occlusion.
-The models will be trained and fine-tuned on our selected datasets to ensure high accuracy and real-time inference speed suitable for a live-stream application.
+We will design and implement a single-model deep learning pipeline focused on real-time awareness:
+- **Single-Stage Detection:** Using **YOLO (v8 or v10)** via transfer learning to detect people, mobility aids, and specific luggage obstacles in real-time.
+- **Proximity Logic:** Implementing a bounding-box scaling heuristic that estimates distance based on the vertical size and frame-area percentage of detected objects, allowing for low-latency obstacle avoidance without a dedicated depth sensor.
+The model will be trained on filtered datasets and validated against a custom POC dataset to ensure the high-inference speeds necessary for real-world wheelchair navigation.
 
 ## 7. Expected Outcomes
-- A trained DL model capable of accurate, real-time crowd density mapping and obstacle detection.
-- A functional GUI (Mobile App or Web App) designed with accessibility in mind, which operationalizes the DL solution.
-- The system will allow users to query specific routes and receive visual/audio feedback regarding crowd levels and accessibility.
-- A comprehensive comparison of at least two algorithms (e.g., comparing YOLO-based detection vs. density estimation techniques) to determine the optimum performance for this specific use case.
+- A trained YOLO model optimized for a first-person wheelchair POV.
+- A functional proximity alerting system that triggers warnings based on bounding-box size thresholds.
+- A functional GUI (Mobile or Web App) designed with accessibility in mind, providing visual and haptic/audio risk alerts.
+- A comprehensive evaluation of the proximity heuristic accuracy across different pedestrian distances and lighting conditions.
 
 ## 8. Timeline / Plan
 - **Part B (Implementation Plan):** Dataset finalization, data preprocessing pipeline setup, and initial model architecture definition.

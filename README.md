@@ -41,26 +41,27 @@
 
 | Name | Student ID | Role (Equally Distributed DL Workload) |
 |------|------------|-----------------------------------------|
-| TBD  | TBD        | **Model 1 (Crowd Density - CSRNet):** Dataset prep (ShanghaiTech/QNRF), continuous density map generation, & model training. |
-| TBD  | TBD        | **Model 2 (Obstacle Detection - YOLO):** Transfer learning on COCO, bounding box regression, & latency optimization. |
-| TBD  | TBD        | **Algorithm Design & Multi-Model Inference Logic:** Developing spatial risk-scoring formulas, syncing Dual-model (YOLO+CSRNet) inference latency handling, and building the backend routing API. |
-
-> **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
+| Jungowok | 25167747 | **Data Engineering & Preprocessing:** Dataset curation (COCO/Open Images), POV filtering, and augmentation strategies for wheelchair perspective. |
+| Phoi Gia Vuong | 25736012 | **YOLO Transfer Learning:** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
+| Chihyun | 14707133 | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
 
 ---
 
 ## Project Abstract
 
-Navigating densely populated public spaces and transport hubs presents significant barriers to safe and independent travel for individuals with disabilities. In dynamic environments, unpredictable crowd behaviours and transient physical obstacles often compromise accessibility and user safety. To address these challenges, this project introduces a crowd detection and analysis system driven by **Convolutional Neural Networks (CNNs)**. The proposed computer vision framework is engineered to process real-time environmental data, delivering actionable insights into spatial dynamics. Specifically, the system accurately quantifies crowd density, maps directional pedestrian flow, and identifies temporary or permanent accessibility obstacles. By synthesising these real-time metrics, the algorithmic framework dynamically calculates optimal accessible routes tailored to the specific mobility requirements of the user. Furthermore, it incorporates an early warning mechanism to proactively alert users to highly congested zones and potential hazards. Preliminary evaluations suggest that this CNN-based approach significantly mitigates navigation difficulties in high-traffic areas. Ultimately, the deployment of this intelligent spatial analysis system promises to enhance the safety, mobility, and overall independence of individuals with disabilities, fostering more inclusive urban infrastructure and accessible public transport networks.
+Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Object Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and localized logistical obstacles. Utilizing transfer learning on datasets like COCO and Open Images, the model is fine-tuned to recognize critical elements within crowded transport environments. Crucially, rather than relying on computationally heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing object scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, fostering greater independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
 
 ### Approach
-*   **Object Detection:** YOLO (v8/v10) via transfer learning — targeting people, wheelchairs, and localized obstacles.
-*   **Crowd Density Estimation:** CSRNet for generating continuous density maps in heavily occluded scenes.
-*   **Output:** Accessible GUI (Mobile/Web App) providing visual and audio feedback.
+*   **Single-Stage Detection:** Utilizing YOLO (v8/v10) via transfer learning for high-speed, robust detection of pedestrians and luggage.
+*   **Wheelchair POV Optimization:** Tailored model calibration for low-angle perspectives to ensure reliable detection of proximity obstacles.
+*   **Bounding-Box Scaling Heuristic:** Estimating proximity based on the relative size of detected bounding boxes within the frame.
+*   **Depth Thresholding:** Implementing a simple linear heuristic where proximity alerts are triggered once an object's bounding box area exceeds a predefined threshold.
+*   **Output:** Actionable alerts (Visual/Audio) via a simplified inference pipeline.
 
 ### Dataset Details
-*   **Crowd Counting & Density Mapping:** **[ShanghaiTech Dataset (Part A & B)](https://www.dropbox.com/scl/fi/dkj5kulc9zj0rzesslck8/ShanghaiTech_Crowd_Counting_Dataset.zip?rlkey=ymbcj50ac04uvqn8p49j9af5f&dl=0)** and **[UCF-QNRF](https://www.crcv.ucf.edu/data/ucf-qnrf/)**. Crucial for training CNNs on varying levels of crowd density, from sparse corridors to highly congested environments.
-*   **Obstacle Detection:** **[COCO Dataset (2017)](https://cocodataset.org/#download)**, filtered for specific logistical obstacles (e.g., luggage, backpacks, wheelchairs) to train the YOLO model via transfer learning.
+*   **General Object Detection:** **[COCO Dataset (2017)](https://cocodataset.org/#download)**, filtered for classes like `person`, `backpack`, and `suitcase` to bootstrap the detector.
+*   **Accessibility Targets:** **[Open Images](https://storage.googleapis.com/openimages/web/index.html)**, specifically utilized for the `Wheelchair` class to ensure visibility of fellow mobility aid users.
+*   **Validation & Context:** **Custom POV Dataset**, a small collection of first-person video recorded at wheelchair height to validate proximity heuristics in realistic hub environments.
 
 ## Additional Support Required
 
