@@ -41,9 +41,11 @@
 
 | Name | Student ID | Role (Equally Distributed DL Workload) |
 |------|------------|-----------------------------------------|
-| Jungowok | 25167747 | **Data Engineering & Preprocessing:** Dataset curation (COCO/Open Images), POV filtering, and augmentation strategies for wheelchair perspective. |
-| Phoi Gia Vuong | 25736012 | **YOLO Transfer Learning:** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
-| Chihyun | 14707133 | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
+| TBD  | TBD        | **Data Engineering & Preprocessing:** Dataset curation (COCO/Open Images), POV filtering, and augmentation strategies for wheelchair perspective. |
+| TBD  | TBD        | **YOLO Transfer Learning:** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
+| TBD  | TBD        | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
+
+> **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
 
 ---
 
