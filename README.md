@@ -21,6 +21,56 @@
 
 > A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time obstacle detection and proximity logic.
 
+## Environment Setup
+
+```bash
+# 1. Clone the repository
+git clone <repo-url> && cd CrowdNav
+git checkout develop
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+# 3. Install dependencies
+pip install -r requirements.txt
+```
+
+## Data Version Control (DVC)
+
+This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
+
+### Pulling Data (Most Common)
+```bash
+# Download datasets & models from Google Drive
+dvc pull
+```
+> **Note:** On the first run, a browser window will open for Google authentication. Log in with the Google account that has access to the shared Drive folder.
+
+### Pushing Data (After Adding/Updating Datasets)
+```bash
+# 1. Track new or updated data with DVC
+dvc add data/raw
+dvc add data/processed
+dvc add models/
+
+# 2. Commit the metadata files to Git
+git add data/raw.dvc data/processed.dvc models.dvc .gitignore
+git commit -m "Update dataset v2"
+
+# 3. Upload the actual data to Google Drive
+dvc push
+
+# 4. Push Git changes
+git push origin develop
+```
+
+### For New Team Members
+1. Ask the project owner to share the Google Drive folder with your Google account (Editor access).
+2. Clone the repo, install dependencies, then run `dvc pull`.
+3. Authenticate via the browser popup — data will be downloaded automatically.
+
 <details>
 <summary><strong>Table of Contents</strong></summary>
 
