@@ -1,0 +1,62 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ========================
+# Virtual Environment
+# ========================
+.venv/
+venv/
+env/
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# Data & Models (managed by DVC)
+# ========================
+data/raw/
+data/processed/
+models/*.pt
+models/*.onnx
+models/*.pth
+
+# ========================
+# Jupyter Notebook Checkpoints
+# ========================
+.ipynb_checkpoints/
+
+# ========================
+# Misc
+# ========================
+*.log
+*.tmp
+
+# ========================
+# ClearML
+# ========================
+.clearml/
+clearml.conf
+clearml.conf.*
+**/clearml.conf
+**/clearml.conf.*
