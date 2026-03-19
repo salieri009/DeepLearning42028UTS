@@ -51,3 +51,12 @@ models/*.pth
 # ========================
 *.log
 *.tmp
+
+# ========================
+# ClearML
+# ========================
+.clearml/
+clearml.conf
+clearml.conf.*
+**/clearml.conf
+**/clearml.conf.*
