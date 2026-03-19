@@ -37,6 +37,28 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## ClearML (Experiment Tracking)
+
+This project supports experiment tracking with **ClearML**.
+
+### 1) One-time setup (per machine)
+
+```bash
+clearml-init
+```
+
+If you don't have a ClearML server, you can use the free ClearML hosting option during `clearml-init`, or set offline mode in your environment:
+
+```bash
+set CLEARML_OFFLINE_MODE=1
+```
+
+### 2) Smoke test (creates a Task and logs metrics)
+
+```bash
+python -m src.clearml_smoketest
+```
+
 ## Data Version Control (DVC)
 
 This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
@@ -65,6 +87,9 @@ graph TD
     DVC_Pointer ---|Points to| GDrive
 ```
 
+<details>
+<summary><strong>한국어 안내 (접기/펼치기)</strong></summary>
+
 ### 1. 역할 분담 요약
 *   **Git (GitHub):** 파이썬 코드, 프로젝트 문서, 그리고 데이터가 구글 드라이브의 어디에 어떤 버전으로 있는지 가리키는 **이름표(메타데이터, `*.dvc`)**만 관리합니다.
 *   **DVC (Google Drive):** 수천 장의 YOLO 학습용 이미지, 라벨링 파일 등 실제 **무거운 알맹이 데이터**를 저장하고 보관합니다.
@@ -82,6 +107,8 @@ graph TD
 3.  **데이터 업로드:** `dvc push`를 통해 무거운 데이터만 구글 드라이브 창고로 바로 쏩니다.
 4.  ** Git 공유:** 가벼운 `data/raw.dvc` 파일만 `git commit` 후 GitHub에 올립니다.
 5.  **팀원 수령:** 다른 팀원이 `git pull` 후 `dvc pull`을 치면, 지알아서 구글 드라이브 창고에서 최신 데이터를 다운로드하여 로컬 폴더를 동기화합니다.
+
+</details>
 
 ### Pulling Data (Most Common)
 ```bash
