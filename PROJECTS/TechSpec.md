@@ -40,15 +40,15 @@ The pipeline utilizes a single-stage object detector optimized for real-time inf
 3.  **Proximity Calibration:** Use custom POV data to calibrate bounding-box size thresholds against known physical distances.
 
 ## 5. Software Stack & Dependencies
-*   **Deep Learning Framework:** PyTorch (preferred for YOLO implementation).
+*   **Deep Learning Framework:** Keras / TensorFlow.
 *   **Computer Vision Libraries:** OpenCV (frame extraction, preprocessing).
-*   **Backend Server:** FastAPI or Flask (Python) to expose the model via REST/WebSocket APIs for real-time inference.
-*   **Frontend Technologies:** React Native (if Mobile) or React.js (if Web app) to build the accessible interface.
+*   **Backend & Cloud Infrastructure:** AWS (for model training, hosting, and inference endpoints). FastAPI or Flask can wrap the API.
+*   **Frontend Technologies:** React Native.
 
 ## 6. Real-Time Inference Criteria
 *   **Hardware Accelerator:** GPU (CUDA compatible) required for latency-sensitive processing.
 *   **Latency Target:** Processing time per frame under 100ms (10 FPS) to maintain "real-time" responsiveness for navigation.
-*   **Optimization:** Convert PyTorch models to TensorRT or ONNX for accelerated inference on deployment endpoints.
+*   **Optimization:** Deploy Keras models to optimized AWS endpoints (e.g., SageMaker or AWS Lambda with ONNX/TFLite).
 
 ## 7. API Design Outline (Draft)
 *   `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and proximity risk scores.

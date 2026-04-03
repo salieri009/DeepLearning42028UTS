@@ -41,7 +41,7 @@
 
 | Name | Student ID | Role (Equally Distributed DL Workload) |
 |------|------------|-----------------------------------------|
-| TBD  | TBD        | **Data Engineering & Preprocessing:** Dataset curation (COCO/Open Images), POV filtering, and augmentation strategies for wheelchair perspective. |
+| TBD  | TBD        | **Data Engineering & Preprocessing:** Dataset curation (JRDB), POV filtering, and augmentation strategies for wheelchair perspective. |
 | Jungwook Van | 25167747 | **YOLO Transfer Learning (Team Lead):** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
 | TBD  | TBD        | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
 
@@ -51,19 +51,18 @@
 
 ## Project Abstract
 
-Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Object Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and localized logistical obstacles. Utilizing transfer learning on datasets like COCO and Open Images, the model is fine-tuned to recognize critical elements within crowded transport environments. Crucially, rather than relying on computationally heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing object scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, fostering greater independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
+Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Crowd Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and crowded areas. Using transfer learning on the JRDB dataset, the model is fine-tuned to recognize pedestrian dynamics within crowded transport environments. Rather than relying on heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing pedestrian scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, increasing independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
 
 ### Approach
-*   **Single-Stage Detection:** Utilizing YOLO (v8/v10) via transfer learning for high-speed, robust detection of pedestrians and luggage.
+*   **Single-Stage Detection:** Using YOLO (v8/v10) via transfer learning for high-speed detection of pedestrians in crowds.
 *   **Wheelchair POV Optimization:** Tailored model calibration for low-angle perspectives to ensure reliable detection of proximity obstacles.
 *   **Bounding-Box Scaling Heuristic:** Estimating proximity based on the relative size of detected bounding boxes within the frame.
-*   **Depth Thresholding:** Implementing a simple linear heuristic where proximity alerts are triggered once an object's bounding box area exceeds a predefined threshold.
+*   **Depth Thresholding:** Implementing a simple linear heuristic where proximity alerts are triggered once a pedestrian's bounding box area exceeds a predefined threshold.
 *   **Output:** Actionable alerts (Visual/Audio) via a simplified inference pipeline.
 
 ### Dataset Details
-*   **General Object Detection:** **[COCO Dataset (2017)](https://cocodataset.org/#download)**, filtered for classes like `person`, `backpack`, and `suitcase` to bootstrap the detector.
-*   **Accessibility Targets:** **[Open Images](https://storage.googleapis.com/openimages/web/index.html)**, specifically utilized for the `Wheelchair` class to ensure visibility of fellow mobility aid users.
-*   **Validation & Context:** **Custom POV Dataset**, a small collection of first-person video recorded at wheelchair height to validate proximity heuristics in realistic hub environments.
+*   **Crowd Detection & Tracking:** **[JRDB Dataset](https://jrdb.erc.monash.edu/)**, a large-scale dataset of indoor and outdoor social navigation collected from a social mobile robot, providing wheelchair-height 360-degree cylindrical panoramic video and 3D point clouds for pedestrian detection.
+*   **Validation & Context:** **JRDB POV Context**, applying the dataset's lower-vantage perspective to validate proximity heuristics in realistic, crowded hub environments.
 
 ## Additional Support Required
 
@@ -80,15 +79,6 @@ The project follows a structured directory format to align with the assignment d
 
 ```text
 .
-├── Assignment-3/
-│   ├── Part-A/    # Project Proposal (submit individually)
-│   │   ├── README.md
-│   │   └── Assignment-3-PartA-Draft.md
-│   ├── Part-B/    # Intermediate Deliverable 1 — Dataset & Architecture
-│   ├── Part-C/    # Intermediate Deliverable 2 — Initial Results
-│   ├── Part-D/    # Intermediate Deliverable 3 — GUI Design
-│   ├── Part-E/    # Final Project Report (submit individually)
-│   └── Part-G/    # Oral Defense Materials
 ├── PROJECTS/      # Project Management & Additional Docs
 │   ├── PRD.md     # Product Requirements Document
 │   └── TechSpec.md # Technical Specifications
@@ -140,7 +130,7 @@ No late penalties for intermediate parts, but <b>everything must be submitted be
 <details>
 <summary><strong>Can I use YOLO or other frameworks?</strong></summary>
 <br>
-Yes. Any object detection or image classification framework is allowed. <b>Training of the network is required</b> — transfer learning is permitted, but you must train the network yourself.
+Yes. Any crowd detection or computer vision framework is allowed. <b>Training of the network is required</b> — transfer learning is permitted, but you must train the network yourself.
 </details>
 
 <details>
