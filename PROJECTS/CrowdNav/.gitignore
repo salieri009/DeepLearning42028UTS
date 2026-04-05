@@ -68,3 +68,7 @@ clearml.conf
 clearml.conf.*
 **/clearml.conf
 **/clearml.conf.*
+
+# Environment Variables
+.env
+

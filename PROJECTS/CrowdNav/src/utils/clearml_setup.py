@@ -24,6 +24,12 @@ def init_clearml_task(
     This function keeps training code clean: call it once at startup.
     """
     try:
+        from dotenv import load_dotenv
+        load_dotenv()  # Load environment variables from .env file if present
+    except ImportError:
+        pass  # python-dotenv not installed, ignore
+        
+    try:
         from clearml import Task  # type: ignore
     except Exception as e:  # pragma: no cover
         raise RuntimeError(
