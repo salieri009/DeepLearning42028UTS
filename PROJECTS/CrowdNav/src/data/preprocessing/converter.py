@@ -37,9 +37,10 @@ def to_yolo(record: AnnotationRecord, class_id: int, img_width: int, img_height:
 
 
 def _sanitize_image_key(image_key: str) -> str:
-    stem = Path(image_key).stem
-    if stem:
-        return stem
+    path = Path(image_key)
+    sanitized = str(path.with_suffix("")).replace("/", "_").replace("\\", "_")
+    if sanitized:
+        return sanitized
     return image_key.replace("/", "_").replace("\\", "_")
 
 
@@ -50,9 +51,14 @@ def write_yolo_files(
     img_height: int,
 ) -> tuple[int, int]:
     """Write one YOLO ``.txt`` per image key and return (written_boxes, skipped_boxes)."""
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_dir.exists() and not output_dir.is_dir():
+        raise NotADirectoryError(f"Output path exists and is not a directory: {output_dir}")
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise OSError(f"Unable to create output directory '{output_dir}': {exc}") from exc
 
-    buckets: dict[str, list[YoloBox]] = {}
+    written = 0
     skipped = 0
 
     for record, class_id in records:
@@ -62,16 +68,13 @@ def write_yolo_files(
             continue
 
         image_key = _sanitize_image_key(record.image_key)
-        buckets.setdefault(image_key, []).append(yolo_box)
-
-    written = 0
-    for image_key, yolo_boxes in buckets.items():
         out_path = output_dir / f"{image_key}.txt"
-        lines = [
-            f"{box.class_id} {box.x_center:.6f} {box.y_center:.6f} {box.width:.6f} {box.height:.6f}"
-            for box in yolo_boxes
-        ]
-        out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        written += len(lines)
+        line = (
+            f"{yolo_box.class_id} {yolo_box.x_center:.6f} {yolo_box.y_center:.6f}"
+            f" {yolo_box.width:.6f} {yolo_box.height:.6f}\n"
+        )
+        with out_path.open("a", encoding="utf-8") as f:
+            f.write(line)
+        written += 1
 
     return written, skipped

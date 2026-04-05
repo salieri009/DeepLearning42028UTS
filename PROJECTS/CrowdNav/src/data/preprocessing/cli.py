@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List, Tuple
 
 from .converter import write_yolo_files
 from .io_utils import iter_raw_items, load_json, parse_record
-from .types import AnnotationRecord
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,7 +28,11 @@ def _validate_dimensions(img_width: int, img_height: int) -> None:
 
 def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int) -> int:
     """Run conversion and return process exit code."""
-    _validate_dimensions(img_width=img_width, img_height=img_height)
+    try:
+        _validate_dimensions(img_width=img_width, img_height=img_height)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 1
 
     try:
         data = load_json(input_json)
@@ -42,26 +44,32 @@ def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int)
         return 1
 
     label_to_id: dict[str, int] = {}
-    parsed_records: List[Tuple[AnnotationRecord, int]] = []
     invalid_items = 0
+    parsed_count = 0
 
-    for index, raw_item in enumerate(iter_raw_items(data), start=1):
-        record = parse_record(raw_item, fallback_index=index)
-        if record is None:
-            invalid_items += 1
-            continue
+    def record_stream():
+        nonlocal invalid_items, parsed_count
+        for index, raw_item in enumerate(iter_raw_items(data), start=1):
+            record = parse_record(raw_item, fallback_index=index)
+            if record is None:
+                invalid_items += 1
+                continue
+            parsed_count += 1
+            class_id = label_to_id.setdefault(record.class_name, len(label_to_id))
+            yield record, class_id
 
-        class_id = label_to_id.setdefault(record.class_name, len(label_to_id))
-        parsed_records.append((record, class_id))
+    try:
+        written, skipped = write_yolo_files(
+            records=record_stream(),
+            output_dir=output_dir,
+            img_width=img_width,
+            img_height=img_height,
+        )
+    except (NotADirectoryError, OSError) as exc:
+        print(f"ERROR: {exc}")
+        return 1
 
-    written, skipped = write_yolo_files(
-        records=parsed_records,
-        output_dir=output_dir,
-        img_width=img_width,
-        img_height=img_height,
-    )
-
-    print(f"Parsed records: {len(parsed_records)}")
+    print(f"Parsed records: {parsed_count}")
     print(f"Invalid items skipped: {invalid_items}")
     print(f"Degenerate boxes skipped: {skipped}")
     print(f"YOLO boxes written: {written}")
