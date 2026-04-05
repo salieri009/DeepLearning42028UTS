@@ -19,16 +19,18 @@ def init_clearml_task(
     params: Optional[Mapping[str, Any]] = None,
 ) -> ClearMLTaskInfo:
     """
-    Initialize a ClearML Task (online) if configured, otherwise fallback to offline mode.
+    Initialize a ClearML Task (online) if configured.
+    Otherwise, fallback to offline mode.
 
     This function keeps training code clean: call it once at startup.
     """
     try:
         from dotenv import load_dotenv
+
         load_dotenv()  # Load environment variables from .env file if present
     except ImportError:
         pass  # python-dotenv not installed, ignore
-        
+
     try:
         from clearml import Task  # type: ignore
     except Exception as e:  # pragma: no cover
@@ -36,7 +38,11 @@ def init_clearml_task(
             "clearml is not installed. Run: pip install -r requirements.txt"
         ) from e
 
-    task = Task.init(project_name=project_name, task_name=task_name, tags=tags or None)
+    task = Task.init(
+        project_name=project_name,
+        task_name=task_name,
+        tags=tags or None,
+    )
 
     if params:
         task.connect(dict(params))
@@ -46,4 +52,3 @@ def init_clearml_task(
         task_name=task_name,
         task_id=getattr(task, "id", None),
     )
-
