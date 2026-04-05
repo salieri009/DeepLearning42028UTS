@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - dev
+      - develop
   pull_request:
     branches:
       - main
       - dev
+      - develop
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -16,6 +18,9 @@ env:
 jobs:
   python-build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./PROJECTS/CrowdNav
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
