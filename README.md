@@ -21,6 +21,125 @@
 
 > A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time obstacle detection and proximity logic.
 
+## Environment Setup
+
+```bash
+# 1. Clone the repository
+git clone <repo-url> && cd CrowdNav
+git checkout develop
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+# 3. Install dependencies
+pip install -r requirements.txt
+```
+
+## ClearML (Experiment Tracking)
+
+This project supports experiment tracking with **ClearML**.
+
+### 1) One-time setup (per machine)
+
+```bash
+clearml-init
+```
+
+If you don't have a ClearML server, you can use the free ClearML hosting option during `clearml-init`, or set offline mode in your environment:
+
+```bash
+set CLEARML_OFFLINE_MODE=1
+```
+
+### 2) Smoke test (creates a Task and logs metrics)
+
+```bash
+python -m src.clearml_smoketest
+```
+
+## Data Version Control (DVC)
+
+This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
+
+### DVC Workflow Overview
+
+```mermaid
+graph TD
+    subgraph "Local PC"
+        Code[Python Code]
+        DVC_Pointer["dataset.dvc (Metadata)"]
+        RawData["data/raw/ (Actual Images)"]
+    end
+
+    subgraph "GitHub (Public/Private Repo)"
+        GitRepo["Git Repository"]
+    end
+
+    subgraph "Google Drive (Cloud Storage)"
+        GDrive["GDrive Remote Hub (Hashed Files)"]
+    end
+
+    Code -->|git push| GitRepo
+    DVC_Pointer -->|git push| GitRepo
+    RawData -.->|dvc push| GDrive
+    DVC_Pointer ---|Points to| GDrive
+```
+
+<details>
+<summary><strong>한국어 안내 (접기/펼치기)</strong></summary>
+
+### 1. 역할 분담 요약
+*   **Git (GitHub):** 파이썬 코드, 프로젝트 문서, 그리고 데이터가 구글 드라이브의 어디에 어떤 버전으로 있는지 가리키는 **이름표(메타데이터, `*.dvc`)**만 관리합니다.
+*   **DVC (Google Drive):** 수천 장의 YOLO 학습용 이미지, 라벨링 파일 등 실제 **무거운 알맹이 데이터**를 저장하고 보관합니다.
+
+### 2. 구글 드라이브 내부 구조 (주의사항)
+구글 드라이브 연동 폴더를 웹 브라우저로 확인하면 `images/`, `labels/` 같은 직관적인 구조 대신 `4f/`, `a2/` 같은 해시(Hash) 값 폴더들만 보입니다.
+> [!WARNING]
+> **절대로 구글 드라이브 웹사이트에서 직접 파일을 수정하거나 이동하지 마세요.**
+> DVC는 버전 관리를 위해 데이터를 최적화된 방식(캐시)으로 변환하여 저장합니다. 데이터 업로드/다운로드는 오직 `dvc push`, `dvc pull` 명령어를 통해서만 수행해야 합니다.
+
+### 3. 실제 협업 흐름 (POV 데이터 추가 예시)
+팀원이 새로운 POV 이미지 100장을 추가하는 과정은 다음과 같습니다:
+1.  **로컬 추가:** 새로운 이미지를 `data/raw/`에 넣습니다.
+2.  **데이터 트래킹:** `dvc add data/raw`를 실행하면 실제 데이터는 구글 드라이브로 올라갈 준비를 하고, 로컬의 `data/raw.dvc` 파일(포인터)이 업데이트됩니다.
+3.  **데이터 업로드:** `dvc push`를 통해 무거운 데이터만 구글 드라이브 창고로 바로 쏩니다.
+4.  ** Git 공유:** 가벼운 `data/raw.dvc` 파일만 `git commit` 후 GitHub에 올립니다.
+5.  **팀원 수령:** 다른 팀원이 `git pull` 후 `dvc pull`을 치면, 지알아서 구글 드라이브 창고에서 최신 데이터를 다운로드하여 로컬 폴더를 동기화합니다.
+
+</details>
+
+### Pulling Data (Most Common)
+```bash
+# Download datasets & models from Google Drive
+dvc pull
+```
+> **Note:** On the first run, a browser window will open for Google authentication. Log in with the Google account that has access to the shared Drive folder.
+
+### Pushing Data (After Adding/Updating Datasets)
+```bash
+# 1. Track new or updated data with DVC
+dvc add data/raw
+dvc add data/processed
+dvc add models/
+
+# 2. Commit the metadata files to Git
+git add data/raw.dvc data/processed.dvc models.dvc .gitignore
+git commit -m "Update dataset v2"
+
+# 3. Upload the actual data to Google Drive
+dvc push
+
+# 4. Push Git changes
+git push origin develop
+```
+
+### For New Team Members
+1. Ask the project owner to share the Google Drive folder with your Google account (Editor access).
+2. Clone the repo, install dependencies, then run `dvc pull`.
+3. Authenticate via the browser popup — data will be downloaded automatically.
+
 <details>
 <summary><strong>Table of Contents</strong></summary>
 
