@@ -8,4 +8,4 @@ This directory is designated for Jupyter notebooks.
 - Visualizing data augmentation outputs and model inference results quickly.
 
 ## Naming Convention
-Please prefix notebooks with a number to imply ordering if necessary, or your functional tag (e.g., `01_eda_shanghaitech.ipynb` or `F101-eda.ipynb`).
+Please prefix notebooks with a number to imply ordering if necessary, or your functional tag (e.g., `01_eda_dataset.ipynb` or `F101-eda.ipynb`).
