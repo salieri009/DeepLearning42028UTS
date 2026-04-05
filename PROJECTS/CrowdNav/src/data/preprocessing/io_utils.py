@@ -50,27 +50,28 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
         or raw.get("rect")
     )
 
-    if isinstance(bbox, dict):
-        x = bbox.get("x", bbox.get("left", bbox.get("x1")))
-        y = bbox.get("y", bbox.get("top", bbox.get("y1")))
-        w = bbox.get("w", bbox.get("width"))
-        h = bbox.get("h", bbox.get("height"))
-        x2 = bbox.get("x2")
-        y2 = bbox.get("y2")
+    try:
+        if isinstance(bbox, dict):
+            x = bbox.get("x", bbox.get("left", bbox.get("x1")))
+            y = bbox.get("y", bbox.get("top", bbox.get("y1")))
+            w = bbox.get("w", bbox.get("width"))
+            h = bbox.get("h", bbox.get("height"))
+            x2 = bbox.get("x2")
+            y2 = bbox.get("y2")
 
-        if None not in (x, y, w, h):
+            if None not in (x, y, w, h):
+                return BoundingBox(float(x), float(y), float(x) + float(w), float(y) + float(h))
+            if None not in (x, y, x2, y2):
+                return BoundingBox(float(x), float(y), float(x2), float(y2))
+
+        if all(k in raw for k in ("x", "y", "w", "h")):
+            x, y, w, h = raw["x"], raw["y"], raw["w"], raw["h"]
             return BoundingBox(float(x), float(y), float(x) + float(w), float(y) + float(h))
-        if None not in (x, y, x2, y2):
-            return BoundingBox(float(x), float(y), float(x2), float(y2))
 
-    if all(k in raw for k in ("x", "y", "w", "h")):
-        x, y, w, h = raw["x"], raw["y"], raw["w"], raw["h"]
-        return BoundingBox(float(x), float(y), float(x) + float(w), float(y) + float(h))
-
-    if all(k in raw for k in ("x1", "y1", "x2", "y2")):
-        return BoundingBox(float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"]))
-
-    return None
+        if all(k in raw for k in ("x1", "y1", "x2", "y2")):
+            return BoundingBox(float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"]))
+    except (TypeError, ValueError):
+        return None
 
 
 def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord | None:
