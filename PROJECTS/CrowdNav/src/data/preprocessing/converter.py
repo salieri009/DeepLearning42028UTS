@@ -38,10 +38,8 @@ def to_yolo(record: AnnotationRecord, class_id: int, img_width: int, img_height:
 
 def _sanitize_image_key(image_key: str) -> str:
     path = Path(image_key)
-    sanitized = str(path.with_suffix("")).replace("/", "_").replace("\\", "_")
-    if sanitized:
-        return sanitized
-    return image_key.replace("/", "_").replace("\\", "_")
+    sanitized = path.with_suffix("").as_posix().replace("/", "_")
+    return sanitized if sanitized else image_key
 
 
 def write_yolo_files(
@@ -60,6 +58,7 @@ def write_yolo_files(
 
     written = 0
     skipped = 0
+    buckets: dict[str, list[str]] = {}
 
     for record, class_id in records:
         yolo_box = to_yolo(record, class_id, img_width=img_width, img_height=img_height)
@@ -68,13 +67,15 @@ def write_yolo_files(
             continue
 
         image_key = _sanitize_image_key(record.image_key)
-        out_path = output_dir / f"{image_key}.txt"
         line = (
             f"{yolo_box.class_id} {yolo_box.x_center:.6f} {yolo_box.y_center:.6f}"
-            f" {yolo_box.width:.6f} {yolo_box.height:.6f}\n"
+            f" {yolo_box.width:.6f} {yolo_box.height:.6f}"
         )
-        with out_path.open("a", encoding="utf-8") as f:
-            f.write(line)
-        written += 1
+        buckets.setdefault(image_key, []).append(line)
+
+    for image_key, lines in buckets.items():
+        out_path = output_dir / f"{image_key}.txt"
+        out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        written += len(lines)
 
     return written, skipped
