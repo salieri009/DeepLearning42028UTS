@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import List, Tuple
 
 from .converter import write_yolo_files
 from .io_utils import iter_raw_items, load_json, parse_record
+from .types import AnnotationRecord
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -40,7 +42,7 @@ def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int)
         return 1
 
     label_to_id: dict[str, int] = {}
-    parsed_records: list[tuple] = []
+    parsed_records: List[Tuple[AnnotationRecord, int]] = []
     invalid_items = 0
 
     for index, raw_item in enumerate(iter_raw_items(data), start=1):
