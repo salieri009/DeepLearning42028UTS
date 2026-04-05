@@ -10,9 +10,6 @@ on:
       - main
       - dev
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   python-build:
     runs-on: ubuntu-latest
@@ -76,22 +73,3 @@ jobs:
       #   run: |
       #     dvc pull
       #     # 필요 시 clearml-init 관련 스크립트 실행
-  frontend-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./PROJECTS/CrowdNav/frontend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install Frontend dependencies (Placeholder)
-        run: echo "No package.json yet. Skipping install."
-
-      - name: Build Frontend (Placeholder)
-        run: echo "No build script yet. Skipping build."
