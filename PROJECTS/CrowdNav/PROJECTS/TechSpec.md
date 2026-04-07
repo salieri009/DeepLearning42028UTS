@@ -30,8 +30,7 @@ The pipeline utilizes a single-stage object detector optimized for real-time inf
 
 ## 4. Data Processing & Pipeline
 ### 4.1 Data Sources
-*   **Primary Dataset:** JRDB (JackRabbot Dataset) — provides annotated pedestrian sequences from a lower vantage point, suitable for crowd detection and proximity estimation from a wheelchair perspective.
-*   **Supplementary Data:** COCO Dataset (`person`, `backpack`, `suitcase`, `bench`, `chair` classes) and Open Images (`Wheelchair` class) for additional obstacle and mobility aid coverage.
+*   **Primary Dataset:** JRDB (Stanford Drone / Social Force dataset) — provides annotated pedestrian sequences suitable for crowd detection and proximity estimation.
 *   **Custom POV Data:** Targeted collection of video from wheelchair height to calibrate proximity thresholds.
 
 ### 4.2 Preprocessing Pipeline
