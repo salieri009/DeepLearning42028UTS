@@ -1,0 +1,102 @@
+name: Build Check
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  python-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./PROJECTS/CrowdNav
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install black flake8
+
+      - name: Check formatting with Black
+        run: |
+          TARGETS=""
+          if [ -d src ]; then
+            TARGETS="$TARGETS src"
+          fi
+          if [ -d models ]; then
+            TARGETS="$TARGETS models"
+          fi
+          if [ -n "$TARGETS" ]; then
+            black --check $TARGETS
+          else
+            echo "No Python source directories found to format-check."
+          fi
+
+      - name: Lint with Flake8
+        run: |
+          TARGETS=""
+          if [ -d src ]; then
+            TARGETS="$TARGETS src"
+          fi
+          if [ -d models ]; then
+            TARGETS="$TARGETS models"
+          fi
+          if [ -n "$TARGETS" ]; then
+            flake8 $TARGETS --max-line-length=88
+          else
+            echo "No Python source directories found to lint."
+          fi
+
+      # DVC / ClearML 환경 변수(Secret) 주입 가이드
+      # GitHub Repository Settings > Secrets and variables > Actions에 아래 시크릿을 추가.
+      # - name: Setup DVC and ClearML
+      #   env:
+      #     GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+      #     CLEARML_API_ACCESS_KEY: ${{ secrets.CLEARML_API_ACCESS_KEY }}
+      #     CLEARML_API_SECRET_KEY: ${{ secrets.CLEARML_API_SECRET_KEY }}
+      #     CLEARML_WEB_HOST: ${{ secrets.CLEARML_WEB_HOST }}
+      #     CLEARML_API_HOST: ${{ secrets.CLEARML_API_HOST }}
+      #     CLEARML_FILES_HOST: ${{ secrets.CLEARML_FILES_HOST }}
+      #   run: |
+      #     dvc pull
+      #     # 필요 시 clearml-init 관련 스크립트 실행
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./PROJECTS/CrowdNav/frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Frontend dependencies (Placeholder)
+        run: echo "No package.json yet. Skipping install."
+
+      - name: Build Frontend (Placeholder)
+        run: echo "No build script yet. Skipping build."

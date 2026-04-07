@@ -187,9 +187,7 @@ Navigating densely populated transport hubs presents significant barriers to saf
 
 To successfully achieve the project outcomes, the team anticipates requiring the following support:
 
-*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models (such as YOLO) within the project timeframe.
-*   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
-
+*   **Computational Resources:** Access to AWS cloud GPU resources or UTS high-performance computing (HPC) clusters to facilitate the training of computationally intensive deep learning models (such as Keras-based models) within the project timeframe.       
 ---
 
 ## Repository Layout
