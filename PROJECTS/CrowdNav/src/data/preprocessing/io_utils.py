@@ -60,16 +60,22 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             y2 = bbox.get("y2")
 
             if None not in (x, y, w, h):
-                return BoundingBox(float(x), float(y), float(x) + float(w), float(y) + float(h))
+                return BoundingBox(
+                    float(x), float(y), float(x) + float(w), float(y) + float(h)
+                )
             if None not in (x, y, x2, y2):
                 return BoundingBox(float(x), float(y), float(x2), float(y2))
 
         if all(k in raw for k in ("x", "y", "w", "h")):
             x, y, w, h = raw["x"], raw["y"], raw["w"], raw["h"]
-            return BoundingBox(float(x), float(y), float(x) + float(w), float(y) + float(h))
+            return BoundingBox(
+                float(x), float(y), float(x) + float(w), float(y) + float(h)
+            )
 
         if all(k in raw for k in ("x1", "y1", "x2", "y2")):
-            return BoundingBox(float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"]))
+            return BoundingBox(
+                float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"])
+            )
     except (TypeError, ValueError):
         return None
 

@@ -14,8 +14,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Convert JRDB-like 2D bounding box JSON into YOLO .txt label files."
     )
-    parser.add_argument("input_json", type=Path, help="Path to input JRDB annotation JSON file")
-    parser.add_argument("output_dir", type=Path, help="Directory where YOLO .txt files are written")
+    parser.add_argument(
+        "input_json", type=Path, help="Path to input JRDB annotation JSON file"
+    )
+    parser.add_argument(
+        "output_dir", type=Path, help="Directory where YOLO .txt files are written"
+    )
     parser.add_argument("img_width", type=int, help="Image width in pixels")
     parser.add_argument("img_height", type=int, help="Image height in pixels")
     return parser
@@ -76,8 +80,12 @@ def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int)
     print(f"Classes discovered: {len(label_to_id)}")
 
     classes_path = output_dir / "classes.txt"
-    class_lines = [label for label, _ in sorted(label_to_id.items(), key=lambda pair: pair[1])]
-    classes_path.write_text("\n".join(class_lines) + ("\n" if class_lines else ""), encoding="utf-8")
+    class_lines = [
+        label for label, _ in sorted(label_to_id.items(), key=lambda pair: pair[1])
+    ]
+    classes_path.write_text(
+        "\n".join(class_lines) + ("\n" if class_lines else ""), encoding="utf-8"
+    )
 
     print(f"Class mapping file: {classes_path}")
     return 0

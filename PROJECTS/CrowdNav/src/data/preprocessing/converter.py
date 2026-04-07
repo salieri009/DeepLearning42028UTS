@@ -12,7 +12,9 @@ def _clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(value, max_value))
 
 
-def to_yolo(record: AnnotationRecord, class_id: int, img_width: int, img_height: int) -> YoloBox:
+def to_yolo(
+    record: AnnotationRecord, class_id: int, img_width: int, img_height: int
+) -> YoloBox:
     """Convert one absolute bounding box record into YOLO normalized coordinates."""
     x_min = _clamp(record.bbox.x_min, 0.0, float(img_width))
     y_min = _clamp(record.bbox.y_min, 0.0, float(img_height))
@@ -48,13 +50,17 @@ def write_yolo_files(
     img_width: int,
     img_height: int,
 ) -> tuple[int, int]:
-    """Write one YOLO ``.txt`` per image key and return (written_boxes, skipped_boxes)."""
+    """Write per-image YOLO label files; return (written_boxes, skipped_boxes)."""
     if output_dir.exists() and not output_dir.is_dir():
-        raise NotADirectoryError(f"Output path exists and is not a directory: {output_dir}")
+        raise NotADirectoryError(
+            f"Output path exists and is not a directory: {output_dir}"
+        )
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
-        raise OSError(f"Unable to create output directory '{output_dir}': {exc}") from exc
+        raise OSError(
+            f"Unable to create output directory '{output_dir}': {exc}"
+        ) from exc
 
     written = 0
     skipped = 0
