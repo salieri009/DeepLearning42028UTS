@@ -6,5 +6,6 @@ This is the main directory for deep learning source code of the CrowdNav project
 - `/src/data`: Scripts for data loading pipelines, dataset extraction, validation, or generating subsets from raw datasets.
 - `/src/models`: Core definitions of Neural Network architectures (e.g., YOLO classes) and the training loop scripts.
 - `/src/utils`: Custom metrics implementations (MAE, MSE, mAP calculation), logging functions, and other helper scripts.
+- `/src/inference`: Runtime business logic modules (e.g., collision alerts and edge-oriented decision heuristics).
 
 *Rule of thumb: Code here should be modular, PEP8 compliant, and designed to run from the command line, rather than interactively like in `/notebooks`.*

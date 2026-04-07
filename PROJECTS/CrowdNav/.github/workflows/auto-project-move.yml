@@ -1,0 +1,271 @@
+# =============================================================================
+# Auto Project Move Workflow (GitHub Projects 카드 자동 이동)
+# =============================================================================
+# 용도: PR이 머지되거나 닫힐 때 GitHub Projects V2 보드의 카드를 자동으로 이동합니다.
+#   - PR 머지 시 → Done 상태로 이동
+#   - PR 머지 없이 닫힐 때 → Todo 상태로 되돌림
+#
+# 사전 설정 필요:
+#   1. GitHub Projects V2 보드에 "Status" 필드가 있어야 합니다.
+#   2. "Status" 필드에 "Todo"와 "Done" 옵션이 있어야 합니다.
+#   3. Repository Variables에 PROJECT_NUMBER를 설정해야 합니다.
+#      (Settings > Secrets and variables > Actions > Variables > New repository variable)
+# =============================================================================
+
+name: Auto Project Move
+
+# PR이 닫힐 때 실행 (머지 & 머지 없이 닫힘 모두 포함)
+on:
+  pull_request:
+    types: [closed]
+
+# 권한 설정 — Projects V2 API 접근을 위한 권한
+permissions:
+  contents: read
+  pull-requests: read
+  repository-projects: write
+
+jobs:
+  # =========================================================================
+  # Job 1: PR이 머지된 경우 → Done으로 이동
+  # =========================================================================
+  move-to-done:
+    name: Move to Done (PR Merged)
+    runs-on: ubuntu-latest
+    # 머지된 경우에만 실행
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Move PR card to Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const projectNumber = parseInt('${{ vars.PROJECT_NUMBER }}');
+            const owner = context.repo.owner;
+
+            if (!projectNumber || isNaN(projectNumber)) {
+              console.log('⚠️ PROJECT_NUMBER가 설정되지 않았습니다. Repository Variables에 설정해주세요.');
+              console.log('Settings > Secrets and variables > Actions > Variables');
+              return;
+            }
+
+            console.log(`📋 프로젝트 번호: ${projectNumber}`);
+            console.log(`🔀 PR #${context.issue.number} 이(가) 머지되었습니다. Done으로 이동합니다...`);
+
+            try {
+              // 1. 프로젝트 ID 및 Status 필드 정보 조회
+              const projectQuery = await github.graphql(`
+                query($owner: String!, $number: Int!) {
+                  user(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { owner, number: projectNumber });
+
+              const project = projectQuery.user.projectV2;
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+
+              if (!statusField) {
+                console.log('❌ "Status" 필드를 찾을 수 없습니다. Projects 보드에 Status 필드가 있는지 확인하세요.');
+                return;
+              }
+
+              const doneOption = statusField.options.find(o => o.name === 'Done');
+              if (!doneOption) {
+                console.log('❌ "Done" 옵션을 찾을 수 없습니다. Status 필드에 "Done" 옵션이 있는지 확인하세요.');
+                return;
+              }
+
+              // 2. PR과 연결된 Project Item 조회
+              const contentId = context.payload.pull_request.node_id;
+              const itemQuery = await github.graphql(`
+                query($projectId: ID!, $cursor: String) {
+                  node(id: "${project.id}") {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        nodes {
+                          id
+                          content {
+                            ... on PullRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { projectId: project.id });
+
+              const item = itemQuery.node.items.nodes.find(
+                i => i.content && i.content.id === contentId
+              );
+
+              if (!item) {
+                console.log('⚠️ 이 PR이 프로젝트 보드에 연결되어 있지 않습니다.');
+                return;
+              }
+
+              // 3. Status를 Done으로 변경
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: {singleSelectOptionId: $value}
+                    }
+                  ) {
+                    projectV2Item { id }
+                  }
+                }
+              `, {
+                projectId: project.id,
+                itemId: item.id,
+                fieldId: statusField.id,
+                value: doneOption.id
+              });
+
+              console.log(`✅ PR #${context.issue.number} 카드가 "Done"으로 이동되었습니다.`);
+
+            } catch (error) {
+              console.log(`❌ 프로젝트 카드 이동 중 오류 발생: ${error.message}`);
+              console.log('💡 GITHUB_TOKEN 권한 또는 프로젝트 설정을 확인하세요.');
+            }
+
+  # =========================================================================
+  # Job 2: PR이 머지되지 않고 닫힌 경우 → Todo로 되돌림
+  # =========================================================================
+  move-to-todo:
+    name: Move to Todo (PR Closed without merge)
+    runs-on: ubuntu-latest
+    # 머지되지 않고 닫힌 경우에만 실행
+    if: github.event.pull_request.merged == false
+    steps:
+      - name: Move PR card to Todo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const projectNumber = parseInt('${{ vars.PROJECT_NUMBER }}');
+            const owner = context.repo.owner;
+
+            if (!projectNumber || isNaN(projectNumber)) {
+              console.log('⚠️ PROJECT_NUMBER가 설정되지 않았습니다. Repository Variables에 설정해주세요.');
+              console.log('Settings > Secrets and variables > Actions > Variables');
+              return;
+            }
+
+            console.log(`📋 프로젝트 번호: ${projectNumber}`);
+            console.log(`❎ PR #${context.issue.number} 이(가) 머지 없이 닫혔습니다. Todo로 되돌립니다...`);
+
+            try {
+              // 1. 프로젝트 ID 및 Status 필드 정보 조회
+              const projectQuery = await github.graphql(`
+                query($owner: String!, $number: Int!) {
+                  user(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { owner, number: projectNumber });
+
+              const project = projectQuery.user.projectV2;
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+
+              if (!statusField) {
+                console.log('❌ "Status" 필드를 찾을 수 없습니다.');
+                return;
+              }
+
+              const todoOption = statusField.options.find(o => o.name === 'Todo');
+              if (!todoOption) {
+                console.log('❌ "Todo" 옵션을 찾을 수 없습니다. Status 필드에 "Todo" 옵션이 있는지 확인하세요.');
+                return;
+              }
+
+              // 2. PR과 연결된 Project Item 조회
+              const contentId = context.payload.pull_request.node_id;
+              const itemQuery = await github.graphql(`
+                query($projectId: ID!, $cursor: String) {
+                  node(id: "${project.id}") {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        nodes {
+                          id
+                          content {
+                            ... on PullRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { projectId: project.id });
+
+              const item = itemQuery.node.items.nodes.find(
+                i => i.content && i.content.id === contentId
+              );
+
+              if (!item) {
+                console.log('⚠️ 이 PR이 프로젝트 보드에 연결되어 있지 않습니다.');
+                return;
+              }
+
+              // 3. Status를 Todo로 변경
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: {singleSelectOptionId: $value}
+                    }
+                  ) {
+                    projectV2Item { id }
+                  }
+                }
+              `, {
+                projectId: project.id,
+                itemId: item.id,
+                fieldId: statusField.id,
+                value: todoOption.id
+              });
+
+              console.log(`✅ PR #${context.issue.number} 카드가 "Todo"로 되돌려졌습니다.`);
+
+            } catch (error) {
+              console.log(`❌ 프로젝트 카드 이동 중 오류 발생: ${error.message}`);
+              console.log('💡 GITHUB_TOKEN 권한 또는 프로젝트 설정을 확인하세요.');
+            }
