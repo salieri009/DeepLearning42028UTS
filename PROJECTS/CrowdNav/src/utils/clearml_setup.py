@@ -18,7 +18,7 @@ class ClearMLSetup:
         """Initialize ClearML setup with project and task names."""
         self._project_name = project_name
         self._task_name = task_name
-        self._task: Any = None
+        self._task: Optional[Any] = None
 
     def init_clearml_task(
         self,
@@ -37,7 +37,7 @@ class ClearMLSetup:
             from clearml import Task  # type: ignore
 
             self._task = Task.current_task()
-        except Exception:
+        except ImportError:
             pass
         return task_info
 
