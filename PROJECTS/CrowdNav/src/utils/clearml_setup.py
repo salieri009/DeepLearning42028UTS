@@ -11,6 +11,51 @@ class ClearMLTaskInfo:
     task_id: Optional[str]
 
 
+class ClearMLSetup:
+    """MLOpsLayer thin wrapper around ClearML task and metric lifecycle."""
+
+    def __init__(self, project_name: str, task_name: str) -> None:
+        """Initialize ClearML setup with project and task names."""
+        self._project_name = project_name
+        self._task_name = task_name
+        self._task: Optional[Any] = None
+
+    def init_clearml_task(
+        self,
+        *,
+        tags: Optional[list[str]] = None,
+        params: Optional[Mapping[str, Any]] = None,
+    ) -> ClearMLTaskInfo:
+        """Initialize and return a ClearML task descriptor."""
+        task_info = init_clearml_task(
+            project_name=self._project_name,
+            task_name=self._task_name,
+            tags=tags,
+            params=params,
+        )
+        try:
+            from clearml import Task  # type: ignore
+
+            self._task = Task.current_task()
+        except ImportError:
+            pass
+        return task_info
+
+    def log_hyperparams(self, params: Mapping[str, Any]) -> None:
+        """Log hyperparameters for experiment tracking."""
+        if self._task is None:
+            raise RuntimeError("Call init_clearml_task() before logging.")
+        self._task.connect(dict(params))
+
+    def log_metric(self, name: str, value: float, step: int) -> None:
+        """Log a metric scalar for the given training step."""
+        if self._task is None:
+            raise RuntimeError("Call init_clearml_task() before logging.")
+        self._task.get_logger().report_scalar(
+            title=name, series=name, value=value, iteration=step
+        )
+
+
 def init_clearml_task(
     *,
     project_name: str,
