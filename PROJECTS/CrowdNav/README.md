@@ -290,18 +290,136 @@ The CrowdNav codebase follows a 4-layer architecture aligned to the class, flow,
 
 ### Diagram 1: Class Structure (4 Layers)
 
-- DomainLayer: Conceptual core layer; no dedicated domain module currently owns the shared record/types listed below.
-- PreprocessingLayer: BoundingBox, AnnotationRecord, YoloBox, IOUtils, Converter, PreprocessingCLI
-- InferenceLayer: AlertState, CollisionThresholds, DepthEstimator, CollisionAvoidance, AlertDispatcher
-- MLOpsLayer: ClearMLTaskInfo, ClearMLSetup, TrainPipeline, MockYOLOGenerator
+```mermaid
+classDiagram
+    direction TB
+
+    class BoundingBox {
+        +x_min: float
+        +y_min: float
+        +x_max: float
+        +y_max: float
+    }
+    class AnnotationRecord {
+        +image_key: str
+        +class_name: str
+    }
+    class YoloBox {
+        +class_id: int
+        +x_center: float
+        +y_center: float
+        +width: float
+        +height: float
+    }
+
+    class PreprocessingCLI {
+        +load_json()
+        +iter_raw_items()
+        +parse_bbox()
+        +parse_record()
+    }
+    class Converter {
+        +to_yolo()
+        +write_yolo_files()
+    }
+
+    class DepthEstimator {
+        +focal_length: float
+        +known_height: float
+        +estimate()
+        +normalize()
+    }
+    class CollisionThresholds {
+        +safe_max: float
+        +warning_max: float
+    }
+    class CollisionAvoidance {
+        +evaluate()
+        +evaluate_many()
+    }
+    class AlertState {
+        <<enumeration>>
+        SAFE
+        WARNING
+        DANGER
+    }
+    class AlertDispatcher {
+        +visual_alert()
+        +audio_alert()
+        +dispatch()
+    }
+
+    class ClearMLSetup {
+        +init_clearml_task()
+        +log_hyperparams()
+        +log_metric()
+    }
+    class TrainPipeline {
+        +model_cfg: str
+        +data_yaml: str
+        +epochs: int
+        +imgsz: int
+        +train()
+        +validate()
+        +export()
+    }
+
+    note for BoundingBox "Layer 1 · DOMAIN\n(data.preprocessing.types)"
+    note for PreprocessingCLI "Layer 2 · PREPROCESSING"
+    note for DepthEstimator "Layer 3 · INFERENCE"
+    note for ClearMLSetup "Layer 4 · MLOPS"
+
+    AnnotationRecord --> BoundingBox : contains
+    AnnotationRecord --> YoloBox : converts to
+    PreprocessingCLI --> AnnotationRecord : produces
+    PreprocessingCLI --> Converter : feeds
+    DepthEstimator --> CollisionAvoidance : depth proxy
+    CollisionThresholds --> CollisionAvoidance : config
+    CollisionAvoidance --> AlertState : evaluates to
+    AlertState --> AlertDispatcher : consumed by
+    ClearMLSetup --> TrainPipeline : initializes
+```
 
 ### Diagram 2: Real-Time Inference Flow (Edge Runtime)
 
-Camera frame is preprocessed, passed to YOLOv8 inference, filtered by confidence threshold, mapped through depth proxy estimation, scored by collision heuristics, converted into SAFE/WARNING/DANGER state, and routed through visual/audio dispatch with local frame logging.
+```mermaid
+flowchart TD
+    A([Camera Frame]) --> B[YOLOv8 Inference]
+    B --> C{Confidence\nThreshold}
+    C -->|fail| B
+    C -->|pass| D[BoundingBox Extraction]
+    D --> E[DepthEstimator\nestimate & normalize]
+    E --> F[CollisionAvoidance\nevaluate_many]
+    F --> G{AlertState}
+    G -->|SAFE| H[🟢 Visual: Green]
+    G -->|WARNING| I[🟡 Visual: Yellow\n🔔 Audio: Beep]
+    G -->|DANGER| J[🔴 Visual: Red\n🚨 Audio: Alarm]
+    H & I & J --> K[AlertDispatcher\ndispatch]
+    K --> L[(Local Frame Log)]
+    L --> A
+```
 
 ### Diagram 3: Training Pipeline Sequence
 
-1. Data preparation converts JRDB-style annotations into YOLO labels and metadata files.
-2. Fine-tuning initializes ClearML tracking and logs hyperparameters and epoch metrics.
-3. Validation and export produce summary metrics and edge-ready model formats (ONNX/NCNN).
-4. Edge deployment consumes model artifacts and runs the inference alert loop on target hardware.
+```mermaid
+sequenceDiagram
+    participant JRDB as JRDB Dataset
+    participant CLI as PreprocessingCLI
+    participant Conv as Converter
+    participant CML as ClearMLSetup
+    participant TP as TrainPipeline
+    participant Model as ModelOut (ONNX/NCNN)
+
+    JRDB->>CLI: raw JSON annotations
+    CLI->>Conv: AnnotationRecord stream
+    Conv-->>TP: YOLO label files + classes.txt
+    TP->>CML: init_clearml_task()
+    CML-->>TP: Task handle
+    TP->>CML: log_hyperparams(epochs, imgsz)
+    loop Training Epochs
+        TP->>CML: log_metric(loss, mAP)
+    end
+    TP->>TP: validate()
+    TP->>Model: export()
+    Model-->>TP: model artifacts
+```
