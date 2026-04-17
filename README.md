@@ -292,9 +292,9 @@ The CrowdNav codebase follows a 4-layer architecture aligned to the class, flow,
 
 ### Diagram 1: Class Structure (4 Layers)
 
-- DomainLayer: BoundingBox, AnnotationRecord, YoloBox, AlertState
-- PreprocessingLayer: IOUtils, Converter, PreprocessingCLI
-- InferenceLayer: CollisionThresholds, DepthEstimator, CollisionAvoidance, AlertDispatcher
+- DomainLayer: No dedicated domain module currently owns the shared data types listed below.
+- PreprocessingLayer: BoundingBox, AnnotationRecord, YoloBox, IOUtils, Converter, PreprocessingCLI
+- InferenceLayer: AlertState, CollisionThresholds, DepthEstimator, CollisionAvoidance, AlertDispatcher
 - MLOpsLayer: ClearMLTaskInfo, ClearMLSetup, TrainPipeline, MockYOLOGenerator
 
 ### Diagram 2: Real-Time Inference Flow (Edge Runtime)

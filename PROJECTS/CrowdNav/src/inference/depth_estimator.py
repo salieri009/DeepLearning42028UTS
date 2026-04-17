@@ -16,7 +16,8 @@ class DepthEstimator:
 
     def __init__(self, focal_length: float, known_height: float) -> None:
         """Initialize estimator parameters for project-specific depth heuristics."""
-        raise NotImplementedError("DepthEstimator skeleton is not implemented yet.")
+        object.__setattr__(self, "focal_length", focal_length)
+        object.__setattr__(self, "known_height", known_height)
 
     def estimate(self, bbox: BoundingBox) -> float:
         """Estimate raw depth from one bounding box input."""
