@@ -1,21 +1,41 @@
 # System Architecture Documentation
 
 ## 1. Overview
-This system currently has three implemented runtime areas in the latest remote default branch (`origin/master`):
-- Data preprocessing pipeline for converting JRDB-style annotations into YOLO label files
-- Collision-risk inference simulation pipeline
-- ClearML integration for experiment/task tracking (plus a TensorFlow training skeleton)
+This document reflects the current 4-layer CrowdNav scaffold in the latest feature branch and PR.
 
-The preprocessing side reads JSON, normalizes raw records into typed domain models, converts bounding boxes to YOLO format, and writes per-image label files with class mapping output. The inference side generates or accepts normalized bounding boxes, computes a proximity-based risk score, and maps that score to alert states. The ClearML side initializes tasks and logs metadata/metrics for training or smoke testing.
+Implemented runtime areas:
+- Domain layer for annotation and detection value objects
+- Preprocessing layer for JRDB-style JSON parsing and YOLO label conversion
+- Inference layer for proximity scoring and alert dispatching
+- MLOps layer for tracking/training lifecycle scaffolds
 
-The architecture is split this way to keep concerns separate:
-- Parsing/format conversion logic is isolated in preprocessing modules
-- Runtime risk logic is isolated in inference classes
-- Experiment tracking is isolated in utility/deploy entry points
+The preprocessing layer reads JSON, normalizes raw records into typed domain models, converts bounding boxes to YOLO format, and writes per-image label files with class mapping output. The inference layer accepts normalized bounding boxes, computes proximity scores, estimates depth proxies, classifies risk states, and routes alerts. The MLOps layer exposes ClearML task setup and training/export pipeline scaffolds.
+
+Separation goals:
+- Parsing and format conversion remain in preprocessing modules
+- Runtime risk and output routing remain in inference modules
+- Experiment tracking and lifecycle orchestration remain in mlops/utils modules
+- CI quality gates (ruff + mypy strict) validate Python quality in build workflows
 
 ## 2. Block Definition Diagram (BDD)
 ```mermaid
 classDiagram
+    class DomainLayer {
+      <<package>>
+    }
+
+    class PreprocessingLayer {
+      <<package>>
+    }
+
+    class InferenceLayer {
+      <<package>>
+    }
+
+    class MLOpsLayer {
+      <<package>>
+    }
+
     class PreprocessingCLI {
       +build_parser()
       +convert(input_json, output_dir, image_width, image_height)
@@ -63,10 +83,23 @@ classDiagram
 
     class CollisionAvoidance {
       +thresholds: CollisionThresholds
-      +weights: tuple[float,float,float]
+      +metric: str
       +proximity_score(bbox)
       +evaluate(bbox)
       +evaluate_many(bboxes)
+    }
+
+    class DepthEstimator {
+      +focal_length: float
+      +known_height: float
+      +estimate(bbox)
+      +normalize(depth)
+    }
+
+    class AlertDispatcher {
+      +visual_alert(state)
+      +audio_alert(state)
+      +dispatch(state)
     }
 
     class AlertState {
@@ -88,6 +121,18 @@ classDiagram
 
     class ClearMLSetup {
       +init_clearml_task(...): ClearMLTaskInfo
+      +log_hyperparams(params)
+      +log_metric(name, value, step)
+    }
+
+    class TrainPipeline {
+      +model_cfg: str
+      +data_yaml: str
+      +epochs: int
+      +imgsz: int
+      +train()
+      +validate()
+      +export(fmt)
     }
 
     class ClearMLSmokeTest {
@@ -104,10 +149,14 @@ classDiagram
     IOUtils ..> BoundingBox : creates
     PreprocessingCLI ..> IOUtils : uses
     PreprocessingCLI ..> Converter : uses
+    DomainLayer .. PreprocessingLayer : shared types
 
     CollisionAvoidance *-- CollisionThresholds : composition
     CollisionAvoidance ..> AlertState : returns state
+    CollisionAvoidance ..> DepthEstimator : optional depth proxy input
+    AlertDispatcher ..> AlertState : dispatch by state
     MockYOLOGenerator ..> CollisionAvoidance : uses _clamp01
+    InferenceLayer ..> DomainLayer : consumes bbox semantics
 
     AlertState --|> Enum : generalization
     AlertState --|> str : generalization
@@ -115,16 +164,37 @@ classDiagram
 
     ClearMLSmokeTest ..> ClearMLSetup : calls init_clearml_task
     ClearMLSetup ..> ClearMLTaskInfo : returns
+    TrainPipeline ..> ClearMLSetup : logs params and metrics
+    MLOpsLayer ..> InferenceLayer : provides artifacts for edge runtime
     TrainSkeleton ..> ClearMLSetup : same ClearML task pattern (Task.init/task.connect)
+
+    DomainLayer .. BoundingBox
+    DomainLayer .. AnnotationRecord
+    DomainLayer .. YoloBox
+    PreprocessingLayer .. PreprocessingCLI
+    PreprocessingLayer .. IOUtils
+    PreprocessingLayer .. Converter
+    InferenceLayer .. CollisionThresholds
+    InferenceLayer .. CollisionAvoidance
+    InferenceLayer .. DepthEstimator
+    InferenceLayer .. AlertDispatcher
+    InferenceLayer .. AlertState
+    MLOpsLayer .. ClearMLTaskInfo
+    MLOpsLayer .. ClearMLSetup
+    MLOpsLayer .. TrainPipeline
+    MLOpsLayer .. MockYOLOGenerator
 ```
 
 ## 3. Internal Block Diagram (IBD)
 ```mermaid
 flowchart LR
+    subgraph DomainLayer
+      DTypes[types.py\nBoundingBox/AnnotationRecord/YoloBox]
+    end
+
     subgraph PreprocessingSubsystem
       CLI[cli.py\nconvert/main]
       IO[io_utils.py\nload_json/parse_record]
-      Types[types.py\nBoundingBox/AnnotationRecord/YoloBox]
       Conv[converter.py\nto_yolo/write_yolo_files]
       Out[(YOLO label files\n+ classes.txt)]
     end
@@ -133,37 +203,59 @@ flowchart LR
       IMain[collision_avoidance.py\nmain]
       Thresholds[CollisionThresholds]
       Evaluator[CollisionAvoidance]
+      Depth[depth_estimator.py\nDepthEstimator]
+      Dispatcher[alert_dispatcher.py\nAlertDispatcher]
       Generator[MockYOLOGenerator]
       Result[(AlertState + score)]
     end
 
-    subgraph TrackingAndTrainingSubsystem
+    subgraph MLOpsSubsystem
       Smoke[clearml_smoketest.py\nmain]
       Setup[utils/clearml_setup.py\ninit_clearml_task]
+      Pipeline[mlops/train_pipeline.py\nTrainPipeline]
+      MockGen[mlops/mock_generator.py\nMockYOLOGenerator export]
       Train[deploy/train_skeleton.py\ntrain_model]
       ClearML[(ClearML Task/Logger)]
       ModelOut[(Saved model artifact)]
+    end
+
+    subgraph CIQualityGate
+      Build[build-check.yml]
+      Ruff[ruff check src]
+      Mypy[mypy --strict src]
     end
 
     CLI -->|input_json path| IO
     IO -->|AnnotationRecord stream| CLI
     CLI -->|records + class map| Conv
     Conv -->|YoloBox lines| Out
-    Types -. shared domain types .- IO
-    Types -. shared domain types .- Conv
+    DTypes -. shared domain types .- IO
+    DTypes -. shared domain types .- Conv
+    DTypes -. shared domain types .- Evaluator
+    DTypes -. shared domain types .- Depth
 
     IMain --> Thresholds
     IMain --> Evaluator
+    IMain --> Depth
+    IMain --> Dispatcher
     IMain --> Generator
     Generator -->|bbox tuple stream| IMain
     IMain -->|evaluate / proximity_score| Evaluator
     Evaluator --> Result
+    Result --> Dispatcher
 
     Smoke --> Setup
+    Pipeline --> Setup
     Train --> ClearML
     Smoke --> ClearML
+    Pipeline --> ClearML
+    Pipeline --> ModelOut
+    MockGen --> IMain
     Train --> ModelOut
     Setup --> ClearML
+
+    Build --> Ruff
+    Build --> Mypy
 ```
 
 ## 4. Sequence Diagram
@@ -194,7 +286,47 @@ sequenceDiagram
     FS-->>User: conversion artifacts saved
 ```
 
+  ### Inference Runtime Sequence
+  ```mermaid
+  sequenceDiagram
+    participant Cam as Edge Camera Frame
+    participant Yolo as YOLOv8 Inference
+    participant Depth as DepthEstimator
+    participant Eval as CollisionAvoidance
+    participant Alert as AlertDispatcher
+    participant Log as Local Logger
+
+    Cam->>Yolo: frame tensor
+    Yolo-->>Eval: bbox list + confidence
+    Eval->>Eval: confidence filter + proximity_score
+    Eval->>Depth: estimate(bbox)
+    Depth-->>Eval: normalized depth proxy
+    Eval-->>Alert: AlertState (SAFE/WARNING/DANGER)
+    Alert->>Alert: visual_alert / audio_alert
+    Alert-->>Log: alert + frame stats
+  ```
+
+  ### Training and Export Sequence
+  ```mermaid
+  sequenceDiagram
+    participant Prep as PreprocessingCLI
+    participant Data as YOLO labels/data.yaml
+    participant TP as TrainPipeline
+    participant CM as ClearMLSetup
+    participant Art as Model Artifacts
+
+    Prep->>Data: convert JRDB JSON to labels
+    TP->>CM: init_clearml_task()
+    TP->>CM: log_hyperparams()
+    loop epoch
+      TP->>CM: log_metric(mAP50/val_loss)
+    end
+    TP->>TP: validate()
+    TP->>Art: export(onnx/ncnn)
+  ```
+
 ## 5. Notes & Assumptions
-- `needs clarification`: Requested branch was `main`, but remote default branch after latest fetch is `master` and `origin/main` does not exist.
-- Diagrams are generated from files in `origin/master` only.
-- Some external services/libraries (ClearML server, TensorFlow runtime) are shown as external artifacts, not internal blocks.
+- Remote base branch used for PR creation is `master` (no `origin/main` and no `origin/develop` at time of creation).
+- Diagram structure reflects current scaffold state: class-level interfaces may still raise `NotImplementedError` by design.
+- `ruff check` passes; `mypy --strict` is integrated into CI and requires code-level type cleanup to pass consistently.
+- External services (ClearML server/runtime dependencies) are modeled as external artifacts, not internal blocks.

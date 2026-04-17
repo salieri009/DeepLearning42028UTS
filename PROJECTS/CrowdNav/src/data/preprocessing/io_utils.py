@@ -1,4 +1,4 @@
-"""Input parsing utilities for JRDB-style annotation JSON files."""
+"""PreprocessingLayer IO utilities for JRDB-style annotation JSON files."""
 
 from __future__ import annotations
 
@@ -7,6 +7,32 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .types import AnnotationRecord, BoundingBox
+
+
+class IOUtils:
+    """Class-based skeleton interface for preprocessing input helpers."""
+
+    def __init__(self) -> None:
+        """Initialize IOUtils skeleton interface."""
+        raise NotImplementedError("IOUtils skeleton is not implemented yet.")
+
+    def load_json(self, path: Path) -> Any:
+        """Load and decode a JSON payload from disk."""
+        raise NotImplementedError("IOUtils.load_json is not implemented yet.")
+
+    def iter_raw_items(self, data: Any) -> Iterable[dict[str, Any]]:
+        """Iterate raw annotation records from heterogeneous container shapes."""
+        raise NotImplementedError("IOUtils.iter_raw_items is not implemented yet.")
+
+    def parse_bbox(self, raw: dict[str, Any]) -> BoundingBox | None:
+        """Parse one raw dictionary into a normalized bounding box."""
+        raise NotImplementedError("IOUtils.parse_bbox is not implemented yet.")
+
+    def parse_record(
+        self, raw: dict[str, Any], fallback_index: int
+    ) -> AnnotationRecord | None:
+        """Parse one raw dictionary into an annotation record."""
+        raise NotImplementedError("IOUtils.parse_record is not implemented yet.")
 
 
 def load_json(path: Path) -> Any:
@@ -60,10 +86,19 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             y2 = bbox.get("y2")
 
             if None not in (x, y, w, h):
+                assert (
+                    x is not None and y is not None and w is not None and h is not None
+                )
                 return BoundingBox(
                     float(x), float(y), float(x) + float(w), float(y) + float(h)
                 )
             if None not in (x, y, x2, y2):
+                assert (
+                    x is not None
+                    and y is not None
+                    and x2 is not None
+                    and y2 is not None
+                )
                 return BoundingBox(float(x), float(y), float(x2), float(y2))
 
         if all(k in raw for k in ("x", "y", "w", "h")):
@@ -76,8 +111,18 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             return BoundingBox(
                 float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"])
             )
-    except (TypeError, ValueError):
+
+        if "keypoints" in raw and isinstance(raw["keypoints"], list):
+            kps = raw["keypoints"]
+            # Extract x, y where visibility/confidence flag (usually 3rd element) > 0
+            xs = [kps[i] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            ys = [kps[i + 1] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            if xs and ys:
+                return BoundingBox(float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys)))
+    except (TypeError, ValueError, IndexError):
         return None
+
+    return None
 
 
 def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord | None:

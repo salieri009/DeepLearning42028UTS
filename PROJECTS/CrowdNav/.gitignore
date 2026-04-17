@@ -30,7 +30,6 @@ desktop.ini
 .ipynb_checkpoints/
 
 # Data and models managed by DVC
-data/raw/
 data/processed/
 models/*.pt
 models/*.onnx
