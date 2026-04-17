@@ -12,11 +12,13 @@ class ClearMLTaskInfo:
 
 
 class ClearMLSetup:
-    """MLOpsLayer skeleton interface for ClearML task and metric lifecycle."""
+    """MLOpsLayer thin wrapper around ClearML task and metric lifecycle."""
 
     def __init__(self, project_name: str, task_name: str) -> None:
-        """Initialize ClearML setup skeleton with project and task names."""
-        raise NotImplementedError("ClearMLSetup skeleton is not implemented yet.")
+        """Initialize ClearML setup with project and task names."""
+        self._project_name = project_name
+        self._task_name = task_name
+        self._task: Any = None
 
     def init_clearml_task(
         self,
@@ -25,15 +27,33 @@ class ClearMLSetup:
         params: Optional[Mapping[str, Any]] = None,
     ) -> ClearMLTaskInfo:
         """Initialize and return a ClearML task descriptor."""
-        raise NotImplementedError("ClearMLSetup.init_clearml_task is not implemented yet.")
+        task_info = init_clearml_task(
+            project_name=self._project_name,
+            task_name=self._task_name,
+            tags=tags,
+            params=params,
+        )
+        try:
+            from clearml import Task  # type: ignore
+
+            self._task = Task.current_task()
+        except Exception:
+            pass
+        return task_info
 
     def log_hyperparams(self, params: Mapping[str, Any]) -> None:
         """Log hyperparameters for experiment tracking."""
-        raise NotImplementedError("ClearMLSetup.log_hyperparams is not implemented yet.")
+        if self._task is None:
+            raise RuntimeError("Call init_clearml_task() before logging.")
+        self._task.connect(dict(params))
 
     def log_metric(self, name: str, value: float, step: int) -> None:
         """Log a metric scalar for the given training step."""
-        raise NotImplementedError("ClearMLSetup.log_metric is not implemented yet.")
+        if self._task is None:
+            raise RuntimeError("Call init_clearml_task() before logging.")
+        self._task.get_logger().report_scalar(
+            title=name, series=name, value=value, iteration=step
+        )
 
 
 def init_clearml_task(

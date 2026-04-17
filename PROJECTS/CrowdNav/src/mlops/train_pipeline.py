@@ -17,7 +17,10 @@ class TrainPipeline:
 
     def __init__(self, model_cfg: str, data_yaml: str, epochs: int, imgsz: int) -> None:
         """Initialize pipeline configuration for training and export stages."""
-        raise NotImplementedError("TrainPipeline skeleton is not implemented yet.")
+        object.__setattr__(self, "model_cfg", model_cfg)
+        object.__setattr__(self, "data_yaml", data_yaml)
+        object.__setattr__(self, "epochs", epochs)
+        object.__setattr__(self, "imgsz", imgsz)
 
     def train(self) -> Any:
         """Run fine-tuning workflow and return training artifacts."""
