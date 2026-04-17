@@ -14,7 +14,9 @@ class AlertDispatcher:
 
     def visual_alert(self, state: AlertState) -> None:
         """Emit a visual alert for the current risk state."""
-        raise NotImplementedError("AlertDispatcher.visual_alert is not implemented yet.")
+        raise NotImplementedError(
+            "AlertDispatcher.visual_alert is not implemented yet."
+        )
 
     def audio_alert(self, state: AlertState) -> None:
         """Emit an audio alert for the current risk state."""
