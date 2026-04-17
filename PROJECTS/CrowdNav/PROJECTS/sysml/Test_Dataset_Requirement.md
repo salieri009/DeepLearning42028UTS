@@ -11,12 +11,12 @@
 ## Minimum Annotation Fields / 최소 어노테이션 필드
 Each sample must include:
 - image (file path or ID)
-- box coordinates: x_min, y_min, x_max, y_max
+- bbox coordinates: x_min, y_min, x_max, y_max
 - class (must indicate human/person)
 
 각 샘플은 다음을 포함해야 한다:
 - image (파일 경로 또는 ID)
-- box 좌표: x_min, y_min, x_max, y_max
+- bbox 좌표: x_min, y_min, x_max, y_max
 - class (human/person)
 
 ## Split Policy / 분할 정책
