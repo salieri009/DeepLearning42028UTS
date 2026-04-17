@@ -11,6 +11,31 @@ class ClearMLTaskInfo:
     task_id: Optional[str]
 
 
+class ClearMLSetup:
+    """MLOpsLayer skeleton interface for ClearML task and metric lifecycle."""
+
+    def __init__(self, project_name: str, task_name: str) -> None:
+        """Initialize ClearML setup skeleton with project and task names."""
+        raise NotImplementedError("ClearMLSetup skeleton is not implemented yet.")
+
+    def init_clearml_task(
+        self,
+        *,
+        tags: Optional[list[str]] = None,
+        params: Optional[Mapping[str, Any]] = None,
+    ) -> ClearMLTaskInfo:
+        """Initialize and return a ClearML task descriptor."""
+        raise NotImplementedError("ClearMLSetup.init_clearml_task is not implemented yet.")
+
+    def log_hyperparams(self, params: Mapping[str, Any]) -> None:
+        """Log hyperparameters for experiment tracking."""
+        raise NotImplementedError("ClearMLSetup.log_hyperparams is not implemented yet.")
+
+    def log_metric(self, name: str, value: float, step: int) -> None:
+        """Log a metric scalar for the given training step."""
+        raise NotImplementedError("ClearMLSetup.log_metric is not implemented yet.")
+
+
 def init_clearml_task(
     *,
     project_name: str,

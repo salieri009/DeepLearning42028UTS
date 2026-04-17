@@ -283,3 +283,27 @@ For specific questions regarding the assignment specifications, contact the **su
   <br />
   <strong>UTS Deep Learning (42028) • Semester 1, 2026</strong>
 </p>
+
+---
+
+## Architecture
+
+The CrowdNav codebase follows a 4-layer architecture aligned to the class, flow, and sequence diagrams used for implementation planning.
+
+### Diagram 1: Class Structure (4 Layers)
+
+- DomainLayer: BoundingBox, AnnotationRecord, YoloBox, AlertState
+- PreprocessingLayer: IOUtils, Converter, PreprocessingCLI
+- InferenceLayer: CollisionThresholds, DepthEstimator, CollisionAvoidance, AlertDispatcher
+- MLOpsLayer: ClearMLTaskInfo, ClearMLSetup, TrainPipeline, MockYOLOGenerator
+
+### Diagram 2: Real-Time Inference Flow (Edge Runtime)
+
+Camera frame is preprocessed, passed to YOLOv8 inference, filtered by confidence threshold, mapped through depth proxy estimation, scored by collision heuristics, converted into SAFE/WARNING/DANGER state, and routed through visual/audio dispatch with local frame logging.
+
+### Diagram 3: Training Pipeline Sequence
+
+1. Data preparation converts JRDB-style annotations into YOLO labels and metadata files.
+2. Fine-tuning initializes ClearML tracking and logs hyperparameters and epoch metrics.
+3. Validation and export produce summary metrics and edge-ready model formats (ONNX/NCNN).
+4. Edge deployment consumes model artifacts and runs the inference alert loop on target hardware.
