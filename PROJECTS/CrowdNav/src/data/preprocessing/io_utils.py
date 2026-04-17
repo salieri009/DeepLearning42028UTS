@@ -86,10 +86,12 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             y2 = bbox.get("y2")
 
             if None not in (x, y, w, h):
+                assert x is not None and y is not None and w is not None and h is not None
                 return BoundingBox(
                     float(x), float(y), float(x) + float(w), float(y) + float(h)
                 )
             if None not in (x, y, x2, y2):
+                assert x is not None and y is not None and x2 is not None and y2 is not None
                 return BoundingBox(float(x), float(y), float(x2), float(y2))
 
         if all(k in raw for k in ("x", "y", "w", "h")):
@@ -104,6 +106,8 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             )
     except (TypeError, ValueError):
         return None
+
+    return None
 
 
 def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord | None:
