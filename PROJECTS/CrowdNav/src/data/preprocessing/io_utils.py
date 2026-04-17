@@ -111,7 +111,15 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             return BoundingBox(
                 float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"])
             )
-    except (TypeError, ValueError):
+
+        if "keypoints" in raw and isinstance(raw["keypoints"], list):
+            kps = raw["keypoints"]
+            # Extract x, y where visibility/confidence flag (usually 3rd element) > 0
+            xs = [kps[i] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            ys = [kps[i + 1] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            if xs and ys:
+                return BoundingBox(float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys)))
+    except (TypeError, ValueError, IndexError):
         return None
 
     return None
