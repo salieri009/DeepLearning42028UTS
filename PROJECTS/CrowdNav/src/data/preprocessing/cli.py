@@ -18,7 +18,9 @@ class PreprocessingCLI:
 
     def build_parser(self) -> argparse.ArgumentParser:
         """Build parser for conversion CLI arguments."""
-        raise NotImplementedError("PreprocessingCLI.build_parser is not implemented yet.")
+        raise NotImplementedError(
+            "PreprocessingCLI.build_parser is not implemented yet."
+        )
 
     def convert(
         self,
