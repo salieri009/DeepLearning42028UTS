@@ -1,4 +1,4 @@
-"""Input parsing utilities for JRDB-style annotation JSON files."""
+"""PreprocessingLayer IO utilities for JRDB-style annotation JSON files."""
 
 from __future__ import annotations
 
@@ -7,6 +7,32 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .types import AnnotationRecord, BoundingBox
+
+
+class IOUtils:
+    """Class-based skeleton interface for preprocessing input helpers."""
+
+    def __init__(self) -> None:
+        """Initialize IOUtils skeleton interface."""
+        raise NotImplementedError("IOUtils skeleton is not implemented yet.")
+
+    def load_json(self, path: Path) -> Any:
+        """Load and decode a JSON payload from disk."""
+        raise NotImplementedError("IOUtils.load_json is not implemented yet.")
+
+    def iter_raw_items(self, data: Any) -> Iterable[dict[str, Any]]:
+        """Iterate raw annotation records from heterogeneous container shapes."""
+        raise NotImplementedError("IOUtils.iter_raw_items is not implemented yet.")
+
+    def parse_bbox(self, raw: dict[str, Any]) -> BoundingBox | None:
+        """Parse one raw dictionary into a normalized bounding box."""
+        raise NotImplementedError("IOUtils.parse_bbox is not implemented yet.")
+
+    def parse_record(
+        self, raw: dict[str, Any], fallback_index: int
+    ) -> AnnotationRecord | None:
+        """Parse one raw dictionary into an annotation record."""
+        raise NotImplementedError("IOUtils.parse_record is not implemented yet.")
 
 
 def load_json(path: Path) -> Any:

@@ -1,4 +1,4 @@
-"""CLI entrypoint for converting JRDB-style JSON annotations to YOLO labels."""
+"""PreprocessingLayer CLI entrypoint for JRDB-to-YOLO conversion."""
 
 from __future__ import annotations
 
@@ -7,6 +7,32 @@ from pathlib import Path
 
 from .converter import write_yolo_files
 from .io_utils import iter_raw_items, load_json, parse_record
+
+
+class PreprocessingCLI:
+    """Class-based skeleton interface for preprocessing command orchestration."""
+
+    def __init__(self) -> None:
+        """Initialize CLI skeleton interface."""
+        raise NotImplementedError("PreprocessingCLI skeleton is not implemented yet.")
+
+    def build_parser(self) -> argparse.ArgumentParser:
+        """Build parser for conversion CLI arguments."""
+        raise NotImplementedError("PreprocessingCLI.build_parser is not implemented yet.")
+
+    def convert(
+        self,
+        input_json: Path,
+        output_dir: Path,
+        img_width: int,
+        img_height: int,
+    ) -> int:
+        """Run conversion and return process exit code."""
+        raise NotImplementedError("PreprocessingCLI.convert is not implemented yet.")
+
+    def main(self) -> int:
+        """Parse CLI arguments and execute conversion pipeline."""
+        raise NotImplementedError("PreprocessingCLI.main is not implemented yet.")
 
 
 def build_parser() -> argparse.ArgumentParser:
