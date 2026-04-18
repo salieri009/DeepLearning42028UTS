@@ -53,7 +53,12 @@ class _FakeYOLOModel:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a local auto-labeling smoke test.")
     parser.add_argument("--input-dir", type=Path, default=Path("data/raw"))
-    parser.add_argument("--output-dir", type=Path, default=Path("data/processed/auto_labels_smoke"))
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory for label outputs. Defaults to a temporary directory.",
+    )
     parser.add_argument("--max-folders", type=int, default=1)
     return parser
 
@@ -75,8 +80,10 @@ def main() -> int:
     total_images = 0
     total_boxes = 0
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_output = Path(temp_dir) / "labels"
+    tmp_dir_manager = tempfile.TemporaryDirectory() if args.output_dir is None else None
+    output_root = Path(tmp_dir_manager.name) / "labels" if tmp_dir_manager is not None else args.output_dir
+
+    try:
         for folder in selected_folders:
             image_paths = sorted(
                 path
@@ -89,7 +96,7 @@ def main() -> int:
             image_keys = [path.with_suffix("").as_posix().replace(":", "_") for path in image_paths]
             processed_images, written_boxes, _ = labeler.write_folder_labels(
                 image_paths=image_paths,
-                output_dir=temp_output,
+                output_dir=output_root,
                 image_keys=image_keys,
             )
             total_images += processed_images
@@ -101,7 +108,10 @@ def main() -> int:
         print(f"folders_processed={len(selected_folders)}")
         print(f"images_processed={total_images}")
         print(f"boxes_written={total_boxes}")
-        print(f"temp_output={temp_output}")
+        print(f"output_dir={output_root}")
+    finally:
+        if tmp_dir_manager is not None:
+            tmp_dir_manager.cleanup()
 
     return 0
 

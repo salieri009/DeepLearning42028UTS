@@ -1,4 +1,4 @@
-"""JRDB to YOLO preprocessing utilities."""
+"""JRDB-to-YOLO preprocessing and YOLO-based auto-labeling utilities."""
 
 from .auto_labeler import AutoLabeler
 from .cli import convert

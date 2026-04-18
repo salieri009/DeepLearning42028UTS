@@ -97,7 +97,7 @@ def main() -> int:
         image_paths = sorted(
             path
             for path in folder.iterdir()
-            if path.is_file() and path.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+            if path.is_file() and path.suffix.lower() in AutoLabeler.IMAGE_EXTENSIONS
         )
         if not image_paths:
             continue

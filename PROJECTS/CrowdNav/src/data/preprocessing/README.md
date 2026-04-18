@@ -43,6 +43,15 @@ python run_auto_labeling.py \
 ### Local smoke test
 
 This uses a fake YOLO model so you can validate the file flow on existing JPGs without downloading weights.
+Outputs go to `--output-dir` when provided; if omitted the script writes to a temporary directory.
+
+```bash
+python -m src.data.preprocessing.auto_labeler_smoke \
+  --input-dir data/raw \
+  --max-folders 1
+```
+
+To persist outputs, pass an explicit output directory:
 
 ```bash
 python -m src.data.preprocessing.auto_labeler_smoke \

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
@@ -46,7 +47,8 @@ class AutoLabeler:
 
     @staticmethod
     def _sanitize_image_key(image_key: str) -> str:
-        return Path(image_key).with_suffix("").as_posix().replace("/", "_")
+        sanitized = Path(image_key).with_suffix("").as_posix()
+        return sanitized.replace("/", "_").replace(":", "_")
 
     @staticmethod
     def discover_image_folders(input_root: Path) -> list[Path]:
@@ -55,21 +57,16 @@ class AutoLabeler:
         if root.is_file():
             return [root.parent]
 
-        folders: list[Path] = []
-        seen: set[Path] = set()
+        image_folders: set[Path] = set()
 
-        for image_path in sorted(root.rglob("*")):
-            if not image_path.is_file():
-                continue
-            if image_path.suffix.lower() not in IMAGE_EXTENSIONS:
-                continue
+        for dirpath, _dirnames, filenames in os.walk(root):
+            dir_path = Path(dirpath)
+            for filename in filenames:
+                if Path(filename).suffix.lower() in IMAGE_EXTENSIONS:
+                    image_folders.add(dir_path)
+                    break
 
-            parent = image_path.parent
-            if parent not in seen:
-                seen.add(parent)
-                folders.append(parent)
-
-        return folders
+        return sorted(image_folders)
 
     def _predict_one(self, image_path: Path):
         kwargs: dict[str, object] = {
@@ -112,8 +109,11 @@ class AutoLabeler:
                 class_name="person",
                 bbox=BoundingBox(x_min=x_min, y_min=y_min, x_max=x_max, y_max=y_max),
             )
+            yolo_box = to_yolo(record, 0, int(image_width), int(image_height))
+            if yolo_box.width <= 0.0 or yolo_box.height <= 0.0:
+                continue
             records.append((record, 0))
-            boxes.append(to_yolo(record, 0, int(image_width), int(image_height)))
+            boxes.append(yolo_box)
 
         return records, boxes, int(image_width), int(image_height)
 
