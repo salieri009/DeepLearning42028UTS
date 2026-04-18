@@ -56,20 +56,22 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _image_keys_for_folder(input_root: Path, image_paths: list[Path]) -> list[str]:
+    root = input_root.resolve()
     keys: list[str] = []
     for image_path in image_paths:
+        image = image_path.resolve()
         try:
-            relative = image_path.relative_to(input_root)
+            relative = image.relative_to(root)
             keys.append(relative.with_suffix("").as_posix())
         except ValueError:
-            keys.append(image_path.with_suffix("").as_posix())
+            keys.append(image.with_suffix("").name)
     return keys
 
 
 def main() -> int:
     args = build_parser().parse_args()
 
-    input_root = args.input_dir
+    input_root = args.input_dir.resolve()
     output_dir = args.output_dir
 
     if not input_root.exists():
