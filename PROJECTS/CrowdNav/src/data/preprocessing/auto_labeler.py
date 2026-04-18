@@ -15,6 +15,8 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 class AutoLabeler:
     """Generate person-only pseudo labels with a YOLOv8 model."""
 
+    IMAGE_EXTENSIONS: frozenset[str] = frozenset(IMAGE_EXTENSIONS)
+
     def __init__(
         self,
         model_path: str = "yolov8x.pt",
@@ -68,7 +70,7 @@ class AutoLabeler:
 
         return sorted(image_folders)
 
-    def _predict_one(self, image_path: Path):
+    def _predict_one(self, image_path: Path) -> Any:
         kwargs: dict[str, object] = {
             "conf": self.confidence_threshold,
             "classes": [0],

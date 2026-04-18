@@ -6,6 +6,7 @@ import argparse
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .auto_labeler import AutoLabeler
 
@@ -29,7 +30,7 @@ class _FakeResult:
 
 
 class _FakeYOLOModel:
-    def predict(self, source: str, **kwargs):  # noqa: D401 - ultralytics-style API
+    def predict(self, source: str, **kwargs: Any) -> list[_FakeResult]:  # noqa: D401 - ultralytics-style API
         _ = kwargs
         _ = source
         result = _FakeResult(
@@ -81,7 +82,10 @@ def main() -> int:
     total_boxes = 0
 
     tmp_dir_manager = tempfile.TemporaryDirectory() if args.output_dir is None else None
-    output_root = Path(tmp_dir_manager.name) / "labels" if tmp_dir_manager is not None else args.output_dir
+    if tmp_dir_manager is not None:
+        output_root: Path = Path(tmp_dir_manager.name) / "labels"
+    else:
+        output_root = args.output_dir
 
     try:
         for folder in selected_folders:
