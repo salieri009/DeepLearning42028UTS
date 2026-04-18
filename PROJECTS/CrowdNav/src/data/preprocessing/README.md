@@ -26,6 +26,46 @@ python -m src.data.jrdb_to_yolo \
   1080
 ```
 
+## Auto-labeling
+
+Use YOLOv8x to generate person-only pseudo labels from local raw image folders.
+
+### Batch run
+
+```bash
+python run_auto_labeling.py \
+  --input-dir data/raw \
+  --output-dir data/processed/auto_labels \
+  --max-folders 20 \
+  --confidence 0.6
+```
+
+### Local smoke test
+
+This uses a fake YOLO model so you can validate the file flow on existing JPGs without downloading weights.
+
+```bash
+python -m src.data.preprocessing.auto_labeler_smoke \
+  --input-dir data/raw \
+  --output-dir data/processed/auto_labels_smoke \
+  --max-folders 1
+```
+
+### Expected input layout
+
+The runner accepts either of these shapes:
+
+```text
+data/raw/*.jpg
+```
+
+or
+
+```text
+data/raw/<sequence>/image_0/*.jpg
+data/raw/<sequence>/image_2/*.jpg
+```
+
 ## CLI Arguments
 
 - `input_json`: JRDB-style annotation JSON file path
