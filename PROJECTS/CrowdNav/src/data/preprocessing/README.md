@@ -44,3 +44,26 @@ python -m src.data.jrdb_to_yolo \
 - Unsupported/malformed annotations: item skipped and counted
 - Missing bbox keys: item skipped and counted
 - Degenerate boxes (zero or negative size): skipped and counted
+
+## Batch + DVC Automation
+
+The project includes `scripts/automate_preprocessing.py` for end-to-end orchestration.
+
+It does the following:
+
+- runs `dvc pull` before conversion (unless skipped)
+- processes multiple JSON files in one run
+- validates generated labels against image files
+- reports malformed/invalid skips and degenerate bbox skips in aggregate
+
+Example:
+
+```bash
+python scripts/automate_preprocessing.py \
+  data/raw/jrdb/annotations \
+  data/raw/jrdb/images \
+  data/processed/auto_labels \
+  1920 \
+  1080 \
+  --recursive
+```
