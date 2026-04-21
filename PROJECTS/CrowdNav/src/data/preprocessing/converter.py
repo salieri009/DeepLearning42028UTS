@@ -1,4 +1,4 @@
-"""Core conversion logic from JRDB-style records to YOLO text files."""
+"""PreprocessingLayer conversion logic from JRDB-style records to YOLO labels."""
 
 from __future__ import annotations
 
@@ -6,6 +6,34 @@ from pathlib import Path
 from typing import Iterable
 
 from .types import AnnotationRecord, YoloBox
+
+
+class Converter:
+    """Class-based skeleton interface for preprocessing conversion steps."""
+
+    def __init__(self) -> None:
+        """Initialize Converter skeleton interface."""
+        raise NotImplementedError("Converter skeleton is not implemented yet.")
+
+    def to_yolo(
+        self,
+        record: AnnotationRecord,
+        class_id: int,
+        img_width: int,
+        img_height: int,
+    ) -> YoloBox:
+        """Convert one annotation record into YOLO normalized coordinates."""
+        raise NotImplementedError("Converter.to_yolo is not implemented yet.")
+
+    def write_yolo_files(
+        self,
+        records: Iterable[tuple[AnnotationRecord, int]],
+        output_dir: Path,
+        img_width: int,
+        img_height: int,
+    ) -> tuple[int, int]:
+        """Write YOLO label files and return written and skipped counts."""
+        raise NotImplementedError("Converter.write_yolo_files is not implemented yet.")
 
 
 def _clamp(value: float, min_value: float, max_value: float) -> float:
