@@ -55,6 +55,8 @@ It does the following:
 - processes multiple JSON files in one run
 - validates generated labels against image files
 - reports malformed/invalid skips and degenerate bbox skips in aggregate
+- writes `preprocessing_report.json` to the output root
+- fails on duplicate image or label stems unless `--allow-duplicate-stems` is set
 
 Example:
 
@@ -67,3 +69,5 @@ python scripts/automate_preprocessing.py \
   1080 \
   --recursive
 ```
+
+If your images are stored in an extracted folder, point `images_dir` to that folder.
