@@ -32,6 +32,7 @@ Useful options:
 - `--skip-dvc-pull`: skip DVC sync
 - `--continue-on-dvc-failure`: continue even when `dvc pull` fails
 - `--allow-duplicate-stems`: allow repeated image or label stems across folders
+- `--validation-only`: skip conversion and only compare raw images against existing labels
 - `--flat-output`: write all labels into one directory
 - `--fail-fast`: stop on first failed file
 - `--dry-run`: print planned actions only

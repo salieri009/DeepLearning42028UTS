@@ -54,6 +54,7 @@ class Config:
     use_dvc_pull: bool
     continue_on_dvc_failure: bool
     allow_duplicate_stems: bool
+    validation_only: bool
     fail_fast: bool
     dry_run: bool
 
@@ -78,6 +79,8 @@ class AggregateValidation:
     image_unique_stems_count: int
     label_files_count: int
     label_unique_stems_count: int
+    classes_file_count: int
+    classes_file_present: bool
     missing_labels: int
     orphan_labels: int
     duplicate_image_stems: int
@@ -125,6 +128,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-duplicate-stems",
         action="store_true",
         help="Allow repeated image or label stems across directories",
+    )
+    parser.add_argument(
+        "--validation-only",
+        action="store_true",
+        help="Skip conversion and only validate existing labels against images",
     )
     parser.add_argument(
         "--fail-fast",
@@ -285,11 +293,14 @@ def collect_label_inventory(output_root: Path) -> LabelInventory:
 
 def validate_aggregate_counts(output_root: Path, image_inventory: ImageInventory) -> tuple[LabelInventory, AggregateValidation]:
     label_inventory = collect_label_inventory(output_root)
+    classes_file_count = sum(1 for path in output_root.rglob("classes.txt") if path.is_file()) if output_root.exists() else 0
     validation = AggregateValidation(
         image_files_count=image_inventory.files_count,
         image_unique_stems_count=len(image_inventory.unique_stems),
         label_files_count=label_inventory.files_count,
         label_unique_stems_count=len(label_inventory.unique_stems),
+        classes_file_count=classes_file_count,
+        classes_file_present=classes_file_count > 0,
         missing_labels=len(image_inventory.unique_stems - label_inventory.unique_stems),
         orphan_labels=len(label_inventory.unique_stems - image_inventory.unique_stems),
         duplicate_image_stems=len(image_inventory.duplicate_stems),
@@ -400,6 +411,7 @@ def write_report(
             "label_unique_stem_count": len(label_inventory.unique_stems),
             "label_duplicate_stems": label_inventory.duplicate_stems,
         },
+        "validation_only": config.validation_only,
         "validation": asdict(validation),
         "results": [
             {
@@ -432,6 +444,7 @@ def to_config(args: argparse.Namespace) -> Config:
         use_dvc_pull=not args.skip_dvc_pull,
         continue_on_dvc_failure=args.continue_on_dvc_failure,
         allow_duplicate_stems=args.allow_duplicate_stems,
+        validation_only=args.validation_only,
         fail_fast=args.fail_fast,
         dry_run=args.dry_run,
     )
@@ -450,7 +463,7 @@ def main() -> int:
         print(f"ERROR: {exc}")
         return 1
 
-    if not json_files:
+    if not json_files and not config.validation_only:
         print(f"ERROR: no JSON files found in {config.json_dir} with pattern '{config.pattern}'")
         return 1
 
@@ -462,6 +475,8 @@ def main() -> int:
     print(f"Image files discovered: {image_inventory.files_count}")
     print(f"Output root: {config.output_root}")
     print(f"Output mode: {'per-json subdirectory' if config.split_output_per_json else 'flat'}")
+    if config.validation_only:
+        print("Validation mode: enabled")
 
     if image_inventory.duplicate_stems and not config.allow_duplicate_stems:
         print("ERROR: duplicate image stems found. Use --allow-duplicate-stems to proceed.")
@@ -488,29 +503,30 @@ def main() -> int:
     print_dvc_summary(dvc_result)
 
     results: list[ConversionResult] = []
-    for json_path in json_files:
-        output_dir = resolve_output_dir(config.output_root, json_path, config.split_output_per_json)
-        output_dir.mkdir(parents=True, exist_ok=True)
+    if not config.validation_only:
+        for json_path in json_files:
+            output_dir = resolve_output_dir(config.output_root, json_path, config.split_output_per_json)
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        result = run_conversion(
-            json_path=json_path,
-            output_dir=output_dir,
-            img_width=config.img_width,
-            img_height=config.img_height,
-        )
-        validate_output(result)
+            result = run_conversion(
+                json_path=json_path,
+                output_dir=output_dir,
+                img_width=config.img_width,
+                img_height=config.img_height,
+            )
+            validate_output(result)
 
-        results.append(result)
+            results.append(result)
 
-        print(f"\n[{json_path.name}] status={result.status}")
-        if result.stdout.strip():
-            print(result.stdout.strip())
-        if result.stderr.strip():
-            print(result.stderr.strip())
+            print(f"\n[{json_path.name}] status={result.status}")
+            if result.stdout.strip():
+                print(result.stdout.strip())
+            if result.stderr.strip():
+                print(result.stderr.strip())
 
-        if should_stop(result, config.fail_fast):
-            print("Fail-fast enabled: stopping batch execution.")
-            break
+            if should_stop(result, config.fail_fast):
+                print("Fail-fast enabled: stopping batch execution.")
+                break
 
     label_inventory, validation = validate_aggregate_counts(config.output_root, image_inventory)
     print("\n=== Aggregate Validation ===")
@@ -518,6 +534,7 @@ def main() -> int:
     print(f"Image files found: {validation.image_files_count}")
     print(f"Unique image stems: {validation.image_unique_stems_count}")
     print(f"Unique label stems: {validation.label_unique_stems_count}")
+    print(f"Classes.txt files found: {validation.classes_file_count}")
     print(f"Missing labels: {validation.missing_labels}")
     print(f"Orphan labels: {validation.orphan_labels}")
     print(f"Duplicate image stems: {validation.duplicate_image_stems}")
@@ -526,6 +543,8 @@ def main() -> int:
     print_result_summary(results)
 
     has_failure = any(result.status != "success" for result in results)
+    if not validation.classes_file_present:
+        has_failure = True
     if validation.missing_labels > 0 or validation.orphan_labels > 0:
         has_failure = True
     if (validation.duplicate_image_stems > 0 or validation.duplicate_label_stems > 0) and not config.allow_duplicate_stems:

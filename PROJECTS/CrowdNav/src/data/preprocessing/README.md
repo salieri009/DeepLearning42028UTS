@@ -57,6 +57,7 @@ It does the following:
 - reports malformed/invalid skips and degenerate bbox skips in aggregate
 - writes `preprocessing_report.json` to the output root
 - fails on duplicate image or label stems unless `--allow-duplicate-stems` is set
+- supports `--validation-only` when the raw folder has images but no JSON annotations
 
 Example:
 
