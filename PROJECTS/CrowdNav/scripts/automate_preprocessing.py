@@ -1,4 +1,26 @@
-"""Batch JRDB->YOLO automation with optional DVC sync and output validation."""
+"""
+Batch JRDB → YOLO label automation with optional DVC sync and output validation.
+
+This script orchestrates batch conversion of JRDB-style JSON annotation files
+into YOLO .txt label files, then validates label/image pair consistency.
+
+Actual data paths for this project:
+  json_dir   : data/raw/images/image_0  (or image_2)
+  images_dir : data/raw/images/image_0  (or image_2)
+  output_root: data/processed/labels
+
+Typical usage:
+  python scripts/automate_preprocessing.py \\
+    data/raw/images/image_0 \\
+    data/raw/images/image_0 \\
+    data/processed/labels \\
+    1920 1080 \\
+    --recursive --skip-dvc-pull
+
+Note: DVC is currently not active. Use --skip-dvc-pull for local runs.
+For pseudo-labeling (model-generated labels without JSON annotations),
+use src/data/pseudo_label_yolov8.py instead.
+"""
 
 from __future__ import annotations
 
@@ -88,10 +110,24 @@ class AggregateValidation:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """
+    Build and return the CLI argument parser.
+
+    Positional arguments:
+      json_dir    -- Directory containing JRDB JSON annotation files.
+                     For this project: data/raw/images/image_0 (or image_2)
+      images_dir  -- Directory containing corresponding source images.
+                     For this project: data/raw/images/image_0 (or image_2)
+      output_root -- Where YOLO .txt label files will be written.
+                     For this project: data/processed/labels
+      img_width   -- Image width in pixels (JRDB: 1920).
+      img_height  -- Image height in pixels (JRDB: 1080).
+    """
     parser = argparse.ArgumentParser(
         description=(
-            "Run DVC pull, batch-convert JRDB JSON files to YOLO labels, "
-            "and validate output labels against source images."
+            "Run DVC pull (optional), batch-convert JRDB JSON files to YOLO labels, "
+            "and validate output labels against source images. "
+            "DVC is currently inactive; use --skip-dvc-pull for local runs."
         )
     )
     parser.add_argument("json_dir", type=Path, help="Directory containing annotation JSON files")
@@ -148,11 +184,19 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_dimensions(img_width: int, img_height: int) -> None:
+    """
+    Raise ValueError if image dimensions are not positive integers.
+    JRDB standard resolution is 1920 x 1080.
+    """
     if img_width <= 0 or img_height <= 0:
         raise ValueError("img_width and img_height must be positive integers")
 
 
 def collect_json_files(json_dir: Path, pattern: str, recursive: bool) -> list[Path]:
+    """
+    Collect all JSON annotation files matching 'pattern' under 'json_dir'.
+    Use recursive=True to traverse all JRDB sequence sub-folders.
+    """
     if not json_dir.exists() or not json_dir.is_dir():
         raise FileNotFoundError(f"JSON directory not found: {json_dir}")
     iterator = json_dir.rglob(pattern) if recursive else json_dir.glob(pattern)
@@ -451,6 +495,18 @@ def to_config(args: argparse.Namespace) -> Config:
 
 
 def main() -> int:
+    """
+    Entry point for batch JRDB-to-YOLO conversion.
+
+    Workflow:
+      1. (Optional) Run DVC pull to fetch raw data — skipped by default (--skip-dvc-pull).
+      2. Discover JSON annotation files under json_dir.
+      3. Run YOLO conversion for each JSON file via src.data.jrdb_to_yolo.
+      4. Validate that output label files match source images.
+      5. Write a JSON summary report to output_root/preprocessing_report.json.
+
+    Returns 0 on full success, 1 if any file failed or validation issues found.
+    """
     parser = build_parser()
     args = parser.parse_args()
     config = to_config(args)

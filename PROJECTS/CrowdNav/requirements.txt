@@ -19,8 +19,10 @@ pandas
 matplotlib
 tqdm
 pyyaml
+typing_extensions>=4.6.0
 
 # Experiment Tracking
 clearml
 
+# Environment
 python-dotenv

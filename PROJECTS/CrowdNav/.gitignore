@@ -35,6 +35,13 @@ models/*.pt
 models/*.onnx
 models/*.pth
 
+# Model weight files (anywhere in repo — do NOT commit large binaries)
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+
 # Logs and checkpoints
 *.log
 *.tmp
