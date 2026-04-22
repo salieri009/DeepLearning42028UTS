@@ -1,59 +1,59 @@
+---
+last_updated: 2026-04-22
+related_code:
+  - src/data/
+  - src/inference/
+  - src/mlops/
+  - scripts/train_yolo.py
+  - scripts/automate_preprocessing.py
+related_diagram:
+  - PROJECTS/sysml/System_Architecture_Documentation.md
+---
+
 # Product Requirements Document (PRD)
 
 ## 1. Project Overview
-**Project Name:** Crowd Detection and Accessibility Navigation for Disabilities While Travelling
-**Subject:** 42028 Deep Learning (UTS 2026 Semester 1)
-
-**Team Members:**
-- Jungowok (25167747)
-- Phoi Gia Vuong (25736012)
-- Chihyun (14707133)
+Project Name: Crowd Detection and Accessibility Navigation for Disabilities While Travelling  
+Subject: 42028 Deep Learning (UTS 2026 Semester 1)
 
 ## 2. Problem Statement
-Navigating crowded transport hubs (airports, train stations) and public spaces can be overwhelming, challenging, and sometimes unsafe for individuals with disabilities. Existing navigation apps lack real-time crowd density awareness and rarely detect temporary accessibility obstacles (e.g., luggage, unattended carts) that impede mobility.
+Users with mobility and accessibility needs face risk in crowded transport spaces. Existing navigation apps usually do not model short-range crowd hazard risk from the user's local perspective.
 
 ## 3. Product Vision
-Develop a computer vision-based crowd analysis and navigation system. The system processes video feeds or live camera data to provide real-time insights into crowd density, directional flow, and potential accessibility obstacles. By mapping optimal, accessible routes, the application enhances the safety, mobility, and independence of individuals navigating congested environments.
+Build a computer-vision assistant that detects nearby crowd/obstacle risks and outputs immediate guidance signals (visual/audio) for safer local movement decisions.
 
-## 4. Target Audience
-- Individuals with physical or mobility disabilities (e.g., wheelchair users).
-- Visually impaired individuals requiring audio feedback on obstacles and crowdedness.
-- Elderly travelers who need to avoid high-density areas.
-- General travelers seeking less congested routes.
+## 4. Target Users
+- Wheelchair and mobility-aid users.
+- Visually impaired users needing warning cues.
+- Elderly travelers and users preferring lower-crowd pathways.
 
-## 5. Key Features & Requirements
+## 5. Product Requirements
+### 5.1 Model and Data
+- Use YOLO-based object detection as the core detector.
+- Support training from generated YOLO labels and `data.yaml` split artifacts.
+- Keep preprocessing reproducible with command-line scripts.
 
-### 5.1 Deep Learning Pipeline
-- **Real-time Object Detection:** Detect individuals, wheelchairs, and specific logistical obstacles (e.g., luggage, vehicles) using state-of-the-art models (YOLO v8/v10).
-- **Proximity Analysis Logic:** Develop a heuristic layer that calculates collision risk based on bounding-box vertical scaling, optimized for low-vantage perspectives.
-- **Model Training & Integration:** Models will be fine-tuned via transfer learning on selected datasets and act as a backend for real-time inference.
+### 5.2 Inference Behavior
+- Compute risk states from bounding box geometry and configured thresholds.
+- Return deterministic states (`SAFE`, `WARNING`, `DANGER`) per frame.
+- Keep logic lightweight for near-real-time execution.
 
-### 5.2 User Interface (GUI - Web/Mobile App)
-- **Accessible Design:** High contrast, large fonts, simple layouts, and compatibility with screen readers.
-- **Visual Feedback:** Color-coded bounding boxes or HUD indicators signifying proximity risk (Low/Warning/Critical).
-- **Route Selection:** Simple path-clearance markers indicating the safest immediate route through identified obstacles.
-- **Audio/Haptic Alerts:** Proximity alerts for highly congested areas or immediate obstacles.
+### 5.3 Accessibility Output
+- Provide clear alert states suitable for future UI integration.
+- Support color + audio signal mapping at the interface layer.
 
-### 5.3 System Performance
-- **Real-time Inference:** Process frames with sufficiently low latency for live-stream application.
-- **Accuracy:** High confidence in detecting obstacles that impede mobility with robust crowd estimation, minimizing false negatives for obstacles.
+## 6. Success Criteria
+- Preprocessing pipeline runs reproducibly and emits validated labels.
+- Training pipeline can complete train/validate/export workflow.
+- Inference module classifies risk states consistently for test inputs.
 
-## 6. Datasets
-- **Accessibility Targets:** Open Images (Targeting 'Wheelchair' class).
-- **Object/Obstacle Detection:** COCO (Common Objects in Context), specifically targeting classes relevant to accessibility obstacles.
-- **Custom Additions:** Potential custom datasets or subsets of travel/surveillance datasets focusing on accessibility pinch-points.
+## 7. Out of Scope (Current Baseline)
+- Production-grade frontend app.
+- Full route-planning/navigation graph engine.
+- Cloud production deployment with SLO-backed operations.
 
-## 7. Development Timeline
-- **Phase 1 (Part-B):** Dataset acquisition, exploratory data analysis, data preprocessing pipeline setup, and definition of initial model architecture.
-- **Phase 2 (Part-C):** Baseline model training, hyperparameter tuning, generation of initial results/metrics, and calibration of proximity heuristics.
-- **Phase 3 (Part-D):** GUI design, usability considerations for the accessibility interface, and integration with the deep learning model inference pipeline.
-- **Phase 4 (Part-E, F, G):** Final evaluation, comprehensive project report drafting, and preparation for oral defense demonstrations.
-
-## 8. Success Metrics
-- **Technical Metrics:**
-  - Stable Frames Per Second (FPS) target during inference on mobile-grade hardware.
-  - Proximity Alert Accuracy (True Positive Rate for critical hazards).
-  - High Object Detection Precision and Recall metrics for selected classes (Person, Wheelchair, Luggage).
-- **User Experience:**
-  - System successfully identifies an alternate accessible route when the primary path is heavily crowded or blocked.
-  - Accessible UI meets key usability standards and supports assistive technologies securely.
+## Review Request Guide
+- State which requirement section changed and why.
+- Link code path(s) that satisfy the requirement.
+- Include one validation command and its expected result.
+- Record any requirement that is still open and moved to backlog.

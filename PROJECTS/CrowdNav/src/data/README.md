@@ -1,21 +1,30 @@
-# `src/data`
+---
+last_updated: 2026-04-22
+related_code:
+	- src/data/jrdb_to_yolo.py
+	- src/data/preprocessing/
+	- src/data/split_by_sequence.py
+	- scripts/automate_preprocessing.py
+related_diagram:
+	- PROJECTS/sysml/System_Architecture_Documentation.md
+---
 
-Data-related scripts and preprocessing utilities for CrowdNav.
+# src/data
+
+Data preprocessing and dataset preparation modules for CrowdNav.
 
 ## Components
+- `jrdb_to_yolo.py`: CLI wrapper for JRDB-style JSON to YOLO labels.
+- `preprocessing/`: parser and converter package.
+- `split_by_sequence.py`: train/val/test split builder and `data.yaml` generator.
 
-- `jrdb_to_yolo.py`: command wrapper for JRDB JSON to YOLO labels
-- `preprocessing/`: modular preprocessing package
-
-## Run
-
+## Single JSON Conversion
 ```bash
 python -m src.data.jrdb_to_yolo <input_json> <output_dir> <img_width> <img_height>
 ```
 
 ## Batch Automation
-
-Use the orchestration script to run `dvc pull`, convert multiple JSON files, and validate labels.
+Runs optional DVC pull, conversion, and validation checks.
 
 ```bash
 python scripts/automate_preprocessing.py \
@@ -27,14 +36,28 @@ python scripts/automate_preprocessing.py \
 	--recursive
 ```
 
-Useful options:
+Common options:
+- `--validation-only`
+- `--skip-dvc-pull`
+- `--continue-on-dvc-failure`
+- `--allow-duplicate-stems`
+- `--flat-output`
+- `--fail-fast`
+- `--dry-run`
 
-- `--skip-dvc-pull`: skip DVC sync
-- `--continue-on-dvc-failure`: continue even when `dvc pull` fails
-- `--allow-duplicate-stems`: allow repeated image or label stems across folders
-- `--validation-only`: skip conversion and only compare raw images against existing labels
-- `--flat-output`: write all labels into one directory
-- `--fail-fast`: stop on first failed file
-- `--dry-run`: print planned actions only
+Output report: `data/processed/auto_labels/preprocessing_report.json`.
 
-The script also writes `preprocessing_report.json` into the output root.
+## Split Dataset for Training
+```bash
+python src/data/split_by_sequence.py \
+	--src-labels data/processed/auto_labels \
+	--src-images data/raw \
+	--output-dir data/processed/splits \
+	--seed 42
+```
+
+## Review Request Guide
+- Include source label/image roots and split ratios.
+- Attach summary counts for matched pairs and per-split totals.
+- If validation fails, include missing-label and orphan-label counts.
+- State whether DVC pull was required or skipped.

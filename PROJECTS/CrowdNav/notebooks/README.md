@@ -1,11 +1,26 @@
-# `/notebooks`
+---
+last_updated: 2026-04-22
+related_code:
+	- notebooks/01_sagemaker_clearml_launcher.ipynb
+	- src/
+related_diagram:
+	- PROJECTS/sysml/System_Architecture_Documentation.md
+---
 
-This directory is designated for Jupyter notebooks.
+# /notebooks
 
-## Purpose
-- Exploratory Data Analysis (EDA) on crowds and bounding boxes.
-- Initial prototyping of model architectures before moving them to production-grade Python scripts in `src/models`.
-- Visualizing data augmentation outputs and model inference results quickly.
+Jupyter workspace for experiments and cloud-launch trials.
 
-## Naming Convention
-Please prefix notebooks with a number to imply ordering if necessary, or your functional tag (e.g., `01_eda_dataset.ipynb` or `F101-eda.ipynb`).
+## Current Notebook
+- `01_sagemaker_clearml_launcher.ipynb`: launcher and integration exploration notebook.
+
+## Usage Policy
+- Keep exploratory analysis in notebooks.
+- Move reusable logic to `src/` and keep notebook cells thin.
+- Record required package/runtime assumptions at top of each notebook.
+
+## Review Request Guide
+- Include notebook path and key executed cells changed.
+- Include required environment/kernel details.
+- Include outputs that support the decision (plots, metrics, logs).
+- If logic moved to Python modules, list destination file paths.

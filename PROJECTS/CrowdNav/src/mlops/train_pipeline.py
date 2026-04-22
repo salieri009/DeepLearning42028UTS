@@ -1,35 +1,141 @@
-"""MLOpsLayer training pipeline skeleton for YOLO fine-tuning and export."""
+"""YOLO fine-tuning pipeline for the prepared CrowdNav dataset."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ultralytics import YOLO
 
 
 @dataclass(frozen=True)
+class TrainArtifacts:
+    """Paths and objects produced by a training run."""
+
+    run_dir: Path
+    best_weights: Path | None
+    last_weights: Path | None
+    raw_result: Any
+
+
 class TrainPipeline:
-    """Orchestrate training, validation, and export lifecycle operations."""
+    """Run YOLO training, validation, and export for the prepared dataset."""
 
-    model_cfg: str
-    data_yaml: str
-    epochs: int
-    imgsz: int
+    def __init__(
+        self,
+        model_cfg: str,
+        data_yaml: str,
+        epochs: int,
+        imgsz: int,
+        *,
+        batch: int = 16,
+        device: str | int | None = None,
+        project: str = "runs/train",
+        name: str = "crowdnav_yolo",
+        patience: int = 50,
+        exist_ok: bool = True,
+    ) -> None:
+        self.model_cfg = model_cfg
+        self.data_yaml = data_yaml
+        self.epochs = epochs
+        self.imgsz = imgsz
+        self.batch = batch
+        self.device = device
+        self.project = project
+        self.name = name
+        self.patience = patience
+        self.exist_ok = exist_ok
+        self._model: YOLO | None = None
+        self._trained_model: YOLO | None = None
+        self._last_artifacts: TrainArtifacts | None = None
 
-    def __init__(self, model_cfg: str, data_yaml: str, epochs: int, imgsz: int) -> None:
-        """Initialize pipeline configuration for training and export stages."""
-        object.__setattr__(self, "model_cfg", model_cfg)
-        object.__setattr__(self, "data_yaml", data_yaml)
-        object.__setattr__(self, "epochs", epochs)
-        object.__setattr__(self, "imgsz", imgsz)
+    def _resolve_model(self) -> YOLO:
+        from ultralytics import YOLO
 
-    def train(self) -> Any:
-        """Run fine-tuning workflow and return training artifacts."""
-        raise NotImplementedError("TrainPipeline.train is not implemented yet.")
+        model_path = Path(self.model_cfg)
+        if model_path.exists():
+            return YOLO(str(model_path))
+        return YOLO(self.model_cfg)
 
-    def export(self, fmt: str) -> str:
-        """Export trained model to the requested deployment format."""
-        raise NotImplementedError("TrainPipeline.export is not implemented yet.")
+    def _require_trained_model(self) -> YOLO:
+        if self._trained_model is None:
+            raise RuntimeError("Training has not been run yet.")
+        return self._trained_model
+
+    def train(self) -> TrainArtifacts:
+        """Train the YOLO model and keep track of the produced weights."""
+        from ultralytics import YOLO
+
+        data_yaml_path = Path(self.data_yaml)
+        if not data_yaml_path.exists() or not data_yaml_path.is_file():
+            raise FileNotFoundError(f"data.yaml not found: {data_yaml_path}")
+
+        self._model = self._resolve_model()
+        results = self._model.train(
+            data=str(data_yaml_path),
+            epochs=self.epochs,
+            imgsz=self.imgsz,
+            batch=self.batch,
+            device=self.device,
+            project=self.project,
+            name=self.name,
+            patience=self.patience,
+            exist_ok=self.exist_ok,
+        )
+
+        save_dir = Path(getattr(results, "save_dir", Path(self.project) / self.name))
+        weights_dir = save_dir / "weights"
+        best_weights = weights_dir / "best.pt"
+        last_weights = weights_dir / "last.pt"
+
+        if best_weights.exists():
+            self._trained_model = YOLO(str(best_weights))
+        elif last_weights.exists():
+            self._trained_model = YOLO(str(last_weights))
+        else:
+            self._trained_model = self._model
+
+        self._last_artifacts = TrainArtifacts(
+            run_dir=save_dir,
+            best_weights=best_weights if best_weights.exists() else None,
+            last_weights=last_weights if last_weights.exists() else None,
+            raw_result=results,
+        )
+        return self._last_artifacts
 
     def validate(self) -> dict[str, float]:
-        """Validate model and return core evaluation metrics."""
-        raise NotImplementedError("TrainPipeline.validate is not implemented yet.")
+        """Validate the trained model on the validation split and return metrics."""
+        model = self._require_trained_model()
+        results = model.val(data=str(self.data_yaml), imgsz=self.imgsz)
+
+        metrics: dict[str, float] = {}
+        results_dict = getattr(results, "results_dict", None)
+        if isinstance(results_dict, dict):
+            for key, value in results_dict.items():
+                if isinstance(value, (int, float)):
+                    metrics[str(key)] = float(value)
+            return metrics
+
+        for key in ("map50", "map", "precision", "recall", "fitness"):
+            value = getattr(results, key, None)
+            if isinstance(value, (int, float)):
+                metrics[key] = float(value)
+        return metrics
+
+    def export(self, fmt: str) -> str:
+        """Export the trained model to a deployment-friendly format."""
+        model = self._require_trained_model()
+        exported = model.export(format=fmt, imgsz=self.imgsz)
+        return str(exported)
+
+
+def default_model_path() -> str:
+    """Pick a local default model if one is present in the repo root."""
+    repo_root = Path(__file__).resolve().parents[2]
+    local_weight = repo_root / "yolov8x.pt"
+    if local_weight.exists():
+        return str(local_weight)
+    return "yolov8n.pt"

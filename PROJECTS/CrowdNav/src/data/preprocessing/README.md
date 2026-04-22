@@ -1,74 +1,49 @@
-# JRDB -> YOLO Preprocessing Module
+---
+last_updated: 2026-04-22
+related_code:
+  - src/data/preprocessing/cli.py
+  - src/data/preprocessing/io_utils.py
+  - src/data/preprocessing/converter.py
+  - src/data/preprocessing/types.py
+  - scripts/automate_preprocessing.py
+related_diagram:
+  - PROJECTS/sysml/System_Architecture_Documentation.md
+---
 
-## Recommended Structure
+# JRDB to YOLO Preprocessing Module
 
+## Package Layout
 ```text
-src/
-  data/
-    __init__.py
-    jrdb_to_yolo.py            # wrapper entry: python -m src.data.jrdb_to_yolo
-    preprocessing/
-      __init__.py
-      types.py                 # dataclasses for bbox and records
-      io_utils.py              # JSON loading and JRDB-style parsing helpers
-      converter.py             # bbox normalization and YOLO txt writing
-      cli.py                   # argparse CLI orchestration
-      README.md                # this document
+src/data/preprocessing/
+  types.py
+  io_utils.py
+  converter.py
+  cli.py
 ```
 
-## Quick Run
-
+## CLI Entry
 ```bash
-python -m src.data.jrdb_to_yolo \
-  ./data/raw/jrdb_annotations.json \
-  ./data/processed/labels \
-  1920 \
-  1080
+python -m src.data.jrdb_to_yolo <input_json> <output_dir> <img_width> <img_height>
 ```
 
-## CLI Arguments
+## Behavior
+- Parses JRDB-like JSON variants into typed records.
+- Converts xyxy boxes into YOLO normalized format.
+- Writes one label file per image stem plus `classes.txt`.
+- Skips malformed records and degenerate boxes with counters.
 
-- `input_json`: JRDB-style annotation JSON file path
-- `output_dir`: destination directory for YOLO `.txt` files
-- `img_width`: original image width in pixels
-- `img_height`: original image height in pixels
+## Batch Orchestration
+`scripts/automate_preprocessing.py` can execute conversion over multiple JSON files and validate output consistency.
 
-## Outputs
+Validation modes:
+- conversion + validation
+- validation-only (for image+label checks without JSON conversion)
 
-- One label file per image key: `<image_stem>.txt`
-- `classes.txt` containing class-name-to-id order
+Generated report:
+- `preprocessing_report.json` in output root.
 
-## Error Handling
-
-- Missing input file: fails with clear error message
-- Unsupported/malformed annotations: item skipped and counted
-- Missing bbox keys: item skipped and counted
-- Degenerate boxes (zero or negative size): skipped and counted
-
-## Batch + DVC Automation
-
-The project includes `scripts/automate_preprocessing.py` for end-to-end orchestration.
-
-It does the following:
-
-- runs `dvc pull` before conversion (unless skipped)
-- processes multiple JSON files in one run
-- validates generated labels against image files
-- reports malformed/invalid skips and degenerate bbox skips in aggregate
-- writes `preprocessing_report.json` to the output root
-- fails on duplicate image or label stems unless `--allow-duplicate-stems` is set
-- supports `--validation-only` when the raw folder has images but no JSON annotations
-
-Example:
-
-```bash
-python scripts/automate_preprocessing.py \
-  data/raw/jrdb/annotations \
-  data/raw/jrdb/images \
-  data/processed/auto_labels \
-  1920 \
-  1080 \
-  --recursive
-```
-
-If your images are stored in an extracted folder, point `images_dir` to that folder.
+## Review Request Guide
+- Include one sample input JSON key format that was validated.
+- Include aggregate skip counters (invalid and degenerate).
+- Include classes mapping output (`classes.txt`) from your run.
+- Include whether validation-only mode was used.

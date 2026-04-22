@@ -63,6 +63,20 @@ python -m src.clearml_smoketest
 
 This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
 
+### Current Data Flow
+
+```mermaid
+graph LR
+    A[Google Drive DVC Remote] --> B[dvc pull]
+    B --> C[data/raw images]
+    C --> D[Preprocessing validation\nclasses.txt + label checks]
+    D --> E[Dataset split\ntrain / val / test]
+    E --> F[data.yaml]
+    F --> G[YOLO training\ntrain_yolo.py]
+    G --> H[Weights\nbest.pt / last.pt]
+    H --> I[Inference\ncollision_avoidance.py]
+```
+
 ### DVC Workflow Overview
 
 ```mermaid

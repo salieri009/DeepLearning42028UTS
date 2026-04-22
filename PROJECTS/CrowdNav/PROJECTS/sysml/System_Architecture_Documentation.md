@@ -1,3 +1,14 @@
+---
+last_updated: 2026-04-22
+related_code:
+  - src/data/preprocessing/
+  - src/inference/
+  - src/mlops/train_pipeline.py
+  - scripts/train_yolo.py
+related_diagram:
+  - PROJECTS/sysml/System_Architecture_Documentation.md
+---
+
 # System Architecture Documentation
 
 ## 1. Overview
@@ -330,3 +341,15 @@ sequenceDiagram
 - Diagram structure reflects current scaffold state: class-level interfaces may still raise `NotImplementedError` by design.
 - `ruff check` passes; `mypy --strict` is integrated into CI and requires code-level type cleanup to pass consistently.
 - External services (ClearML server/runtime dependencies) are modeled as external artifacts, not internal blocks.
+
+## 6. Additional Updates Needed
+- Replace remaining scaffold-only notes as modules become fully implemented.
+- Add an explicit API contract diagram once frontend/backend interfaces are finalized.
+- Add deployment view for Docker compose runtime under `deploy/`.
+- Add metric lineage mapping between training logs and exported model artifacts.
+
+## Review Request Guide
+- List the exact diagrams updated (BDD, IBD, sequence).
+- Link affected code modules for each diagram change.
+- State if a diagram block is speculative or implemented.
+- Confirm that naming in diagrams matches module/class names in code.
