@@ -1,4 +1,6 @@
 import argparse
+import json
+import time
 from pathlib import Path
 import csv
 import yaml
@@ -17,6 +19,41 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--debug-dir", type=Path, default=Path("data/processed/debug_previews"), help="Debug previews directory")
     parser.add_argument("--conf-thresh", type=float, default=0.5, help="Confidence threshold for detection")
     parser.add_argument("--manual-thresh", type=float, default=0.8, help="Confidence threshold below which manual review is flagged")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda",
+        choices=["cuda", "cpu", "auto"],
+        help="Inference device. Default is 'cuda' to use GPU.",
+    )
+    parser.add_argument(
+        "--no-clearml",
+        action="store_true",
+        help="Disable ClearML task logging",
+    )
+    parser.add_argument(
+        "--checkpoint-path",
+        type=Path,
+        default=None,
+        help="JSON checkpoint file path (default: <out-dir>/pseudo_label_checkpoint.json)",
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=500,
+        help="Write checkpoint every N processed images",
+    )
+    parser.add_argument(
+        "--max-images",
+        type=int,
+        default=0,
+        help="Optional cap for processed images (useful for ETA benchmarking)",
+    )
+    parser.add_argument(
+        "--overwrite-existing",
+        action="store_true",
+        help="Reprocess images even when output txt already exists",
+    )
     return parser
 
 def write_yaml(output_dir: Path, class_map: dict):
@@ -40,15 +77,60 @@ def write_yaml(output_dir: Path, class_map: dict):
     
     return yaml_path
 
+
+def write_checkpoint(
+    checkpoint_path: Path,
+    *,
+    total_candidates: int,
+    images_processed: int,
+    labels_written: int,
+    boxes_written: int,
+    manual_review_count: int,
+    elapsed_seconds: float,
+    last_image: str,
+) -> None:
+    remaining_images = max(0, total_candidates - images_processed)
+    images_per_second = images_processed / elapsed_seconds if elapsed_seconds > 0 else 0.0
+    eta_seconds = (remaining_images / images_per_second) if images_per_second > 0 else None
+
+    checkpoint_payload = {
+        "total_candidates": total_candidates,
+        "images_processed": images_processed,
+        "labels_written": labels_written,
+        "boxes_written": boxes_written,
+        "manual_review_count": manual_review_count,
+        "elapsed_seconds": elapsed_seconds,
+        "images_per_second": images_per_second,
+        "eta_seconds": eta_seconds,
+        "last_image": last_image,
+        "updated_unix": time.time(),
+    }
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.write_text(json.dumps(checkpoint_payload, indent=2), encoding="utf-8")
+
 def main():
     args = build_parser().parse_args()
     
-    # Initialize ClearML Task
-    task = Task.init(project_name="CrowdNav", task_name="pseudo_labeling_v1")
-    task.connect(vars(args))
+    # Initialize ClearML if available/configured.
+    if args.no_clearml:
+        print("ClearML disabled (--no-clearml).")
+    else:
+        try:
+            task = Task.init(project_name="CrowdNav", task_name="pseudo_labeling_v1")
+            task.connect(vars(args))
+        except Exception as exc:
+            print(f"ClearML init skipped: {exc}")
     
     # Setup Device & Batch Size
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    elif args.device == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("--device cuda was requested but CUDA is not available on this machine.")
+        device = "cuda"
+    else:
+        device = "cpu"
+
     batch_size = 16 if device == "cuda" else 4
     print(f"Using device: {device} | Batch Size: {batch_size}")
     
@@ -57,6 +139,8 @@ def main():
     src_dir = args.src_dir
     out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = args.checkpoint_path or (out_dir / "pseudo_label_checkpoint.json")
+    checkpoint_interval = max(1, args.checkpoint_interval)
     
     if args.debug:
         args.debug_dir.mkdir(parents=True, exist_ok=True)
@@ -70,74 +154,121 @@ def main():
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp"}
     
     sequences = [d for d in src_dir.iterdir() if d.is_dir() and d.name in {"image_0", "image_2"}]
-    
-    total_images_processed = 0
-    total_boxes_written = 0
-    
+
+    all_candidates = []
+    skipped_existing = 0
     for seq_group in sequences:
-        # e.g., seq_group is image_0 or image_2
         for sequence in seq_group.iterdir():
             if not sequence.is_dir():
                 continue
-            
-            print(f"Processing sequence: {sequence.name}")
             seq_out_dir = out_dir / sequence.name
-            seq_out_dir.mkdir(parents=True, exist_ok=True)
-            
-            if args.debug:
-                seq_debug_dir = args.debug_dir / sequence.name
-                seq_debug_dir.mkdir(parents=True, exist_ok=True)
-            
             image_paths = sorted([img for img in sequence.iterdir() if img.suffix.lower() in valid_exts])
-            
-            # Process in batches
-            for i in range(0, len(image_paths), batch_size):
-                batch_paths = image_paths[i:i + batch_size]
-                
-                # YOLO inference
-                results = model.predict(
-                    source=batch_paths,
-                    device=device,
-                    conf=args.conf_thresh,
-                    classes=target_classes,
-                    verbose=False,
-                    save=False
-                )
-                
-                for r_idx, r in enumerate(results):
-                    img_path = batch_paths[r_idx]
-                    label_path = seq_out_dir / f"{img_path.stem}.txt"
-                    
-                    needs_review = False
-                    boxes = r.boxes
-                    
-                    lines = []
-                    for box in boxes:
-                        cls_idx = int(box.cls[0].item())
-                        conf = box.conf[0].item()
-                        x, y, w, h = box.xywhn[0].tolist()
-                        
-                        # Check confidence
-                        if conf < args.manual_thresh:
-                            needs_review = True
-                            
-                        # Ensure we map to our CLASS_MAP index (person -> 0)
-                        mapped_id = CLASS_MAP.get("person", 0)
-                        lines.append(f"{mapped_id} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
-                    
-                    if lines:
-                        label_path.write_text("\n".join(lines) + "\n")
-                        total_boxes_written += len(lines)
-                        
-                    if needs_review:
-                        manual_review_list.append([str(img_path), conf])
-                        
-                    # Visual Sanity Check
-                    if args.debug and i == 0 and r_idx < 5:
-                        debug_path = seq_debug_dir / f"preview_{img_path.name}"
-                        r.save(filename=str(debug_path))
-                        
-                total_images_processed += len(batch_paths)
+            for img_path in image_paths:
+                label_path = seq_out_dir / f"{img_path.stem}.txt"
+                if (not args.overwrite_existing) and label_path.exists():
+                    skipped_existing += 1
+                    continue
+                all_candidates.append((img_path, seq_out_dir, sequence.name))
+
+    total_candidates = len(all_candidates)
+    print(f"Discovered {total_candidates} candidate images.")
+    if skipped_existing > 0:
+        print(f"Resume mode: skipped {skipped_existing} images with existing labels.")
+    if args.max_images and args.max_images > 0:
+        total_run_target = min(args.max_images, total_candidates)
+        print(f"Run capped to {total_run_target} images (--max-images).")
+    else:
+        total_run_target = total_candidates
+    
+    total_images_processed = 0
+    total_boxes_written = 0
+    total_labels_written = 0
+    run_started = time.time()
+    
+    last_sequence = None
+    for i in range(0, total_run_target, batch_size):
+        batch_candidates = all_candidates[i:i + batch_size]
+        batch_paths = [c[0] for c in batch_candidates]
+        for _, seq_out_dir, sequence_name in batch_candidates:
+            seq_out_dir.mkdir(parents=True, exist_ok=True)
+            if args.debug:
+                seq_debug_dir = args.debug_dir / sequence_name
+                seq_debug_dir.mkdir(parents=True, exist_ok=True)
+            if sequence_name != last_sequence:
+                print(f"Processing sequence: {sequence_name}")
+                last_sequence = sequence_name
+
+        results = model.predict(
+            source=batch_paths,
+            device=device,
+            conf=args.conf_thresh,
+            classes=target_classes,
+            verbose=False,
+            save=False,
+        )
+
+        for r_idx, r in enumerate(results):
+            img_path, seq_out_dir, sequence_name = batch_candidates[r_idx]
+            label_path = seq_out_dir / f"{img_path.stem}.txt"
+
+            needs_review = False
+            boxes = r.boxes
+
+            lines = []
+            lowest_conf = None
+            for box in boxes:
+                conf = box.conf[0].item()
+                x, y, w, h = box.xywhn[0].tolist()
+
+                if lowest_conf is None or conf < lowest_conf:
+                    lowest_conf = conf
+                if conf < args.manual_thresh:
+                    needs_review = True
+
+                mapped_id = CLASS_MAP.get("person", 0)
+                lines.append(f"{mapped_id} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
+
+            if lines:
+                label_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                total_labels_written += 1
+                total_boxes_written += len(lines)
+
+            if needs_review:
+                manual_review_list.append([str(img_path), lowest_conf if lowest_conf is not None else 0.0])
+
+            if args.debug and i == 0 and r_idx < 5:
+                debug_path = args.debug_dir / sequence_name / f"preview_{img_path.name}"
+                r.save(filename=str(debug_path))
+
+        total_images_processed += len(batch_paths)
+        elapsed = time.time() - run_started
+        images_per_sec = total_images_processed / elapsed if elapsed > 0 else 0.0
+        eta_seconds = (
+            (total_run_target - total_images_processed) / images_per_sec
+            if images_per_sec > 0
+            else None
+        )
+
+        if total_images_processed % checkpoint_interval == 0 or total_images_processed == total_run_target:
+            write_checkpoint(
+                checkpoint_path,
+                total_candidates=total_run_target,
+                images_processed=total_images_processed,
+                labels_written=total_labels_written,
+                boxes_written=total_boxes_written,
+                manual_review_count=len(manual_review_list),
+                elapsed_seconds=elapsed,
+                last_image=str(batch_paths[-1]) if batch_paths else "",
+            )
+
+        if eta_seconds is None:
+            eta_msg = "calculating"
+        else:
+            eta_msg = f"{eta_seconds / 60.0:.1f} min"
+        print(
+            f"Progress: {total_images_processed}/{total_run_target} | "
+            f"{images_per_sec:.2f} img/s | ETA {eta_msg}"
+        )
                 
     # Write manual review CSV
     if manual_review_list:
@@ -151,6 +282,9 @@ def main():
     yaml_path = write_yaml(out_dir, CLASS_MAP)
     print(f"Generated YAML at: {yaml_path}")
     print(f"Total processed: {total_images_processed} images, {total_boxes_written} boxes.")
+    final_elapsed = max(0.001, time.time() - run_started)
+    print(f"Elapsed: {final_elapsed / 60.0:.2f} min | Throughput: {total_images_processed / final_elapsed:.2f} img/s")
+    print(f"Checkpoint file: {checkpoint_path}")
     
 if __name__ == "__main__":
     main()

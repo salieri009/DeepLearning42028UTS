@@ -24,11 +24,16 @@ Canonical project overview, setup, and top-level workflow documentation is maint
 
 ## Primary Commands
 ```bash
-# preprocess / validate labels
-python scripts/automate_preprocessing.py data/raw/jrdb/annotations data/raw/jrdb/images data/processed/auto_labels 1920 1080 --recursive
+# preprocess / pseudo-label (images -> YOLO txt labels)
+python src/data/pseudo_label_yolov8.py --src-dir data/raw/images --out-dir data/processed/labels
+
+# split dataset (train/val/test) for training
+# run once per camera view and merge into one splits/ folder via --stem-prefix
+python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_0 --output-dir data/processed/splits --stem-prefix image0 --train-ratio 0.7 --val-ratio 0.2 --seed 42
+python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_2 --output-dir data/processed/splits --stem-prefix image2 --train-ratio 0.7 --val-ratio 0.2 --seed 42
 
 # train / validate / export YOLO model
-python scripts/train_yolo.py --model yolov8x.pt --data data/processed/splits/data.yaml --epochs 5 --imgsz 640 --export onnx
+python scripts/train_yolo.py --model-cfg yolov8x.pt --data-yaml data/processed/splits/data.yaml --epochs 5 --imgsz 640 --export onnx
 ```
 
 ## Review Request Guide

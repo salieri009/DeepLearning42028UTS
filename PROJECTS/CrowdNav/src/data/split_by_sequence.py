@@ -14,6 +14,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--src-labels", type=Path, required=True, help="Directory with generated YOLO txt files")
     parser.add_argument("--src-images", type=Path, required=True, help="Directory containing raw images in sequence folders")
     parser.add_argument("--output-dir", type=Path, default=Path("data/processed"), help="Output directory for train/val/test splits")
+    parser.add_argument(
+        "--stem-prefix",
+        type=str,
+        default="",
+        help="Optional prefix added to every output stem to avoid filename collisions (example: image0 or image2)",
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed for splitting sequences")
     parser.add_argument("--train-ratio", type=float, default=0.7, help="Train split ratio")
     parser.add_argument("--val-ratio", type=float, default=0.2, help="Validation split ratio")
@@ -35,14 +41,17 @@ def _copy_pairs(items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_
     return copied
 
 
-def _collect_recursive_pairs(src_images: Path, src_labels: Path) -> list[tuple[Path, Path, str]]:
+def _collect_recursive_pairs(src_images: Path, src_labels: Path, stem_prefix: str) -> list[tuple[Path, Path, str]]:
     pairs: list[tuple[Path, Path, str]] = []
     for img_path in sorted(src_images.rglob("*")):
         if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
             continue
+        # NOTE: In many JRDB sequences, frame stems repeat across sequences (e.g. 000001.jpg),
+        # so output stems must be unique to avoid overwriting during copy.
+        rel_stem = f"{stem_prefix}{img_path.relative_to(src_images).with_suffix('').as_posix().replace('/', '_')}"
         lbl_path = src_labels / f"{img_path.stem}.txt"
         if lbl_path.exists():
-            pairs.append((img_path, lbl_path, img_path.stem))
+            pairs.append((img_path, lbl_path, rel_stem))
     return pairs
 
 
@@ -92,6 +101,8 @@ def main() -> None:
     src_labels = args.src_labels
     src_images = args.src_images
     output_dir = args.output_dir
+    stem_prefix = str(args.stem_prefix).strip()
+    stem_prefix = f"{stem_prefix}_" if stem_prefix else ""
     train_ratio = _clamp_ratio(args.train_ratio)
     val_ratio = _clamp_ratio(args.val_ratio)
 
@@ -108,35 +119,13 @@ def main() -> None:
 
     class_names = _load_class_names(src_labels)
 
-    recursive_pairs = _collect_recursive_pairs(src_images, src_labels)
-
     # Find sequences (assume folders inside src_images)
     sequences = sorted([d.name for d in src_images.iterdir() if d.is_dir()])
     random.seed(args.seed)
 
     total_images = {"train": 0, "val": 0, "test": 0}
 
-    if recursive_pairs:
-        print(f"Found {len(recursive_pairs)} matched image/label pairs in recursive stem mode.")
-        random.shuffle(recursive_pairs)
-
-        train_count, val_count, _ = _split_counts(len(recursive_pairs), train_ratio, val_ratio)
-        train_end = train_count
-        val_end = train_count + val_count
-        split_pairs = {
-            "train": recursive_pairs[:train_end],
-            "val": recursive_pairs[train_end:val_end],
-            "test": recursive_pairs[val_end:],
-        }
-
-        for split_name, pairs in split_pairs.items():
-            if not pairs:
-                continue
-            print(f"[{split_name.upper()}] processing {len(pairs)} pairs...")
-            out_img_dir = output_dir / split_name / "images"
-            out_lbl_dir = output_dir / split_name / "labels"
-            total_images[split_name] = _copy_pairs(pairs, out_img_dir, out_lbl_dir)
-    elif sequences:
+    if sequences:
         print(f"Found {len(sequences)} sequences for splitting.")
         random.shuffle(sequences)
 
@@ -162,8 +151,12 @@ def main() -> None:
                 for img_path in sorted(seq_dir.iterdir()):
                     if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
                         continue
-                    new_stem = f"{seq}_{img_path.stem}"
-                    lbl_path = src_labels / f"{new_stem}.txt"
+                    new_stem = f"{stem_prefix}{seq}_{img_path.stem}"
+                    # Prefer labels organized by sequence folder: <labels>/<seq>/<frame>.txt
+                    lbl_path = src_labels / seq / f"{img_path.stem}.txt"
+                    # Backward-compatible fallbacks (flat label roots)
+                    if not lbl_path.exists():
+                        lbl_path = src_labels / f"{new_stem}.txt"
                     if not lbl_path.exists():
                         lbl_path = src_labels / f"{img_path.stem}.txt"
                     if lbl_path.exists():
@@ -171,36 +164,58 @@ def main() -> None:
 
             total_images[split_name] = _copy_pairs(pairs, out_img_dir, out_lbl_dir)
     else:
-        print("No sequence folders found. Using flat-image split mode.")
-        flat_pairs: list[tuple[Path, Path, str]] = []
-        for img_path in sorted(src_images.iterdir()):
-            if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
-                continue
-            lbl_path = src_labels / f"{img_path.stem}.txt"
-            if lbl_path.exists():
-                flat_pairs.append((img_path, lbl_path, img_path.stem))
+        recursive_pairs = _collect_recursive_pairs(src_images, src_labels, stem_prefix)
+        if recursive_pairs:
+            print(f"Found {len(recursive_pairs)} matched image/label pairs in recursive stem mode.")
+            random.shuffle(recursive_pairs)
 
-        if not flat_pairs:
-            print("No image/label pairs found in flat-image mode!")
-            return
+            train_count, val_count, _ = _split_counts(len(recursive_pairs), train_ratio, val_ratio)
+            train_end = train_count
+            val_end = train_count + val_count
+            split_pairs = {
+                "train": recursive_pairs[:train_end],
+                "val": recursive_pairs[train_end:val_end],
+                "test": recursive_pairs[val_end:],
+            }
 
-        random.shuffle(flat_pairs)
-        train_count, val_count, _ = _split_counts(len(flat_pairs), train_ratio, val_ratio)
-        train_end = train_count
-        val_end = train_count + val_count
-        split_pairs = {
-            "train": flat_pairs[:train_end],
-            "val": flat_pairs[train_end:val_end],
-            "test": flat_pairs[val_end:],
-        }
+            for split_name, pairs in split_pairs.items():
+                if not pairs:
+                    continue
+                print(f"[{split_name.upper()}] processing {len(pairs)} pairs...")
+                out_img_dir = output_dir / split_name / "images"
+                out_lbl_dir = output_dir / split_name / "labels"
+                total_images[split_name] = _copy_pairs(pairs, out_img_dir, out_lbl_dir)
+        else:
+            print("No sequence folders found. Using flat-image split mode.")
+            flat_pairs: list[tuple[Path, Path, str]] = []
+            for img_path in sorted(src_images.iterdir()):
+                if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
+                    continue
+                lbl_path = src_labels / f"{img_path.stem}.txt"
+                if lbl_path.exists():
+                    flat_pairs.append((img_path, lbl_path, img_path.stem))
 
-        for split_name, pairs in split_pairs.items():
-            if not pairs:
-                continue
-            print(f"[{split_name.upper()}] processing {len(pairs)} pairs...")
-            out_img_dir = output_dir / split_name / "images"
-            out_lbl_dir = output_dir / split_name / "labels"
-            total_images[split_name] = _copy_pairs(pairs, out_img_dir, out_lbl_dir)
+            if not flat_pairs:
+                print("No image/label pairs found in flat-image mode!")
+                return
+
+            random.shuffle(flat_pairs)
+            train_count, val_count, _ = _split_counts(len(flat_pairs), train_ratio, val_ratio)
+            train_end = train_count
+            val_end = train_count + val_count
+            split_pairs = {
+                "train": flat_pairs[:train_end],
+                "val": flat_pairs[train_end:val_end],
+                "test": flat_pairs[val_end:],
+            }
+
+            for split_name, pairs in split_pairs.items():
+                if not pairs:
+                    continue
+                print(f"[{split_name.upper()}] processing {len(pairs)} pairs...")
+                out_img_dir = output_dir / split_name / "images"
+                out_lbl_dir = output_dir / split_name / "labels"
+                total_images[split_name] = _copy_pairs(pairs, out_img_dir, out_lbl_dir)
 
     print("\n--- Summary ---")
     for split_name, count in total_images.items():

@@ -58,10 +58,22 @@ data/processed/debug_previews/ ← Only when --debug is used
 Splits labels and images into train/val/test at the sequence level (default: 70/20/10).
 
 ```bash
+# NOTE: frame filenames often repeat across JRDB sequences (e.g. 000001.jpg),
+# so use --stem-prefix when merging multiple camera views into one splits folder.
 python src/data/split_by_sequence.py \
   --src-labels data/processed/labels \
-  --src-images data/raw/images \
+  --src-images data/raw/images/image_0 \
   --output-dir data/processed/splits \
+  --stem-prefix image0 \
+  --train-ratio 0.7 \
+  --val-ratio 0.2 \
+  --seed 42
+
+python src/data/split_by_sequence.py \
+  --src-labels data/processed/labels \
+  --src-images data/raw/images/image_2 \
+  --output-dir data/processed/splits \
+  --stem-prefix image2 \
   --train-ratio 0.7 \
   --val-ratio 0.2 \
   --seed 42
