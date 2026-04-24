@@ -49,6 +49,12 @@ models/*.pth
 *.h5
 *.hdf5
 
+# Training / experiment outputs (large)
+/runs/
+
+# Local scratch (non-source)
+/scratch/
+
 # Frontend and mobile build outputs
 node_modules/
 .expo/

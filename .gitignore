@@ -37,6 +37,9 @@ desktop.ini
 *.h5
 *.hdf5
 
+# Training / experiment outputs (large)
+/runs/
+
 
 # Node.js and React Native
 node_modules/
