@@ -1,0 +1,56 @@
+{
+  "image_0_sequences": 27,
+  "image_2_sequences": 27,
+  "labels_sequences": 27,
+  "labels_txt_total": 27210,
+  "labels_per_sequence": {
+    "bytes-cafe-2019-02-07_0": 1726,
+    "clark-center-2019-02-28_0": 578,
+    "clark-center-2019-02-28_1": 1419,
+    "clark-center-intersection-2019-02-28_0": 1007,
+    "cubberly-auditorium-2019-04-22_0": 1286,
+    "forbes-cafe-2019-01-22_0": 1401,
+    "gates-159-group-meeting-2019-04-03_0": 837,
+    "gates-ai-lab-2019-02-08_0": 465,
+    "gates-basement-elevators-2019-01-17_1": 918,
+    "gates-to-clark-2019-02-28_1": 699,
+    "hewlett-packard-intersection-2019-01-24_0": 1707,
+    "huang-2-2019-01-25_0": 783,
+    "huang-basement-2019-01-25_0": 923,
+    "huang-lane-2019-02-12_0": 723,
+    "jordan-hall-2019-04-22_0": 1522,
+    "memorial-court-2019-03-16_0": 1042,
+    "meyer-green-2019-03-16_0": 402,
+    "nvidia-aud-2019-04-18_0": 1012,
+    "packard-poster-session-2019-03-20_0": 716,
+    "packard-poster-session-2019-03-20_1": 851,
+    "packard-poster-session-2019-03-20_2": 1371,
+    "stlc-111-2019-04-19_0": 1735,
+    "svl-meeting-gates-2-2019-04-08_0": 866,
+    "svl-meeting-gates-2-2019-04-08_1": 871,
+    "tressider-2019-03-16_0": 407,
+    "tressider-2019-03-16_1": 503,
+    "tressider-2019-04-26_2": 1440
+  },
+  "manual_review_rows": 32986,
+  "splits": {
+    "train": {
+      "name": "train",
+      "images": 34676,
+      "labels": 34676,
+      "stems_match": true
+    },
+    "val": {
+      "name": "val",
+      "images": 9834,
+      "labels": 9834,
+      "stems_match": true
+    },
+    "test": {
+      "name": "test",
+      "images": 9950,
+      "labels": 9950,
+      "stems_match": true
+    }
+  }
+}

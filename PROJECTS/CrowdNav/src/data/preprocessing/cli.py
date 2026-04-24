@@ -1,40 +1,28 @@
-"""PreprocessingLayer CLI entrypoint for JRDB-to-YOLO conversion."""
+"""CLI entrypoint for JRDB-to-YOLO label conversion."""
 
 from __future__ import annotations
 
 import argparse
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from ..formats.dataset_config import write_classes_txt_from_label_map
 from .converter import write_yolo_files
 from .io_utils import iter_raw_items, load_json, parse_record
 
 
-class PreprocessingCLI:
-    """Class-based skeleton interface for preprocessing command orchestration."""
+@dataclass
+class ConversionSummary:
+    """Structured result returned by ``convert()`` for programmatic consumption."""
 
-    def __init__(self) -> None:
-        """Initialize CLI skeleton interface."""
-        raise NotImplementedError("PreprocessingCLI skeleton is not implemented yet.")
-
-    def build_parser(self) -> argparse.ArgumentParser:
-        """Build parser for conversion CLI arguments."""
-        raise NotImplementedError(
-            "PreprocessingCLI.build_parser is not implemented yet."
-        )
-
-    def convert(
-        self,
-        input_json: Path,
-        output_dir: Path,
-        img_width: int,
-        img_height: int,
-    ) -> int:
-        """Run conversion and return process exit code."""
-        raise NotImplementedError("PreprocessingCLI.convert is not implemented yet.")
-
-    def main(self) -> int:
-        """Parse CLI arguments and execute conversion pipeline."""
-        raise NotImplementedError("PreprocessingCLI.main is not implemented yet.")
+    parsed: int
+    invalid: int
+    degenerate: int
+    written: int
+    classes_discovered: int
+    classes_path: str
+    exit_code: int
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,6 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("img_width", type=int, help="Image width in pixels")
     parser.add_argument("img_height", type=int, help="Image height in pixels")
+    parser.add_argument(
+        "--summary-json",
+        type=Path,
+        default=None,
+        help="Optional path to write a JSON summary of conversion metrics",
+    )
     return parser
 
 
@@ -58,22 +52,37 @@ def _validate_dimensions(img_width: int, img_height: int) -> None:
         raise ValueError("img_width and img_height must be positive integers")
 
 
-def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int) -> int:
-    """Run conversion and return process exit code."""
+def convert(
+    input_json: Path,
+    output_dir: Path,
+    img_width: int,
+    img_height: int,
+    *,
+    summary_json: Path | None = None,
+    quiet: bool = False,
+) -> ConversionSummary:
+    """Run JRDB JSON → YOLO conversion and return a structured summary.
+
+    When *quiet* is False (default), human-readable progress is also printed
+    to stdout for backward compatibility with existing CLI usage.
+    """
     try:
         _validate_dimensions(img_width=img_width, img_height=img_height)
     except ValueError as exc:
-        print(f"ERROR: {exc}")
-        return 1
+        if not quiet:
+            print(f"ERROR: {exc}")
+        return ConversionSummary(0, 0, 0, 0, 0, "", exit_code=1)
 
     try:
         data = load_json(input_json)
     except FileNotFoundError as exc:
-        print(f"ERROR: {exc}")
-        return 1
+        if not quiet:
+            print(f"ERROR: {exc}")
+        return ConversionSummary(0, 0, 0, 0, 0, "", exit_code=1)
     except Exception as exc:
-        print(f"ERROR: Failed to read JSON: {exc}")
-        return 1
+        if not quiet:
+            print(f"ERROR: Failed to read JSON: {exc}")
+        return ConversionSummary(0, 0, 0, 0, 0, "", exit_code=1)
 
     label_to_id: dict[str, int] = {}
     invalid_items = 0
@@ -98,36 +107,51 @@ def convert(input_json: Path, output_dir: Path, img_width: int, img_height: int)
             img_height=img_height,
         )
     except (NotADirectoryError, OSError) as exc:
-        print(f"ERROR: {exc}")
-        return 1
+        if not quiet:
+            print(f"ERROR: {exc}")
+        return ConversionSummary(0, 0, 0, 0, 0, "", exit_code=1)
 
-    print(f"Parsed records: {parsed_count}")
-    print(f"Invalid items skipped: {invalid_items}")
-    print(f"Degenerate boxes skipped: {skipped}")
-    print(f"YOLO boxes written: {written}")
-    print(f"Classes discovered: {len(label_to_id)}")
+    classes_path = write_classes_txt_from_label_map(output_dir, label_to_id)
 
-    classes_path = output_dir / "classes.txt"
-    class_lines = [
-        label for label, _ in sorted(label_to_id.items(), key=lambda pair: pair[1])
-    ]
-    classes_path.write_text(
-        "\n".join(class_lines) + ("\n" if class_lines else ""), encoding="utf-8"
+    summary = ConversionSummary(
+        parsed=parsed_count,
+        invalid=invalid_items,
+        degenerate=skipped,
+        written=written,
+        classes_discovered=len(label_to_id),
+        classes_path=str(classes_path),
+        exit_code=0,
     )
 
-    print(f"Class mapping file: {classes_path}")
-    return 0
+    if not quiet:
+        print(f"Parsed records: {summary.parsed}")
+        print(f"Invalid items skipped: {summary.invalid}")
+        print(f"Degenerate boxes skipped: {summary.degenerate}")
+        print(f"YOLO boxes written: {summary.written}")
+        print(f"Classes discovered: {summary.classes_discovered}")
+        print(f"Class mapping file: {summary.classes_path}")
+
+    if summary_json is not None:
+        summary_json.parent.mkdir(parents=True, exist_ok=True)
+        summary_json.write_text(
+            json.dumps(asdict(summary), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+    return summary
 
 
 def main() -> int:
     """Parse arguments and execute conversion."""
     args = build_parser().parse_args()
-    return convert(
+    summary = convert(
         input_json=args.input_json,
         output_dir=args.output_dir,
         img_width=args.img_width,
         img_height=args.img_height,
+        summary_json=args.summary_json,
     )
+    return summary.exit_code
 
 
 if __name__ == "__main__":
