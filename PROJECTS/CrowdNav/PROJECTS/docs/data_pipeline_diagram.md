@@ -269,6 +269,8 @@ data/processed/splits/
 
 > **AWS SageMaker 팀이 관여하는 구간입니다.**
 
+#### Path A: YOLO Training (Ultralytics)
+
 1. `data/processed/splits/` 전체를 **S3 버킷에 업로드**합니다.
 2. `data.yaml`의 `path:` 항목을 S3 경로로 업데이트합니다.
 3. SageMaker Training Job 실행:
@@ -289,6 +291,21 @@ python deploy/train_skeleton.py \
   --data s3://.../data.yaml \
   --epochs 50 \
   --imgsz 640
+```
+
+#### Path B: Keras Training (COCO JSON)
+
+1. `data/processed/coco/*.json` + `data/processed/splits/{train,val,test}/images`를 S3로 업로드합니다.
+2. SageMaker Training Job 실행 (Keras entry-point):
+
+```bash
+python deploy/train_keras_skeleton.py \
+  --train-json /opt/ml/input/data/training/coco/train.json \
+  --val-json /opt/ml/input/data/training/coco/val.json \
+  --images-root /opt/ml/input/data/training/splits \
+  --epochs 1 \
+  --imgsz 640 \
+  --batch 8
 ```
 
 ---

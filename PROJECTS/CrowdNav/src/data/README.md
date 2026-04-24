@@ -124,6 +124,27 @@ data/processed/splits/
 
 ---
 
+## Step 2b: Convert YOLO Splits to COCO JSON (Keras Path)
+
+Converts the YOLO split folders into COCO JSON annotation files for Keras / SageMaker training.
+
+```bash
+python -m src.data.prepare.yolo_to_coco \
+  --splits-dir data/processed/splits \
+  --out-dir data/processed/coco
+```
+
+**Output:**
+```
+data/processed/coco/
+  train.json
+  val.json
+  test.json
+  # optional: categories.json (with --write-categories)
+```
+
+---
+
 ## Step 3: JRDB JSON Conversion (Supplementary)
 
 Use this only when JRDB ground-truth JSON annotation files are available.

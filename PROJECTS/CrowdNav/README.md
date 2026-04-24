@@ -45,6 +45,15 @@ python src/data/split_by_sequence.py --src-labels data/processed/labels --src-im
 
 # train / validate / export YOLO model
 python scripts/train_yolo.py --model-cfg yolov8x.pt --data-yaml data/processed/splits/data.yaml --epochs 5 --imgsz 640 --export onnx
+
+# Keras path: YOLO splits -> COCO JSON
+python -m src.data.prepare.yolo_to_coco --splits-dir data/processed/splits --out-dir data/processed/coco
+
+# Keras path: SageMaker entry-point (expects COCO JSON + images root)
+python deploy/train_keras_skeleton.py \
+  --train-json data/processed/coco/train.json \
+  --val-json data/processed/coco/val.json \
+  --images-root data/processed/splits
 ```
 
 ## Programmatic API (New)
