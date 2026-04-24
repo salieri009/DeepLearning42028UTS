@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-04-22
+last_updated: 2026-04-24
 related_code:
   - scripts/train_yolo.py
   - scripts/automate_preprocessing.py
@@ -16,11 +16,22 @@ Canonical project overview, setup, and top-level workflow documentation is maint
 - `README.md`
 
 ## What Lives Here
-- `src/`: preprocessing, inference, and mlops Python modules
-- `scripts/`: command-line wrappers for preprocessing and training
+- `src/data/formats/`: shared YOLO label and dataset config utilities (single source of truth)
+- `src/data/prepare/`: official data preparation pipeline entry-points
+- `src/data/preprocessing/`: JRDB JSON parsing and conversion internals
+- `src/`: inference, analysis (Awareness layer), and mlops Python modules
+- `scripts/`: command-line wrappers for preprocessing and training (thin — all logic in `src/`)
 - `data/`: raw and processed data roots
 - `deploy/`: docker and training skeleton artifacts
 - `PROJECTS/`: PRD, TechSpec, and SysML architecture docs
+
+## Situational Awareness
+The pipeline supports **Extended YOLO Format** (6 columns) which includes `track_id`,
+controlled via the `include_track_id` option in `src/data/formats/yolo_label.py`.
+This enables the **Awareness Layer** for:
+- People density analysis
+- Heading and movement flow estimation
+- Bottleneck detection in crowded environments
 
 ## Primary Commands
 ```bash
@@ -34,6 +45,15 @@ python src/data/split_by_sequence.py --src-labels data/processed/labels --src-im
 
 # train / validate / export YOLO model
 python scripts/train_yolo.py --model-cfg yolov8x.pt --data-yaml data/processed/splits/data.yaml --epochs 5 --imgsz 640 --export onnx
+```
+
+## Programmatic API (New)
+```python
+from src.data.prepare.pseudo_label import run as pseudo_label
+from src.data.prepare.split import run as split_dataset
+from src.data.prepare.jrdb_to_yolo import run as convert_json
+
+# Use these entry-points for notebooks, orchestration, or testing
 ```
 
 ## Review Request Guide

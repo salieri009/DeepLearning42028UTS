@@ -1,16 +1,27 @@
+"""YOLOv8 pseudo-labeling pipeline for JRDB video frames.
+
+Runs a pre-trained YOLOv8 model on raw frames and generates YOLO ``.txt``
+label files.  Low-confidence detections are flagged for manual review.
+"""
+
 import argparse
+import csv
 import json
 import time
 from pathlib import Path
-import csv
-import yaml
-import torch
-from ultralytics import YOLO
-from clearml import Task
 
-CLASS_MAP = {'person': 0}
+import torch
+from clearml import Task
+from ultralytics import YOLO
+
+from .formats.dataset_config import write_data_yaml_from_class_map
+from .formats.yolo_label import format_line
+
+CLASS_MAP = {"person": 0}
+
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build CLI argument parser for the pseudo-labeling pipeline."""
     parser = argparse.ArgumentParser(description="Pseudo-label JRDB subset using YOLOv8.")
     parser.add_argument("--model", type=str, default="yolov8x.pt", help="YOLO model path or name")
     parser.add_argument("--src-dir", type=Path, default=Path("data/raw/images"), help="Source images directory")
@@ -56,26 +67,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-def write_yaml(output_dir: Path, class_map: dict):
-    yaml_path = output_dir / "data.yaml"
-    sorted_classes = sorted(class_map.items(), key=lambda x: x[1])
-    class_names = [name for name, _ in sorted_classes]
-    
-    # Just outputting a simple structure compatible with SageMaker/YOLO
-    dataset_root = output_dir.resolve().as_posix()
-    content = {
-        "path": dataset_root,
-        "train": "train/images",
-        "val": "val/images",
-        "test": "test/images",
-        "nc": len(class_names),
-        "names": class_names
-    }
-    
-    with open(yaml_path, "w") as f:
-        yaml.dump(content, f, sort_keys=False)
-    
-    return yaml_path
+def write_yaml(output_dir: Path, class_map: dict) -> Path:
+    """Write ``data.yaml`` via shared utility (kept as thin wrapper for compat)."""
+    return write_data_yaml_from_class_map(output_dir, class_map)
 
 
 def write_checkpoint(
@@ -89,6 +83,7 @@ def write_checkpoint(
     elapsed_seconds: float,
     last_image: str,
 ) -> None:
+    """Persist progress to a JSON checkpoint file for resumable runs."""
     remaining_images = max(0, total_candidates - images_processed)
     images_per_second = images_processed / elapsed_seconds if elapsed_seconds > 0 else 0.0
     eta_seconds = (remaining_images / images_per_second) if images_per_second > 0 else None
@@ -108,7 +103,8 @@ def write_checkpoint(
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path.write_text(json.dumps(checkpoint_payload, indent=2), encoding="utf-8")
 
-def main():
+def main() -> None:
+    """Run the full pseudo-labeling pipeline from CLI arguments."""
     args = build_parser().parse_args()
     
     # Initialize ClearML if available/configured.
@@ -122,16 +118,11 @@ def main():
             print(f"ClearML init skipped: {exc}")
     
     # Setup Device & Batch Size
-    if args.device == "auto":
+    device = args.device
+    if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    elif args.device == "cuda":
-        if not torch.cuda.is_available():
-            raise RuntimeError("--device cuda was requested but CUDA is not available on this machine.")
-        device = "cuda"
-    else:
-        device = "cpu"
-
-    batch_size = 16 if device == "cuda" else 4
+    
+    batch_size = 16 if "cuda" in str(device) or (isinstance(device, int)) else 4
     print(f"Using device: {device} | Batch Size: {batch_size}")
     
     model = YOLO(args.model)
@@ -198,11 +189,14 @@ def main():
                 print(f"Processing sequence: {sequence_name}")
                 last_sequence = sequence_name
 
-        results = model.predict(
+        # Use model.track() to maintain IDs across frames in a sequence.
+        # Note: persit=True ensures the tracker state is maintained between batches.
+        results = model.track(
             source=batch_paths,
             device=device,
             conf=args.conf_thresh,
             classes=target_classes,
+            persist=True,
             verbose=False,
             save=False,
         )
@@ -226,7 +220,16 @@ def main():
                     needs_review = True
 
                 mapped_id = CLASS_MAP.get("person", 0)
-                lines.append(f"{mapped_id} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
+                track_id = int(box.id[0].item()) if box.id is not None else None
+                line = format_line(
+                    class_id=mapped_id,
+                    x_center=x,
+                    y_center=y,
+                    width=w,
+                    height=h,
+                    track_id=track_id,
+                )
+                lines.append(line)
 
             if lines:
                 label_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -29,8 +29,8 @@ desktop.ini
 # Jupyter Notebook
 .ipynb_checkpoints/
 
-# Data and models managed by DVC
-data/
+# Data and models managed by DVC (top-level only, not src/data/)
+/data/
 models/*.pt
 models/*.onnx
 models/*.pth

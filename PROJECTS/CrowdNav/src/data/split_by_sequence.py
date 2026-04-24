@@ -5,11 +5,14 @@ import random
 import shutil
 from pathlib import Path
 
+from .formats.dataset_config import write_data_yaml
+
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build CLI argument parser for sequence-level dataset splitting."""
     parser = argparse.ArgumentParser(description="Split JRDB dataset by sequences.")
     parser.add_argument("--src-labels", type=Path, required=True, help="Directory with generated YOLO txt files")
     parser.add_argument("--src-images", type=Path, required=True, help="Directory containing raw images in sequence folders")
@@ -27,10 +30,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _clamp_ratio(value: float) -> float:
+    """Clamp a ratio to [0.0, 1.0]."""
     return max(0.0, min(1.0, value))
 
 
 def _copy_pairs(items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_dir: Path) -> int:
+    """Copy image/label pairs to output directories; return count copied."""
     copied = 0
     out_img_dir.mkdir(parents=True, exist_ok=True)
     out_lbl_dir.mkdir(parents=True, exist_ok=True)
@@ -42,6 +47,7 @@ def _copy_pairs(items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_
 
 
 def _collect_recursive_pairs(src_images: Path, src_labels: Path, stem_prefix: str) -> list[tuple[Path, Path, str]]:
+    """Recursively match images to labels using flattened stem names."""
     pairs: list[tuple[Path, Path, str]] = []
     for img_path in sorted(src_images.rglob("*")):
         if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
@@ -56,6 +62,7 @@ def _collect_recursive_pairs(src_images: Path, src_labels: Path, stem_prefix: st
 
 
 def _split_counts(total: int, train_ratio: float, val_ratio: float) -> tuple[int, int, int]:
+    """Compute (train, val, test) counts ensuring every split has >= 1 item when possible."""
     if total <= 0:
         return 0, 0, 0
     train_count = int(total * train_ratio)
@@ -71,6 +78,7 @@ def _split_counts(total: int, train_ratio: float, val_ratio: float) -> tuple[int
 
 
 def _load_class_names(src_labels: Path) -> list[str]:
+    """Read class names from ``classes.txt``; defaults to ``["person"]`` if absent."""
     classes_path = src_labels / "classes.txt"
     if not classes_path.exists() or not classes_path.is_file():
         return ["person"]
@@ -80,22 +88,12 @@ def _load_class_names(src_labels: Path) -> list[str]:
 
 
 def _write_data_yaml(output_dir: Path, class_names: list[str]) -> Path:
-    data_yaml = output_dir / "data.yaml"
-    names_repr = ", ".join(f'"{name}"' for name in class_names)
-    dataset_root = output_dir.resolve().as_posix()
-    content = (
-        f"path: {dataset_root}\n"
-        "train: train/images\n"
-        "val: val/images\n"
-        "test: test/images\n"
-        f"nc: {len(class_names)}\n"
-        f"names: [{names_repr}]\n"
-    )
-    data_yaml.write_text(content, encoding="utf-8")
-    return data_yaml
+    """Thin wrapper delegating to the shared ``write_data_yaml`` utility."""
+    return write_data_yaml(output_dir, class_names)
 
 
 def main() -> None:
+    """Parse CLI arguments, split the dataset, and write ``data.yaml``."""
     args = build_parser().parse_args()
 
     src_labels = args.src_labels

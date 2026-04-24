@@ -1,5 +1,4 @@
-"""
-Batch JRDB → YOLO label automation with optional DVC sync and output validation.
+"""Batch JRDB -> YOLO label automation with output validation.
 
 This script orchestrates batch conversion of JRDB-style JSON annotation files
 into YOLO .txt label files, then validates label/image pair consistency.
@@ -26,38 +25,27 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.data.preprocessing.cli import ConversionSummary, convert  # noqa: E402
+
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 REPO_ROOT = Path(__file__).resolve().parents[1]
-METRIC_PATTERNS = {
-    "parsed": re.compile(r"^Parsed records:\s*(\d+)\s*$", re.MULTILINE),
-    "invalid": re.compile(r"^Invalid items skipped:\s*(\d+)\s*$", re.MULTILINE),
-    "degenerate": re.compile(r"^Degenerate boxes skipped:\s*(\d+)\s*$", re.MULTILINE),
-    "written": re.compile(r"^YOLO boxes written:\s*(\d+)\s*$", re.MULTILINE),
-    "classes": re.compile(r"^Classes discovered:\s*(\d+)\s*$", re.MULTILINE),
-    "classes_path": re.compile(r"^Class mapping file:\s*(.+?)\s*$", re.MULTILINE),
-}
 
 
 @dataclass
 class ConversionResult:
+    """Result of one JSON file conversion, combining the structured summary
+    from ``src.data.preprocessing.cli.convert()`` with output validation."""
+
     json_path: Path
     output_dir: Path
-    returncode: int
-    stdout: str
-    stderr: str
-    parsed: int | None = None
-    invalid: int | None = None
-    degenerate: int | None = None
-    written: int | None = None
-    classes: int | None = None
-    classes_path: str | None = None
-    parse_ok: bool = False
+    summary: ConversionSummary
     classes_ok: bool = False
     labels_count: int = 0
     status: str = "unknown"
@@ -110,16 +98,12 @@ class AggregateValidation:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """
-    Build and return the CLI argument parser.
+    """Build and return the CLI argument parser.
 
     Positional arguments:
       json_dir    -- Directory containing JRDB JSON annotation files.
-                     For this project: data/raw/images/image_0 (or image_2)
       images_dir  -- Directory containing corresponding source images.
-                     For this project: data/raw/images/image_0 (or image_2)
       output_root -- Where YOLO .txt label files will be written.
-                     For this project: data/processed/labels
       img_width   -- Image width in pixels (JRDB: 1920).
       img_height  -- Image height in pixels (JRDB: 1080).
     """
@@ -184,19 +168,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_dimensions(img_width: int, img_height: int) -> None:
-    """
-    Raise ValueError if image dimensions are not positive integers.
-    JRDB standard resolution is 1920 x 1080.
-    """
+    """Raise ValueError if image dimensions are not positive integers."""
     if img_width <= 0 or img_height <= 0:
         raise ValueError("img_width and img_height must be positive integers")
 
 
 def collect_json_files(json_dir: Path, pattern: str, recursive: bool) -> list[Path]:
-    """
-    Collect all JSON annotation files matching 'pattern' under 'json_dir'.
-    Use recursive=True to traverse all JRDB sequence sub-folders.
-    """
+    """Collect all JSON annotation files matching *pattern* under *json_dir*."""
     if not json_dir.exists() or not json_dir.is_dir():
         raise FileNotFoundError(f"JSON directory not found: {json_dir}")
     iterator = json_dir.rglob(pattern) if recursive else json_dir.glob(pattern)
@@ -204,6 +182,7 @@ def collect_json_files(json_dir: Path, pattern: str, recursive: bool) -> list[Pa
 
 
 def collect_image_inventory(images_dir: Path, recursive: bool) -> ImageInventory:
+    """Scan *images_dir* for image files and detect stem duplicates."""
     if not images_dir.exists() or not images_dir.is_dir():
         raise FileNotFoundError(f"Images directory not found: {images_dir}")
 
@@ -228,6 +207,7 @@ def collect_image_inventory(images_dir: Path, recursive: bool) -> ImageInventory
 
 
 def run_dvc_pull() -> subprocess.CompletedProcess[str]:
+    """Execute ``dvc pull`` at the repository root."""
     return subprocess.run(
         ["dvc", "pull"],
         capture_output=True,
@@ -237,61 +217,36 @@ def run_dvc_pull() -> subprocess.CompletedProcess[str]:
     )
 
 
-def parse_metrics(stdout: str) -> dict[str, int | str | None]:
-    parsed: dict[str, int | str | None] = {}
-    for key, pattern in METRIC_PATTERNS.items():
-        match = pattern.search(stdout)
-        if not match:
-            parsed[key] = None
-            continue
-        value = match.group(1).strip()
-        if key == "classes_path":
-            parsed[key] = value
-        else:
-            parsed[key] = int(value)
-    return parsed
-
-
 def resolve_output_dir(output_root: Path, json_path: Path, split_output_per_json: bool) -> Path:
+    """Resolve the per-file output directory."""
     if split_output_per_json:
         return output_root / json_path.stem
     return output_root
 
 
 def run_conversion(json_path: Path, output_dir: Path, img_width: int, img_height: int) -> ConversionResult:
-    command = [
-        sys.executable,
-        "-m",
-        "src.data.jrdb_to_yolo",
-        str(json_path),
-        str(output_dir),
-        str(img_width),
-        str(img_height),
-    ]
-    process = subprocess.run(command, capture_output=True, text=True, check=False, cwd=REPO_ROOT)
+    """Convert one JSON file by calling ``src.data.preprocessing.cli.convert()`` directly.
 
-    metrics = parse_metrics(process.stdout)
+    This replaces the previous subprocess + stdout-regex approach with a
+    structured function call, eliminating the fragile text-parsing coupling.
+    """
+    summary = convert(
+        input_json=json_path,
+        output_dir=output_dir,
+        img_width=img_width,
+        img_height=img_height,
+        quiet=True,
+    )
 
     return ConversionResult(
         json_path=json_path,
         output_dir=output_dir,
-        returncode=process.returncode,
-        stdout=process.stdout,
-        stderr=process.stderr,
-        parsed=metrics["parsed"],
-        invalid=metrics["invalid"],
-        degenerate=metrics["degenerate"],
-        written=metrics["written"],
-        classes=metrics["classes"],
-        classes_path=metrics["classes_path"],
-        parse_ok=all(
-            metrics[key] is not None
-            for key in ("parsed", "invalid", "degenerate", "written", "classes", "classes_path")
-        ),
+        summary=summary,
     )
 
 
 def validate_output(result: ConversionResult) -> None:
+    """Validate conversion output (classes.txt presence, label count)."""
     classes_path = result.output_dir / "classes.txt"
     result.classes_ok = classes_path.exists() and classes_path.is_file() and classes_path.stat().st_size > 0
 
@@ -300,21 +255,18 @@ def validate_output(result: ConversionResult) -> None:
         for path in result.output_dir.glob("*.txt")
         if path.name.lower() != "classes.txt" and path.is_file()
     )
-
-    label_stems = {path.stem for path in label_files}
-    result.labels_count = len(label_stems)
+    result.labels_count = len({path.stem for path in label_files})
 
     status = "success"
-    if result.returncode != 0:
+    if result.summary.exit_code != 0:
         status = "failed-conversion"
-    elif not result.parse_ok:
-        status = "failed-log-parse"
     elif not result.classes_ok:
         status = "failed-classes"
     result.status = status
 
 
 def collect_label_inventory(output_root: Path) -> LabelInventory:
+    """Scan *output_root* for YOLO label files and detect duplicates."""
     if not output_root.exists():
         return LabelInventory(files_count=0, unique_stems=set(), duplicate_stems={})
 
@@ -336,6 +288,7 @@ def collect_label_inventory(output_root: Path) -> LabelInventory:
 
 
 def validate_aggregate_counts(output_root: Path, image_inventory: ImageInventory) -> tuple[LabelInventory, AggregateValidation]:
+    """Cross-validate label and image inventories to find gaps."""
     label_inventory = collect_label_inventory(output_root)
     classes_file_count = sum(1 for path in output_root.rglob("classes.txt") if path.is_file()) if output_root.exists() else 0
     validation = AggregateValidation(
@@ -354,6 +307,7 @@ def validate_aggregate_counts(output_root: Path, image_inventory: ImageInventory
 
 
 def print_dvc_summary(proc: subprocess.CompletedProcess[str] | None) -> None:
+    """Print DVC pull outcome."""
     if proc is None:
         print("[DVC] skipped")
         return
@@ -367,6 +321,7 @@ def print_dvc_summary(proc: subprocess.CompletedProcess[str] | None) -> None:
 
 
 def print_result_summary(results: list[ConversionResult]) -> None:
+    """Print a per-file and aggregate summary table."""
     if not results:
         print("No conversion results.")
         return
@@ -379,20 +334,21 @@ def print_result_summary(results: list[ConversionResult]) -> None:
     print(header)
     print("-" * len(header))
     for result in results:
+        s = result.summary
         print(
             f"{result.json_path.name[:36]:36} "
             f"{result.status:22} "
-            f"{str(result.parsed):>7} "
-            f"{str(result.invalid):>8} "
-            f"{str(result.degenerate):>6} "
-            f"{str(result.written):>7} "
+            f"{s.parsed:>7} "
+            f"{s.invalid:>8} "
+            f"{s.degenerate:>6} "
+            f"{s.written:>7} "
             f"{result.labels_count:>7}"
         )
 
-    total_parsed = sum(result.parsed or 0 for result in results)
-    total_invalid = sum(result.invalid or 0 for result in results)
-    total_degenerate = sum(result.degenerate or 0 for result in results)
-    total_written = sum(result.written or 0 for result in results)
+    total_parsed = sum(r.summary.parsed for r in results)
+    total_invalid = sum(r.summary.invalid for r in results)
+    total_degenerate = sum(r.summary.degenerate for r in results)
+    total_written = sum(r.summary.written for r in results)
 
     print("\n=== Aggregate Skip Report ===")
     print(f"Parsed records total: {total_parsed}")
@@ -400,12 +356,12 @@ def print_result_summary(results: list[ConversionResult]) -> None:
     print(f"Degenerate boxes skipped total: {total_degenerate}")
     print(f"YOLO boxes written total: {total_written}")
 
-    failed = [result for result in results if result.status != "success"]
+    failed = [r for r in results if r.status != "success"]
     print(f"\nOverall: {len(results) - len(failed)}/{len(results)} successful")
     if failed:
         print("Failed files:")
-        for result in failed:
-            print(f"- {result.json_path} ({result.status})")
+        for r in failed:
+            print(f"- {r.json_path} ({r.status})")
 
 
 def write_report(
@@ -419,6 +375,7 @@ def write_report(
     results: list[ConversionResult],
     exit_code: int,
 ) -> None:
+    """Write a JSON summary report to *report_path*."""
     report_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "config": {
@@ -459,11 +416,14 @@ def write_report(
         "validation": asdict(validation),
         "results": [
             {
-                **asdict(result),
-                "json_path": str(result.json_path),
-                "output_dir": str(result.output_dir),
+                "json_path": str(r.json_path),
+                "output_dir": str(r.output_dir),
+                "summary": asdict(r.summary),
+                "classes_ok": r.classes_ok,
+                "labels_count": r.labels_count,
+                "status": r.status,
             }
-            for result in results
+            for r in results
         ],
         "exit_code": exit_code,
     }
@@ -472,10 +432,12 @@ def write_report(
 
 
 def should_stop(result: ConversionResult, fail_fast: bool) -> bool:
+    """Return True if processing should halt after a failure."""
     return fail_fast and result.status != "success"
 
 
 def to_config(args: argparse.Namespace) -> Config:
+    """Map parsed CLI arguments to a ``Config`` dataclass."""
     return Config(
         json_dir=args.json_dir,
         images_dir=args.images_dir,
@@ -495,13 +457,12 @@ def to_config(args: argparse.Namespace) -> Config:
 
 
 def main() -> int:
-    """
-    Entry point for batch JRDB-to-YOLO conversion.
+    """Entry point for batch JRDB-to-YOLO conversion.
 
     Workflow:
-      1. (Optional) Run DVC pull to fetch raw data — skipped by default (--skip-dvc-pull).
+      1. (Optional) Run DVC pull to fetch raw data.
       2. Discover JSON annotation files under json_dir.
-      3. Run YOLO conversion for each JSON file via src.data.jrdb_to_yolo.
+      3. Run YOLO conversion for each JSON via ``src.data.preprocessing.cli.convert()``.
       4. Validate that output label files match source images.
       5. Write a JSON summary report to output_root/preprocessing_report.json.
 
@@ -571,14 +532,13 @@ def main() -> int:
                 img_height=config.img_height,
             )
             validate_output(result)
-
             results.append(result)
 
-            print(f"\n[{json_path.name}] status={result.status}")
-            if result.stdout.strip():
-                print(result.stdout.strip())
-            if result.stderr.strip():
-                print(result.stderr.strip())
+            s = result.summary
+            print(
+                f"\n[{json_path.name}] status={result.status} | "
+                f"parsed={s.parsed} written={s.written} invalid={s.invalid} degenerate={s.degenerate}"
+            )
 
             if should_stop(result, config.fail_fast):
                 print("Fail-fast enabled: stopping batch execution.")
@@ -598,7 +558,7 @@ def main() -> int:
 
     print_result_summary(results)
 
-    has_failure = any(result.status != "success" for result in results)
+    has_failure = any(r.status != "success" for r in results)
     if not validation.classes_file_present:
         has_failure = True
     if validation.missing_labels > 0 or validation.orphan_labels > 0:

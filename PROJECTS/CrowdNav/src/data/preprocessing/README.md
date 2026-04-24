@@ -1,10 +1,12 @@
 ---
-last_updated: 2026-04-22
+last_updated: 2026-04-24
 related_code:
   - src/data/preprocessing/cli.py
   - src/data/preprocessing/io_utils.py
   - src/data/preprocessing/converter.py
   - src/data/preprocessing/types.py
+  - src/data/formats/yolo_label.py
+  - src/data/formats/dataset_config.py
   - src/data/jrdb_to_yolo.py
   - scripts/automate_preprocessing.py
 related_diagram:
@@ -23,8 +25,11 @@ src/data/preprocessing/
   types.py       ← AnnotationRecord, BoundingBox, YoloBox dataclasses
   io_utils.py    ← JSON loading, raw item iteration, bbox + record parsing
   converter.py   ← Coordinate normalization (xyxy → YOLO xywh) and .txt file writing
-  cli.py         ← CLI entrypoint, argument parsing, orchestration
+  cli.py         ← CLI entrypoint, argument parsing, ConversionSummary return type
 ```
+
+Shared utilities (label formatting, data.yaml/classes.txt writing) live in
+`src/data/formats/` and are imported by this package — see `converter.py` and `cli.py`.
 
 ---
 
@@ -36,6 +41,7 @@ sequenceDiagram
     participant CLI as cli.py (main)
     participant IO  as io_utils.py
     participant CV  as converter.py
+    participant FMT as formats/yolo_label.py
 
     User->>CLI: python -m src.data.jrdb_to_yolo input.json output_dir/ 1920 1080
 
@@ -58,14 +64,16 @@ sequenceDiagram
         CV->>CV: to_yolo(record, class_id, img_w, img_h)
         Note over CV: x_center = (x_min + w/2) / img_width<br/>y_center = (y_min + h/2) / img_height<br/>All values clamped to [0.0, 1.0]
         CV->>CV: Skip if width <= 0 or height <= 0 (degenerate box)
+        CV->>FMT: format_line(class_id, x, y, w, h, track_id, include_track_id)
+        FMT-->>CV: "0 0.512000 0.634000 0.123400 0.245600 101"
         CV->>CV: Bucket lines by image_key
     end
 
     CV->>CV: Write <image_key>.txt per bucket
     CV-->>CLI: (written_boxes, skipped_boxes)
 
-    CLI->>CLI: Write classes.txt (class_name per line, sorted by ID)
-    CLI-->>User: Print summary (parsed, invalid, degenerate, written, classes)
+    CLI->>CLI: write_classes_txt_from_label_map() via formats/dataset_config.py
+    CLI-->>User: ConversionSummary(parsed, invalid, degenerate, written, classes)
 ```
 
 ---
@@ -76,11 +84,22 @@ sequenceDiagram
 # Single JSON file
 python -m src.data.jrdb_to_yolo <input_json> <output_dir> <img_width> <img_height>
 
-# Example
-python -m src.data.jrdb_to_yolo \
-  data/raw/annotations/sequence_0.json \
-  data/processed/labels/sequence_0 \
-  1920 1080
+# With JSON summary output
+python -m src.data.jrdb_to_yolo annotations.json labels/ 1920 1080 --summary-json summary.json
+```
+
+## Programmatic API
+
+```python
+from src.data.prepare.jrdb_to_yolo import run
+
+summary = run(
+    input_json=Path("data/raw/annotations/sequence_0.json"),
+    output_dir=Path("data/processed/labels/sequence_0"),
+    img_width=1920,
+    img_height=1080,
+)
+print(f"Written: {summary.written}, Parsed: {summary.parsed}")
 ```
 
 ## Behavior
@@ -89,10 +108,18 @@ python -m src.data.jrdb_to_yolo \
 - Converts absolute `xyxy` boxes into YOLO normalized `xywh` format (values clamped to [0.0, 1.0]).
 - Writes one `.txt` label file per image stem, plus a `classes.txt` mapping file.
 - Skips malformed records (no valid bbox) and degenerate boxes (zero width or height), counting each.
+- Returns a `ConversionSummary` dataclass for programmatic consumption (no more stdout-only metrics).
+
+## Label Format Support
+
+Label lines are formatted via `src/data/formats/yolo_label.format_line()`:
+- **Standard (5 columns):** `<class_id> <x> <y> <w> <h>` — when `include_track_id=False` or no track_id
+- **Extended (6 columns):** `<class_id> <x> <y> <w> <h> <track_id>` — default when track_id is present
 
 ## Batch Orchestration
 
 `scripts/automate_preprocessing.py` runs conversion over multiple JSON files and validates output consistency.
+It now calls `src.data.preprocessing.cli.convert()` directly (no more subprocess + stdout parsing).
 
 ```bash
 python scripts/automate_preprocessing.py \
@@ -103,11 +130,6 @@ python scripts/automate_preprocessing.py \
   --recursive \
   --skip-dvc-pull
 ```
-
-Validation modes:
-- `--recursive` — traverse all subdirectories for JSON files and images
-- `--validation-only` — check existing image/label pairs without running conversion
-- `--dry-run` — show planned actions only
 
 Generated report: `preprocessing_report.json` in output root.
 
