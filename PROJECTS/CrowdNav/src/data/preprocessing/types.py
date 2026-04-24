@@ -17,13 +17,18 @@ class BoundingBox:
 
 @dataclass(frozen=True)
 class YoloBox:
-    """A YOLO-normalized bounding box."""
+    """
+    A YOLO-normalized bounding box.
+    Extended Format: <class_id> <x_center> <y_center> <width> <height> <track_id>
+    The track_id is optional and appended as the 6th column for tracking analysis.
+    """
 
     class_id: int
     x_center: float
     y_center: float
     width: float
     height: float
+    track_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -33,3 +38,4 @@ class AnnotationRecord:
     image_key: str
     class_name: str
     bbox: BoundingBox
+    track_id: int | None = None

@@ -1,4 +1,4 @@
-"""Input parsing utilities for JRDB-style annotation JSON files."""
+"""IO utilities for JRDB-style annotation JSON files."""
 
 from __future__ import annotations
 
@@ -21,7 +21,11 @@ def load_json(path: Path) -> Any:
 
 
 def iter_raw_items(data: Any) -> Iterable[dict[str, Any]]:
-    """Yield dictionary items from common JRDB-like container structures."""
+    """Yield dict items from common JRDB-like container structures.
+
+    Handles top-level lists, or dicts with ``annotations`` / ``labels`` /
+    ``items`` / ``frames`` keys.
+    """
     if isinstance(data, list):
         for item in data:
             if isinstance(item, dict):
@@ -41,7 +45,11 @@ def iter_raw_items(data: Any) -> Iterable[dict[str, Any]]:
 
 
 def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
-    """Parse a bounding box from heterogeneous key conventions."""
+    """Parse a bounding box from heterogeneous key conventions.
+
+    Tries nested bbox dict (``bbox`` / ``box`` / ``2d_bbox`` / ``rect``),
+    flat ``x/y/w/h`` or ``x1/y1/x2/y2`` keys, and COCO-style keypoint arrays.
+    """
     bbox = (
         raw.get("bbox")
         or raw.get("box")
@@ -60,10 +68,19 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             y2 = bbox.get("y2")
 
             if None not in (x, y, w, h):
+                assert (
+                    x is not None and y is not None and w is not None and h is not None
+                )
                 return BoundingBox(
                     float(x), float(y), float(x) + float(w), float(y) + float(h)
                 )
             if None not in (x, y, x2, y2):
+                assert (
+                    x is not None
+                    and y is not None
+                    and x2 is not None
+                    and y2 is not None
+                )
                 return BoundingBox(float(x), float(y), float(x2), float(y2))
 
         if all(k in raw for k in ("x", "y", "w", "h")):
@@ -76,12 +93,24 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
             return BoundingBox(
                 float(raw["x1"]), float(raw["y1"]), float(raw["x2"]), float(raw["y2"])
             )
-    except (TypeError, ValueError):
+
+        if "keypoints" in raw and isinstance(raw["keypoints"], list):
+            kps = raw["keypoints"]
+            xs = [kps[i] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            ys = [kps[i + 1] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
+            if xs and ys:
+                return BoundingBox(float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys)))
+    except (TypeError, ValueError, IndexError):
         return None
+
+    return None
 
 
 def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord | None:
-    """Parse one raw annotation dictionary into an ``AnnotationRecord``."""
+    """Parse one raw annotation dictionary into an ``AnnotationRecord``.
+
+    Returns None when the raw item lacks a recognisable bounding box.
+    """
     bbox = parse_bbox(raw)
     if bbox is None:
         return None
@@ -105,4 +134,17 @@ def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord |
         or "person"
     )
 
-    return AnnotationRecord(image_key=str(image_key), class_name=class_name, bbox=bbox)
+    track_id_raw = raw.get("track_id") or raw.get("id") or raw.get("pedestrian_id")
+    track_id: int | None = None
+    if track_id_raw is not None:
+        try:
+            track_id = int(track_id_raw)
+        except (ValueError, TypeError):
+            pass
+
+    return AnnotationRecord(
+        image_key=str(image_key),
+        class_name=class_name,
+        bbox=bbox,
+        track_id=track_id,
+    )

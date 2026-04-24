@@ -1,10 +1,11 @@
-"""Core conversion logic from JRDB-style records to YOLO text files."""
+"""Conversion logic from JRDB-style annotation records to YOLO label files."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Iterable
 
+from ..formats.yolo_label import format_line
 from .types import AnnotationRecord, YoloBox
 
 
@@ -35,6 +36,7 @@ def to_yolo(
         y_center=_clamp(y_center, 0.0, 1.0),
         width=_clamp(width, 0.0, 1.0),
         height=_clamp(height, 0.0, 1.0),
+        track_id=record.track_id,
     )
 
 
@@ -49,8 +51,14 @@ def write_yolo_files(
     output_dir: Path,
     img_width: int,
     img_height: int,
+    *,
+    include_track_id: bool = True,
 ) -> tuple[int, int]:
-    """Write per-image YOLO label files; return (written_boxes, skipped_boxes)."""
+    """Write per-image YOLO label files; return ``(written_boxes, skipped_boxes)``.
+
+    Uses the shared ``format_line`` utility so that label format (5 vs 6
+    columns) is controlled from a single place.
+    """
     if output_dir.exists() and not output_dir.is_dir():
         raise NotADirectoryError(
             f"Output path exists and is not a directory: {output_dir}"
@@ -73,9 +81,14 @@ def write_yolo_files(
             continue
 
         image_key = _sanitize_image_key(record.image_key)
-        line = (
-            f"{yolo_box.class_id} {yolo_box.x_center:.6f} {yolo_box.y_center:.6f}"
-            f" {yolo_box.width:.6f} {yolo_box.height:.6f}"
+        line = format_line(
+            class_id=yolo_box.class_id,
+            x_center=yolo_box.x_center,
+            y_center=yolo_box.y_center,
+            width=yolo_box.width,
+            height=yolo_box.height,
+            track_id=yolo_box.track_id,
+            include_track_id=include_track_id,
         )
         buckets.setdefault(image_key, []).append(line)
 

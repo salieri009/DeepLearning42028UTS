@@ -63,6 +63,20 @@ python -m src.clearml_smoketest
 
 This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
 
+### Current Data Flow
+
+```mermaid
+graph LR
+    A[Google Drive DVC Remote] --> B[dvc pull]
+    B --> C[data/raw images]
+    C --> D[Preprocessing validation\nclasses.txt + label checks]
+    D --> E[Dataset split\ntrain / val / test]
+    E --> F[data.yaml]
+    F --> G[YOLO training\ntrain_yolo.py]
+    G --> H[Weights\nbest.pt / last.pt]
+    H --> I[Inference\ncollision_avoidance.py]
+```
+
 ### DVC Workflow Overview
 
 ```mermaid
@@ -283,3 +297,169 @@ For specific questions regarding the assignment specifications, contact the **su
   <br />
   <strong>UTS Deep Learning (42028) • Semester 1, 2026</strong>
 </p>
+
+---
+
+## Architecture
+
+The CrowdNav codebase follows a 4-layer architecture aligned to the class, flow, and sequence diagrams used for implementation planning.
+
+### Diagram 1: Class Structure (4 Layers)
+
+```mermaid
+classDiagram
+    direction TB
+
+    class BoundingBox {
+        +x_min: float
+        +y_min: float
+        +x_max: float
+        +y_max: float
+    }
+    class AnnotationRecord {
+        +image_key: str
+        +class_name: str
+    }
+    class YoloBox {
+        +class_id: int
+        +x_center: float
+        +y_center: float
+        +width: float
+        +height: float
+    }
+
+    class ConversionSummary {
+        +parsed: int
+        +invalid: int
+        +written: int
+        +exit_code: int
+    }
+    class io_utils {
+        <<module>>
+        +load_json()
+        +iter_raw_items()
+        +parse_bbox()
+        +parse_record()
+    }
+    class converter {
+        <<module>>
+        +to_yolo()
+        +write_yolo_files()
+    }
+
+    class DepthEstimator {
+        +focal_length: float
+        +known_height: float
+        +estimate()
+        +normalize()
+    }
+    class CollisionThresholds {
+        +safe_max: float
+        +warning_max: float
+    }
+    class CollisionAvoidance {
+        +evaluate()
+        +evaluate_many()
+    }
+    class AlertState {
+        <<enumeration>>
+        SAFE
+        WARNING
+        DANGER
+    }
+    class AlertDispatcher {
+        +visual_alert()
+        +audio_alert()
+        +dispatch()
+    }
+
+    class ClearMLSetup {
+        +init_clearml_task()
+        +log_hyperparams()
+        +log_metric()
+    }
+    class TrainPipeline {
+        +model_cfg: str
+        +data_yaml: str
+        +epochs: int
+        +imgsz: int
+        +train()
+        +validate()
+        +export()
+    }
+
+    note for BoundingBox "Layer 1 · DOMAIN\n(data.preprocessing.types)"
+    note for io_utils "Layer 2 · PREPROCESSING\n(data.preprocessing)"
+    note for DepthEstimator "Layer 3 · INFERENCE"
+    note for ClearMLSetup "Layer 4 · MLOPS"
+
+    AnnotationRecord --> BoundingBox : contains
+    AnnotationRecord --> YoloBox : converts to
+    io_utils --> AnnotationRecord : produces
+    io_utils --> converter : feeds
+    converter --> ConversionSummary : returns
+    DepthEstimator --> CollisionAvoidance : depth proxy
+    CollisionThresholds --> CollisionAvoidance : config
+    CollisionAvoidance --> AlertState : evaluates to
+    AlertState --> AlertDispatcher : consumed by
+    ClearMLSetup --> TrainPipeline : initializes
+```
+
+### Diagram 2: Real-Time Inference Flow (Edge Runtime)
+
+```mermaid
+flowchart TD
+    A([Camera Frame]) --> B[YOLOv8 Inference]
+    B --> C{Confidence\nThreshold}
+    C -->|fail| B
+    C -->|pass| D[BoundingBox Extraction]
+    D --> E[DepthEstimator\nestimate & normalize]
+    E --> F[CollisionAvoidance\nevaluate_many]
+    F --> G{AlertState}
+    G -->|SAFE| H[🟢 Visual: Green]
+    G -->|WARNING| I[🟡 Visual: Yellow\n🔔 Audio: Beep]
+    G -->|DANGER| J[🔴 Visual: Red\n🚨 Audio: Alarm]
+    H & I & J --> K[AlertDispatcher\ndispatch]
+    K --> L[(Local Frame Log)]
+    L --> A
+```
+
+### Diagram 3: Training Pipeline Sequence (YOLO + Keras)
+
+```mermaid
+sequenceDiagram
+    participant JRDB as JRDB Dataset
+    participant IO as io_utils (preprocessing)
+    participant Conv as converter (preprocessing)
+    participant Split as split_by_sequence
+    participant CML as ClearMLSetup
+
+    rect rgb(240,248,255)
+    note right of JRDB: Path A — YOLO Training
+    participant TP as TrainPipeline (YOLO)
+    participant YOut as YOLO ModelOut (.pt/.onnx)
+    JRDB->>IO: raw JSON / pseudo-labels
+    IO->>Conv: AnnotationRecord stream
+    Conv-->>Split: YOLO label files + classes.txt
+    Split-->>TP: train/val/test splits + data.yaml
+    TP->>CML: init_clearml_task()
+    loop Training Epochs
+        TP->>CML: log_metric(loss, mAP)
+    end
+    TP->>YOut: export()
+    end
+
+    rect rgb(255,248,240)
+    note right of Split: Path B — Keras Training (SageMaker)
+    participant COCO as yolo_to_coco converter
+    participant KT as train_keras (SageMaker)
+    participant KOut as Keras ModelOut (SavedModel)
+    Split-->>COCO: YOLO splits
+    COCO-->>KT: COCO JSON + images
+    KT->>CML: log_hyperparams()
+    loop Training Epochs
+        KT->>CML: log_metric(loss, mAP)
+    end
+    KT->>KOut: save model
+    end
+```

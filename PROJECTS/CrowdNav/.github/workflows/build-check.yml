@@ -28,7 +28,7 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install black flake8
+          pip install black flake8 ruff mypy
 
       - name: Check formatting with Black
         run: |
@@ -58,6 +58,22 @@ jobs:
             flake8 $TARGETS --max-line-length=88
           else
             echo "No Python source directories found to lint."
+          fi
+
+      - name: Lint with Ruff
+        run: |
+          if [ -d src ]; then
+            python -m ruff check src
+          else
+            echo "No src directory found to run Ruff."
+          fi
+
+      - name: Type check with Mypy (strict)
+        run: |
+          if [ -d src ]; then
+            python -m mypy --strict src
+          else
+            echo "No src directory found to run Mypy."
           fi
 
       # DVC / ClearML 환경 변수(Secret) 주입 가이드
