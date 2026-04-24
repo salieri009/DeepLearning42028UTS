@@ -1,60 +1,67 @@
+---
+last_updated: 2026-04-22
+related_code:
+  - scripts/train_yolo.py
+  - scripts/automate_preprocessing.py
+  - src/data/preprocessing/
+  - src/data/split_by_sequence.py
+  - src/inference/
+  - src/mlops/train_pipeline.py
+related_diagram:
+  - PROJECTS/sysml/System_Architecture_Documentation.md
+---
+
 # Technical Specification Document
 
-## 1. Introduction
-**Project:** Crowd Detection and Accessibility Navigation for Disabilities While Travelling
-**Purpose of Document:** This document serves as the Technical Specification (Tech Spec) outlining the system architecture, model components, data pipeline, and key technical decisions necessary to build and deploy the application.
+## 1. Scope
+This document defines the implemented technical baseline for CrowdNav as of the current branch state.
 
-## 2. System Architecture Overview
-The system is divided into three primary components:
-1. **Frontend / Application Layer:** A Web or Mobile GUI for end-users to query routes and receive visual/audio feedback.
-2. **Backend Server / API:** Handles incoming video streams or static image requests, coordinates inference, and processes the results into actionable navigation data.
-3. **Deep Learning Inference Pipeline:** The core engine executing Object Detection and Crowd Density Estimation models.
+## 2. Runtime Architecture
+The codebase currently follows four implementation layers:
+1. Domain Types: typed records for annotation and bbox data.
+2. Preprocessing: JSON parse, validation, YOLO label conversion, split generation.
+3. Inference: proximity score evaluation and alert dispatch.
+4. MLOps: train/validate/export orchestration and optional tracking hooks.
 
-## 3. Deep Learning Pipeline
-The pipeline utilizes a single-stage object detector optimized for real-time inference on edge devices, coupled with a depth-heuristic logic layer.
+## 3. Implemented Model/Training Stack
+- Detector family: Ultralytics YOLO (`yolov8x.pt` currently referenced in scripts).
+- Training wrapper: `TrainPipeline` in `src/mlops/train_pipeline.py`.
+- CLI entrypoint: `scripts/train_yolo.py`.
+- Export path: model export via `--export` argument (for example `onnx`).
 
-### 3.1 Object Detection & Proximity Model
-*   **Architecture:** Keras / TensorFlow-based CNN (e.g., MobileNet or EfficientDet variants for low latency).
-*   **Purpose:** To detect individuals, wheelchairs, and navigational obstacles (e.g., luggage) from a low-vantage POV.
-*   **Training Strategy:** Transfer learning using a pre-trained base model. Fine-tuning on curated pedestrian and mobility aid images from JRDB.
-*   **Inputs:** RGB frames ($640 \times 640$).
-*   **Outputs:** Bounding boxes, class labels, and proximity risk estimations.
+## 4. Data Pipeline
+### 4.1 Conversion
+- Source: JRDB-style JSON annotations.
+- Converter: `src/data/preprocessing/*` and wrapper `src/data/jrdb_to_yolo.py`.
+- Output: per-image YOLO `.txt` labels and `classes.txt`.
 
-### 3.2 Proximity & Alerting Logic
-*   **Mechanism:** Bounding-Box Scaling Heuristic.
-*   **Logic:** Instead of complex depth mapping, the system calculates the area of detected bounding boxes relative to the total frame area.
-*   **Thresholding:**
-    *   **Level 1 (Warning):** Target box height > 40% of frame height.
-    *   **Level 2 (Critical):** Target box height > 60% of frame height.
-*   **Justification:** For a fixed wheelchair POV, the vertical scale of a pedestrian correlates strongly with physical proximity.
+### 4.2 Validation and Batch Run
+- Orchestrator: `scripts/automate_preprocessing.py`.
+- Supports DVC pull, recursive conversion, validation-only mode, and JSON report output.
 
-## 4. Data Processing & Pipeline
-### 4.1 Data Sources
-*   **Primary Dataset:** JRDB (Stanford Drone / Social Force dataset) — provides annotated pedestrian sequences suitable for crowd detection and proximity estimation.
-*   **Custom POV Data:** Targeted collection of video from wheelchair height to calibrate proximity thresholds.
+### 4.3 Split and Training YAML
+- Split script: `src/data/split_by_sequence.py`.
+- Output root: `data/processed/splits/`.
+- Expected generated artifact: `data.yaml` consumed by YOLO training.
 
-### 4.2 Preprocessing Pipeline
-1.  **Resizing and Normalization:** Standardize input frames to model-specific dimensions (e.g., $640 \times 640$ for YOLO).
-2.  **Data Augmentation:** Apply random cropping, horizontal flipping, brightness/contrast adjustments, and mosaic augmentation to improve model robustness across various lighting and camera angles.
-3.  **Proximity Calibration:** Use custom POV data to calibrate bounding-box size thresholds against known physical distances.
+## 5. Inference Logic
+- Core module: `src/inference/collision_avoidance.py`.
+- States: `SAFE`, `WARNING`, `DANGER`.
+- Optional helper modules: `depth_estimator.py`, `alert_dispatcher.py`.
+- Input assumption: normalized bbox geometry from detector output.
 
-## 5. Software Stack & Dependencies
-*   **Deep Learning Framework:** Keras / TensorFlow.
-*   **Computer Vision Libraries:** OpenCV (frame extraction, preprocessing).
-*   **Backend & Cloud Infrastructure:** AWS (for model training, hosting, and inference endpoints). FastAPI or Flask can wrap the API.
-*   **Frontend Technologies:** React Native.
+## 6. Tooling and Quality Gates
+- Python environment managed via `requirements.txt`.
+- Lint/type expectations referenced in architecture notes: `ruff` and `mypy --strict`.
+- DVC used for large data and model artifact flow.
 
-## 6. Real-Time Inference Criteria
-*   **Hardware Accelerator:** GPU (CUDA compatible) required for latency-sensitive processing.
-*   **Latency Target:** Processing time per frame under 100ms (10 FPS) to maintain "real-time" responsiveness for navigation.
-*   **Optimization:** Deploy Keras models to GPU-backed AWS endpoints (e.g., SageMaker GPU inference endpoints or ECS/EC2 with NVIDIA GPUs). If an ONNX/TFLite CPU deployment is used, it should be treated as a smaller-model fallback path with different latency expectations rather than the primary real-time serving path.
+## 7. Open Technical Gaps
+- Frontend/API contract is not yet implemented in code.
+- End-to-end runtime pipeline integration (camera -> detector -> UI) is still partial.
+- Production deployment hardening is pending.
 
-## 7. API Design Outline (Draft)
-*   `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and proximity risk scores.
-*   **Response Format:** JSON containing `obstacles: []`, `max_proximity_risk: "CRITICAL|WARNING|SAFE"`, and `recommendation: "STOP|CAUTION|PROCEED"`.
-
-## 8. Development & Evaluation Plan
-*   **Metrics:** 
-    *   Object Detection: Mean Average Precision (mAP) @ IoU=0.5.
-    *   Crowd Estimation: Mean Absolute Error (MAE) and Mean Squared Error (MSE).
-*   **Evaluation Phase:** Conduct offline evaluation against validation sets followed by simulated live-stream testing.
+## Review Request Guide
+- Include exact command(s) used and their arguments.
+- Include artifact paths produced by the run.
+- Include metric summary for any train/validate change.
+- Link architecture doc section if interfaces or layer boundaries changed.

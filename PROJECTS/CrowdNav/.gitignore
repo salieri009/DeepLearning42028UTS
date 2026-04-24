@@ -29,11 +29,18 @@ desktop.ini
 # Jupyter Notebook
 .ipynb_checkpoints/
 
-# Data and models managed by DVC
-data/processed/
+# Data and models managed by DVC (top-level only, not src/data/)
+/data/
 models/*.pt
 models/*.onnx
 models/*.pth
+
+# Model weight files (anywhere in repo — do NOT commit large binaries)
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
 
 # Logs and checkpoints
 *.log
@@ -41,6 +48,12 @@ models/*.pth
 *.ckpt
 *.h5
 *.hdf5
+
+# Training / experiment outputs (large)
+/runs/
+
+# Local scratch (non-source)
+/scratch/
 
 # Frontend and mobile build outputs
 node_modules/

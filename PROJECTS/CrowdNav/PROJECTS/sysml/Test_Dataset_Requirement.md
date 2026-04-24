@@ -1,3 +1,11 @@
+---
+last_updated: 2026-04-22
+related_code:
+	- src/data/
+related_diagram:
+	- PROJECTS/sysml/System_Architecture_Documentation.md
+---
+
 # Human Object Detection Test Dataset Requirement
 
 ## Requirement / 요구사항
@@ -71,3 +79,9 @@ Each sample must include:
 - [ ] Sample 18
 - [ ] Sample 19
 - [ ] Sample 20
+
+## Review Request Guide
+- Include sample inventory source and version.
+- Include annotation schema check result.
+- Include who verified image-label consistency.
+- Include any sample replacement reason for traceability.

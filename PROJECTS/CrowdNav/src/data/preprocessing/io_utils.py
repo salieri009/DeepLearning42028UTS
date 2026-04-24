@@ -1,4 +1,4 @@
-"""PreprocessingLayer IO utilities for JRDB-style annotation JSON files."""
+"""IO utilities for JRDB-style annotation JSON files."""
 
 from __future__ import annotations
 
@@ -7,32 +7,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .types import AnnotationRecord, BoundingBox
-
-
-class IOUtils:
-    """Class-based skeleton interface for preprocessing input helpers."""
-
-    def __init__(self) -> None:
-        """Initialize IOUtils skeleton interface."""
-        raise NotImplementedError("IOUtils skeleton is not implemented yet.")
-
-    def load_json(self, path: Path) -> Any:
-        """Load and decode a JSON payload from disk."""
-        raise NotImplementedError("IOUtils.load_json is not implemented yet.")
-
-    def iter_raw_items(self, data: Any) -> Iterable[dict[str, Any]]:
-        """Iterate raw annotation records from heterogeneous container shapes."""
-        raise NotImplementedError("IOUtils.iter_raw_items is not implemented yet.")
-
-    def parse_bbox(self, raw: dict[str, Any]) -> BoundingBox | None:
-        """Parse one raw dictionary into a normalized bounding box."""
-        raise NotImplementedError("IOUtils.parse_bbox is not implemented yet.")
-
-    def parse_record(
-        self, raw: dict[str, Any], fallback_index: int
-    ) -> AnnotationRecord | None:
-        """Parse one raw dictionary into an annotation record."""
-        raise NotImplementedError("IOUtils.parse_record is not implemented yet.")
 
 
 def load_json(path: Path) -> Any:
@@ -47,7 +21,11 @@ def load_json(path: Path) -> Any:
 
 
 def iter_raw_items(data: Any) -> Iterable[dict[str, Any]]:
-    """Yield dictionary items from common JRDB-like container structures."""
+    """Yield dict items from common JRDB-like container structures.
+
+    Handles top-level lists, or dicts with ``annotations`` / ``labels`` /
+    ``items`` / ``frames`` keys.
+    """
     if isinstance(data, list):
         for item in data:
             if isinstance(item, dict):
@@ -67,7 +45,11 @@ def iter_raw_items(data: Any) -> Iterable[dict[str, Any]]:
 
 
 def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
-    """Parse a bounding box from heterogeneous key conventions."""
+    """Parse a bounding box from heterogeneous key conventions.
+
+    Tries nested bbox dict (``bbox`` / ``box`` / ``2d_bbox`` / ``rect``),
+    flat ``x/y/w/h`` or ``x1/y1/x2/y2`` keys, and COCO-style keypoint arrays.
+    """
     bbox = (
         raw.get("bbox")
         or raw.get("box")
@@ -114,7 +96,6 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
 
         if "keypoints" in raw and isinstance(raw["keypoints"], list):
             kps = raw["keypoints"]
-            # Extract x, y where visibility/confidence flag (usually 3rd element) > 0
             xs = [kps[i] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
             ys = [kps[i + 1] for i in range(0, len(kps), 3) if i + 2 < len(kps) and kps[i + 2] > 0]
             if xs and ys:
@@ -126,7 +107,10 @@ def parse_bbox(raw: dict[str, Any]) -> BoundingBox | None:
 
 
 def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord | None:
-    """Parse one raw annotation dictionary into an ``AnnotationRecord``."""
+    """Parse one raw annotation dictionary into an ``AnnotationRecord``.
+
+    Returns None when the raw item lacks a recognisable bounding box.
+    """
     bbox = parse_bbox(raw)
     if bbox is None:
         return None
@@ -150,4 +134,17 @@ def parse_record(raw: dict[str, Any], fallback_index: int) -> AnnotationRecord |
         or "person"
     )
 
-    return AnnotationRecord(image_key=str(image_key), class_name=class_name, bbox=bbox)
+    track_id_raw = raw.get("track_id") or raw.get("id") or raw.get("pedestrian_id")
+    track_id: int | None = None
+    if track_id_raw is not None:
+        try:
+            track_id = int(track_id_raw)
+        except (ValueError, TypeError):
+            pass
+
+    return AnnotationRecord(
+        image_key=str(image_key),
+        class_name=class_name,
+        bbox=bbox,
+        track_id=track_id,
+    )

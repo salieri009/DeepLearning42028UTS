@@ -63,6 +63,20 @@ python -m src.clearml_smoketest
 
 This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
 
+### Current Data Flow
+
+```mermaid
+graph LR
+    A[Google Drive DVC Remote] --> B[dvc pull]
+    B --> C[data/raw images]
+    C --> D[Preprocessing validation\nclasses.txt + label checks]
+    D --> E[Dataset split\ntrain / val / test]
+    E --> F[data.yaml]
+    F --> G[YOLO training\ntrain_yolo.py]
+    G --> H[Weights\nbest.pt / last.pt]
+    H --> I[Inference\ncollision_avoidance.py]
+```
+
 ### DVC Workflow Overview
 
 ```mermaid
@@ -314,13 +328,21 @@ classDiagram
         +height: float
     }
 
-    class PreprocessingCLI {
+    class ConversionSummary {
+        +parsed: int
+        +invalid: int
+        +written: int
+        +exit_code: int
+    }
+    class io_utils {
+        <<module>>
         +load_json()
         +iter_raw_items()
         +parse_bbox()
         +parse_record()
     }
-    class Converter {
+    class converter {
+        <<module>>
         +to_yolo()
         +write_yolo_files()
     }
@@ -367,14 +389,15 @@ classDiagram
     }
 
     note for BoundingBox "Layer 1 · DOMAIN\n(data.preprocessing.types)"
-    note for PreprocessingCLI "Layer 2 · PREPROCESSING"
+    note for io_utils "Layer 2 · PREPROCESSING\n(data.preprocessing)"
     note for DepthEstimator "Layer 3 · INFERENCE"
     note for ClearMLSetup "Layer 4 · MLOPS"
 
     AnnotationRecord --> BoundingBox : contains
     AnnotationRecord --> YoloBox : converts to
-    PreprocessingCLI --> AnnotationRecord : produces
-    PreprocessingCLI --> Converter : feeds
+    io_utils --> AnnotationRecord : produces
+    io_utils --> converter : feeds
+    converter --> ConversionSummary : returns
     DepthEstimator --> CollisionAvoidance : depth proxy
     CollisionThresholds --> CollisionAvoidance : config
     CollisionAvoidance --> AlertState : evaluates to
@@ -401,27 +424,42 @@ flowchart TD
     L --> A
 ```
 
-### Diagram 3: Training Pipeline Sequence
+### Diagram 3: Training Pipeline Sequence (YOLO + Keras)
 
 ```mermaid
 sequenceDiagram
     participant JRDB as JRDB Dataset
-    participant CLI as PreprocessingCLI
-    participant Conv as Converter
+    participant IO as io_utils (preprocessing)
+    participant Conv as converter (preprocessing)
+    participant Split as split_by_sequence
     participant CML as ClearMLSetup
-    participant TP as TrainPipeline
-    participant Model as ModelOut (ONNX/NCNN)
 
-    JRDB->>CLI: raw JSON annotations
-    CLI->>Conv: AnnotationRecord stream
-    Conv-->>TP: YOLO label files + classes.txt
+    rect rgb(240,248,255)
+    note right of JRDB: Path A — YOLO Training
+    participant TP as TrainPipeline (YOLO)
+    participant YOut as YOLO ModelOut (.pt/.onnx)
+    JRDB->>IO: raw JSON / pseudo-labels
+    IO->>Conv: AnnotationRecord stream
+    Conv-->>Split: YOLO label files + classes.txt
+    Split-->>TP: train/val/test splits + data.yaml
     TP->>CML: init_clearml_task()
-    CML-->>TP: Task handle
-    TP->>CML: log_hyperparams(epochs, imgsz)
     loop Training Epochs
         TP->>CML: log_metric(loss, mAP)
     end
-    TP->>TP: validate()
-    TP->>Model: export()
-    Model-->>TP: model artifacts
+    TP->>YOut: export()
+    end
+
+    rect rgb(255,248,240)
+    note right of Split: Path B — Keras Training (SageMaker)
+    participant COCO as yolo_to_coco converter
+    participant KT as train_keras (SageMaker)
+    participant KOut as Keras ModelOut (SavedModel)
+    Split-->>COCO: YOLO splits
+    COCO-->>KT: COCO JSON + images
+    KT->>CML: log_hyperparams()
+    loop Training Epochs
+        KT->>CML: log_metric(loss, mAP)
+    end
+    KT->>KOut: save model
+    end
 ```

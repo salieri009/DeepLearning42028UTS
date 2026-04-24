@@ -24,6 +24,9 @@ desktop.ini
 # Project Data & Models
 /data/raw/*
 !/data/raw/.gitkeep
+
+# CrowdNav (monorepo path): do not commit raw image frames; use DVC or local only
+PROJECTS/CrowdNav/data/raw/images/
 /data/processed/*
 !/data/processed/.gitkeep
 /models/*
@@ -36,6 +39,9 @@ desktop.ini
 *.pth
 *.h5
 *.hdf5
+
+# Training / experiment outputs (large)
+/runs/
 
 
 # Node.js and React Native

@@ -1,8 +1,23 @@
-# `/models`
+---
+last_updated: 2026-04-22
+related_code:
+	- scripts/train_yolo.py
+	- src/mlops/train_pipeline.py
+related_diagram:
+	- PROJECTS/sysml/System_Architecture_Documentation.md
+---
 
-This directory is used to store trained model weights and checkpoints (`.pt`, `.onnx`).
+# /models
+
+Storage location for trained model artifacts (for example `.pt`, `.onnx`, `.ncnn`).
 
 ## Guidelines
-- Avoid committing large weight files directly to the repository unless necessary for inference.
-- Use tools like DVC (Data Version Control) or standard cloud storage for large model artifacts if they exceed GitHub limits.
-- Save intermediate training checkpoints here during longer runs.
+- Keep large artifacts in DVC-managed storage where possible.
+- Keep naming tied to run context (model, date, dataset version).
+- Do not overwrite baseline weights without version note.
+
+## Review Request Guide
+- Include source training run (command and config).
+- Include exact exported format and file name.
+- Include validation metric summary for the artifact.
+- State whether artifact is tracked via DVC.
