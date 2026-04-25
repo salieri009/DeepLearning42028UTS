@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.mlops.train_pipeline import TrainPipeline, default_model_path
+from src.mlops.training_device import describe_runtime, resolve_training_device
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,7 +30,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size")
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
-    parser.add_argument("--device", default=None, help="Device to use, for example cpu, 0, or 0,1")
+    parser.add_argument(
+        "--device",
+        default=None,
+        help=(
+            "Ultralytics device: cpu, 0, cuda:0, etc. "
+            "If omitted: CROWDNAV_DEVICE env, else CUDA:0 if available, else cpu."
+        ),
+    )
     parser.add_argument(
         "--workers",
         type=int,
@@ -60,13 +68,16 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
 
+    device = resolve_training_device(args.device)
+    print(f"[CrowdNav] runtime={describe_runtime()} device={device!r} (set --device or CROWDNAV_DEVICE to override auto)")
+
     pipeline = TrainPipeline(
         model_cfg=args.model_cfg,
         data_yaml=str(args.data_yaml),
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
-        device=args.device,
+        device=device,
         project=args.project,
         name=args.name,
         patience=args.patience,

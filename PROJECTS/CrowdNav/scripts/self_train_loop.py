@@ -19,8 +19,9 @@ from pathlib import Path
 
 from src.data.prepare import pseudo_label as pseudo_label_api
 from src.data.prepare import split as split_api
-from src.mlops.train_pipeline import TrainPipeline
 from src.mlops.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
+from src.mlops.train_pipeline import TrainPipeline
+from src.mlops.training_device import describe_runtime, resolve_training_device
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run a multi-cycle self-training loop (train->relabel->split).")
     p.add_argument("--cycles", type=int, default=5, help="Number of self-training cycles")
     p.add_argument("--base-model", type=str, default="yolov8m.pt", help="Base model for cycle 0")
-    p.add_argument("--device", type=str, default="0", help="Training device for Ultralytics (e.g. 0, 0,1, cpu)")
+    p.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Training device; if omitted, same auto rule as train_yolo (CUDA 0 or cpu).",
+    )
     p.add_argument("--epochs", type=int, default=15, help="Epochs per cycle")
     p.add_argument("--imgsz", type=int, default=640, help="Training image size")
     p.add_argument("--batch", type=int, default=16, help="Training batch size")
@@ -105,6 +111,9 @@ def _count_split_pairs(splits_dir: Path, split_name: str) -> int:
 def main() -> int:
     args = build_parser().parse_args()
 
+    train_device = resolve_training_device(args.device)
+    print(f"[CrowdNav] self_train runtime={describe_runtime()} device={train_device!r}")
+
     model_for_cycle = args.base_model
     for cycle in range(args.cycles):
         started = time.time()
@@ -116,7 +125,7 @@ def main() -> int:
             epochs=args.epochs,
             imgsz=args.imgsz,
             batch=args.batch,
-            device=args.device,
+            device=train_device,
             project=args.project,
             name=run_name,
             patience=args.patience,

@@ -267,18 +267,23 @@ data/processed/splits/
 
 ### Step 7 — GPU training (no S3)
 
-> **S3는 필수가 아님.** EC2 (예: g6.xlarge) EBS, 로컬 디스크, 또는 Docker 볼륨에 `data/processed/splits/` 를 두고 학습.
+> **S3는 필수가 아님.** **AWS SageMaker**에서 **ml.g6.xlarge** (또는 GPU xlarge) **노트북/스튜디오 인스턴스**에 리포를 두고 **인스턴스에서 직접** `train_yolo.py` 를 실행하거나, **로컬 PC (CUDA)** 에서 동일 스크립트를 실행.
 
-#### Path A: YOLO (Ultralytics) — default
+- **장치:** `--device` 를 생략하면 `src/mlops/training_device.py` 가 CUDA 사용 가능 시 GPU, 아니면 CPU 를 고름. 로컬에서 CPU만 쓰려면 `--device cpu` 또는 `CROWDNAV_DEVICE=cpu`.
+- **데이터:** EBS(SageMaker), 로컬 디스크, Docker 볼륨 등 **디스크**에 `data/processed/splits/`.
 
-1. GPU 머신에 리포 + `data/processed/splits/` 를 둔다 (`data.yaml` 의 `path: .` 유지).
-2. `PROJECTS/CrowdNav` 에서:
+#### Path A: YOLO (Ultralytics) — default (SageMaker xlarge **또는** local CUDA, 동일 명령)
+
+1. `PROJECTS/CrowdNav` 로 이동, `data/processed/splits/` 준비 (`data.yaml` 의 `path: .` 유지).
+2. 실행 (GPU 자동이면 `--device` 생략 가능):
 
 ```bash
 python scripts/train_yolo.py \
   --data-yaml data/processed/splits/data.yaml \
   --model-cfg yolov8m.pt \
-  --epochs 100 --batch 16 --workers 4 --device 0
+  --epochs 100 --batch 16 --workers 4
+# 명시 GPU: add --device 0
+# 명시 CPU:  --device cpu
 ```
 
 #### Path B: Keras (COCO JSON) — optional skeleton
