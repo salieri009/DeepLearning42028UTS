@@ -42,7 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--workers",
         type=int,
         default=4,
-        help="DataLoader workers (keep low on 16GB RAM instances, e.g. g6.xlarge)",
+        help="DataLoader workers (keep low on 16 GB system RAM, e.g. ml.g4dn.xlarge)",
     )
     parser.add_argument("--project", default="runs/train", help="Ultralytics project output directory")
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")

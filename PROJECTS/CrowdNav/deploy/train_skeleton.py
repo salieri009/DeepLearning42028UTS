@@ -9,20 +9,16 @@ import os
 
 from tensorflow import keras
 
-# ClearML은 데이터 전처리 단계에서 임시 비활성화.
-# from clearml import Task
+# Optional: from clearml import Task
 
 # ==============================================================================
-# AWS SageMaker 전용 뼈대(Skeleton) 학습 스크립트.
-# 향후 Jupyter에서 테스트한 코드를 이 스크립트로 옮기면 SageMaker가 호출함.
+# Legacy SageMaker/Keras placeholder — prefer scripts/train_yolo.py for YOLO.
 # ==============================================================================
 
 
 def train_model():
     parser = argparse.ArgumentParser()
-    # SageMaker 환경 변수:
-    # - SM_MODEL_DIR: 모델 저장 경로 (SageMaker가 있으면 아티팩트로 수집)
-    # - SM_CHANNEL_TRAINING: 학습 데이터 마운트 경로
+    # SageMaker env: SM_MODEL_DIR, SM_CHANNEL_TRAINING (or local paths)
     parser.add_argument("--model-dir", type=str, default=os.environ.get("SM_MODEL_DIR", "/opt/ml/model"))
     parser.add_argument(
         "--train-data",
@@ -31,7 +27,7 @@ def train_model():
     )
     args = parser.parse_args()
 
-    # ClearML (현재 미사용)
+    # ClearML (optional)
     # task = Task.init(
     #     project_name="CrowdNav/Collision-Avoidance",
     #     task_name="SageMaker_YOLO_Training_Run",
@@ -46,13 +42,13 @@ def train_model():
             keras.layers.MaxPooling2D((2, 2)),
             keras.layers.Flatten(),
             keras.layers.Dense(64, activation="relu"),
-            keras.layers.Dense(3, activation="softmax"),  # 예: SAFE / WARNING / DANGER
+            keras.layers.Dense(3, activation="softmax"),  # e.g. SAFE / WARNING / DANGER
         ]
     )
 
     model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
-    # 스모크 테스트용 가짜 데이터; 실제로는 args.train_data에서 로드
+    # Random smoke data; load from args.train_data in a real run
     import numpy as np
 
     x_train = np.random.random((10, 224, 224, 3))

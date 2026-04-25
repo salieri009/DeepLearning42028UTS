@@ -102,25 +102,21 @@ graph TD
 ```
 
 <details>
-<summary><strong>한국어 안내 (접기/펼치기)</strong></summary>
+<summary><strong>DVC vs Git (expand)</strong></summary>
 
-### 1. 역할 분담 요약
-*   **Git (GitHub):** 파이썬 코드, 프로젝트 문서, 그리고 데이터가 구글 드라이브의 어디에 어떤 버전으로 있는지 가리키는 **이름표(메타데이터, `*.dvc`)**만 관리합니다.
-*   **DVC (Google Drive):** 수천 장의 YOLO 학습용 이미지, 라벨링 파일 등 실제 **무거운 알맹이 데이터**를 저장하고 보관합니다.
+### Roles
+- **Git (GitHub):** Source code, docs, and small **pointers** (`*.dvc`) that record where a dataset version lives in remote storage.
+- **DVC (e.g. Google Drive):** Stores large blobs—images, labels, checkpoints—not suitable for Git.
 
-### 2. 구글 드라이브 내부 구조 (주의사항)
-구글 드라이브 연동 폴더를 웹 브라우저로 확인하면 `images/`, `labels/` 같은 직관적인 구조 대신 `4f/`, `a2/` 같은 해시(Hash) 값 폴더들만 보입니다.
-> [!WARNING]
-> **절대로 구글 드라이브 웹사이트에서 직접 파일을 수정하거나 이동하지 마세요.**
-> DVC는 버전 관리를 위해 데이터를 최적화된 방식(캐시)으로 변환하여 저장합니다. 데이터 업로드/다운로드는 오직 `dvc push`, `dvc pull` 명령어를 통해서만 수행해야 합니다.
+### Drive layout
+In the web UI you may see hash folders (`4f/`, `a2/`) instead of `images/`, `labels/`. **Do not move or edit those files in the browser.** DVC owns the cache layout. Use only `dvc push` and `dvc pull` to transfer data.
 
-### 3. 실제 협업 흐름 (POV 데이터 추가 예시)
-팀원이 새로운 POV 이미지 100장을 추가하는 과정은 다음과 같습니다:
-1.  **로컬 추가:** 새로운 이미지를 `data/raw/`에 넣습니다.
-2.  **데이터 트래킹:** `dvc add data/raw`를 실행하면 실제 데이터는 구글 드라이브로 올라갈 준비를 하고, 로컬의 `data/raw.dvc` 파일(포인터)이 업데이트됩니다.
-3.  **데이터 업로드:** `dvc push`를 통해 무거운 데이터만 구글 드라이브 창고로 바로 쏩니다.
-4.  ** Git 공유:** 가벼운 `data/raw.dvc` 파일만 `git commit` 후 GitHub에 올립니다.
-5.  **팀원 수령:** 다른 팀원이 `git pull` 후 `dvc pull`을 치면, 지알아서 구글 드라이브 창고에서 최신 데이터를 다운로드하여 로컬 폴더를 동기화합니다.
+### Example: add POV images
+1. Add files under `data/raw/`.
+2. `dvc add data/raw` — updates the pointer and stages remote upload.
+3. `dvc push` — uploads bulk data to the remote.
+4. `git add` the `.dvc` files, commit, `git push`.
+5. Teammates: `git pull` then `dvc pull` to materialize the same data locally.
 
 </details>
 

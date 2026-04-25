@@ -54,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--workers",
         type=int,
         default=4,
-        help="DataLoader workers (keep low on 16GB RAM, e.g. g6.xlarge)",
+        help="DataLoader workers (keep low on 16GB system RAM, e.g. ml.g4dn.xlarge)",
     )
     p.add_argument("--labels-dir", type=Path, default=Path("data/processed/labels"), help="Pseudo-label output dir")
     p.add_argument("--splits-dir", type=Path, default=Path("data/processed/splits"), help="Split output dir")

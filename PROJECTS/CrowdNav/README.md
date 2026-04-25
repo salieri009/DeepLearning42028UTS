@@ -40,11 +40,11 @@ python src/data/pseudo_label_yolov8.py --src-dir data/raw/images --out-dir data/
 
 # split dataset (train/val/test) for training
 # run once per camera view and merge into one splits/ folder via --stem-prefix
-python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_0 --output-dir data/processed/splits --stem-prefix image0 --train-ratio 0.7 --val-ratio 0.2 --seed 42
-python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_2 --output-dir data/processed/splits --stem-prefix image2 --train-ratio 0.7 --val-ratio 0.2 --seed 42
+python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_0 --output-dir data/processed/splits --stem-prefix image0 --train-ratio 0.8 --val-ratio 0.1 --seed 42
+python src/data/split_by_sequence.py --src-labels data/processed/labels --src-images data/raw/images/image_2 --output-dir data/processed/splits --stem-prefix image2 --train-ratio 0.8 --val-ratio 0.1 --seed 42
 
-# train / validate / export YOLO model
-python scripts/train_yolo.py --model-cfg yolov8x.pt --data-yaml data/processed/splits/data.yaml --epochs 5 --imgsz 640 --export onnx
+# train / validate / export YOLO model (SageMaker ml.g4dn.xlarge or local CUDA: omit --device for auto)
+python scripts/train_yolo.py --model-cfg yolov8m.pt --data-yaml data/processed/splits/data.yaml --epochs 100 --imgsz 640 --export onnx
 
 # Keras path: YOLO splits -> COCO JSON
 python -m src.data.prepare.yolo_to_coco --splits-dir data/processed/splits --out-dir data/processed/coco
