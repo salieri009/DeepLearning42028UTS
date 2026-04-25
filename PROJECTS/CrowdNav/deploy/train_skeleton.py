@@ -21,7 +21,7 @@ from tensorflow import keras
 def train_model():
     parser = argparse.ArgumentParser()
     # SageMaker 환경 변수:
-    # - SM_MODEL_DIR: 모델 저장 경로 (S3 업로드)
+    # - SM_MODEL_DIR: 모델 저장 경로 (SageMaker가 있으면 아티팩트로 수집)
     # - SM_CHANNEL_TRAINING: 학습 데이터 마운트 경로
     parser.add_argument("--model-dir", type=str, default=os.environ.get("SM_MODEL_DIR", "/opt/ml/model"))
     parser.add_argument(

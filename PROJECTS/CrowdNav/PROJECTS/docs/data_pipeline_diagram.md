@@ -90,16 +90,16 @@ flowchart TD
     end
 
     subgraph SPLIT["Train/Val/Test Split\nsrc/data/split_by_sequence.py"]
-        F["Sequence-level split\nTrain 70% / Val 20% / Test 10%"]
+        F["Sequence-level split\nTrain 80% / Val 10% / Test 10%"]
         F1["data/processed/train/images+labels"]
         F2["data/processed/val/images+labels"]
         F3["data/processed/test/images+labels"]
     end
 
-    subgraph SAGEMAKER["AWS SageMaker Training"]
-        G1["Upload data/processed/ -> S3"]
-        G2["Launch Training Job\nusing data.yaml + yolov8x.pt"]
-        G3["YOLOv8 Fine-tuning\nPerson class on JRDB"]
+    subgraph GPU_TRAIN["GPU training (EC2 / local / Docker)"]
+        G1["Data on disk: data/processed/splits/\n(no S3 required)"]
+        G2["train_yolo.py + data.yaml (path: .)"]
+        G3["YOLOv8m Fine-tuning\nPerson class on JRDB"]
         G4["Output: Fine-tuned model .pt / .onnx"]
     end
 
@@ -238,14 +238,14 @@ python src/data/split_by_sequence.py \
   --src-images data/raw/images/image_0 \
   --output-dir data/processed/splits \
   --stem-prefix image0 \
-  --train-ratio 0.7 --val-ratio 0.2 --seed 42
+  --train-ratio 0.8 --val-ratio 0.1 --seed 42
 
 python src/data/split_by_sequence.py \
   --src-labels data/processed/labels \
   --src-images data/raw/images/image_2 \
   --output-dir data/processed/splits \
   --stem-prefix image2 \
-  --train-ratio 0.7 --val-ratio 0.2 --seed 42
+  --train-ratio 0.8 --val-ratio 0.1 --seed 42
 ```
 
 분할 결과:
@@ -265,45 +265,32 @@ data/processed/splits/
 
 ---
 
-### Step 7 — AWS SageMaker Training
+### Step 7 — GPU training (no S3)
 
-> **AWS SageMaker 팀이 관여하는 구간입니다.**
+> **S3는 필수가 아님.** EC2 (예: g6.xlarge) EBS, 로컬 디스크, 또는 Docker 볼륨에 `data/processed/splits/` 를 두고 학습.
 
-#### Path A: YOLO Training (Ultralytics)
+#### Path A: YOLO (Ultralytics) — default
 
-1. `data/processed/splits/` 전체를 **S3 버킷에 업로드**합니다.
-2. `data.yaml`의 `path:` 항목을 S3 경로로 업데이트합니다.
-3. SageMaker Training Job 실행:
-
-```python
-# SageMaker에서 사용할 data.yaml 구조
-path: s3://<your-bucket>/crowdnav/processed/splits
-train: train/images
-val: val/images
-test: test/images
-nc: 1
-names: ["person"]
-```
+1. GPU 머신에 리포 + `data/processed/splits/` 를 둔다 (`data.yaml` 의 `path: .` 유지).
+2. `PROJECTS/CrowdNav` 에서:
 
 ```bash
-python deploy/train_skeleton.py \
-  --model yolov8x.pt \
-  --data s3://.../data.yaml \
-  --epochs 50 \
-  --imgsz 640
+python scripts/train_yolo.py \
+  --data-yaml data/processed/splits/data.yaml \
+  --model-cfg yolov8m.pt \
+  --epochs 100 --batch 16 --workers 4 --device 0
 ```
 
-#### Path B: Keras Training (COCO JSON)
+#### Path B: Keras (COCO JSON) — optional skeleton
 
-1. `data/processed/coco/*.json` + `data/processed/splits/{train,val,test}/images`를 S3로 업로드합니다.
-2. SageMaker Training Job 실행 (Keras entry-point):
+`data/processed/coco/*.json` 과 이미지 루트를 **같은 머신의 경로**에 둔 뒤:
 
 ```bash
 python deploy/train_keras_skeleton.py \
-  --train-json /opt/ml/input/data/training/coco/train.json \
-  --val-json /opt/ml/input/data/training/coco/val.json \
-  --images-root /opt/ml/input/data/training/splits \
-  --epochs 1 \
+  --train-json /path/to/coco/train.json \
+  --val-json /path/to/coco/val.json \
+  --images-root /path/to/splits \
+  --epochs 50 \
   --imgsz 640 \
   --batch 8
 ```
@@ -341,9 +328,9 @@ YOLO .txt labels         ClearML experiment log
     ↓
 train / val / test splits + data.yaml
     ↓
-S3 Upload
+[GPU host: EBS / local disk / Docker volume]
     ↓
-[SageMaker Training Job]
+[train_yolo.py]
     ↓
 Fine-tuned YOLOv8 model (.pt / .onnx)
 ```
