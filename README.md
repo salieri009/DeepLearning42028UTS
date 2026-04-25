@@ -23,19 +23,26 @@
 
 ## Environment Setup
 
+The application code for training and inference lives under **`PROJECTS/CrowdNav`**. Create the virtual environment at the repo root or inside that folder; below uses the **repo root** and installs [`PROJECTS/CrowdNav/requirements.txt`](PROJECTS/CrowdNav/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+
 ```bash
 # 1. Clone the repository
-git clone <repo-url> && cd CrowdNav
-git checkout develop
+git clone <repo-url> "Assignment 3"
+cd "Assignment 3"
 
-# 2. Create and activate a virtual environment
+# 2. (Optional) Work in the CrowdNav package
+cd PROJECTS/CrowdNav
+
+# 3. Create and activate a virtual environment
 python -m venv .venv
 .venv\Scripts\activate   # Windows
 # source .venv/bin/activate  # macOS/Linux
 
-# 3. Install dependencies
+# 4. Install dependencies (use CrowdNav requirements for ML stack)
 pip install -r requirements.txt
 ```
+
+> **Default branch** for this repo is `master` unless your fork uses another name.
 
 ## ClearML (Experiment Tracking)
 
@@ -55,9 +62,37 @@ set CLEARML_OFFLINE_MODE=1
 
 ### 2) Smoke test (creates a Task and logs metrics)
 
+Run from **`PROJECTS/CrowdNav`** (so `src` resolves on `PYTHONPATH`):
+
 ```bash
+cd PROJECTS/CrowdNav
 python -m src.clearml_smoketest
 ```
+
+## Training (YOLO) — quick reference
+
+Training is implemented with **Ultralytics YOLO** and `scripts/train_yolo.py` inside [`PROJECTS/CrowdNav`](PROJECTS/CrowdNav). Typical setup:
+
+| Topic | Details |
+|--------|--------|
+| **Default model** | `yolov8m.pt` (override with `--model-cfg`) |
+| **Data config** | `data/processed/splits/data.yaml` with `path: .` (portable across machines) |
+| **Split ratio** | Train / val / test **8 : 1 : 1** (see `src/data/split_by_sequence.py`) |
+| **Defaults** | 100 epochs, early-stop patience 20, batch 16, dataloader `workers` 4 (suits **ml.g4dn.xlarge**: T4, 16 GB system RAM) |
+| **Device** | Omit `--device` to auto-select **CUDA** if available, else CPU; or `--device 0` / `CROWDNAV_DEVICE=cpu` |
+| **Cloud** | **AWS SageMaker** Notebook/Studio on **ml.g4dn.xlarge** — run the same command on the instance; **no S3** required (data on EBS next to the repo) |
+| **Local** | Same commands on a machine with **NVIDIA CUDA** installed |
+
+**One-shot train** (from `PROJECTS/CrowdNav`):
+
+```bash
+python scripts/train_yolo.py \
+  --data-yaml data/processed/splits/data.yaml \
+  --model-cfg yolov8m.pt \
+  --epochs 100 --batch 16 --workers 4
+```
+
+Full pipeline diagram and pseudo-labeling thresholds are documented in [`PROJECTS/CrowdNav/PROJECTS/docs/data_pipeline_diagram.md`](PROJECTS/CrowdNav/PROJECTS/docs/data_pipeline_diagram.md). Orchestration notes: [`notebooks/01_sagemaker_clearml_launcher.ipynb`](PROJECTS/CrowdNav/notebooks/01_sagemaker_clearml_launcher.ipynb).
 
 ## Data Version Control (DVC)
 
@@ -71,8 +106,8 @@ graph LR
     B --> C[data/raw images]
     C --> D[Preprocessing validation\nclasses.txt + label checks]
     D --> E[Dataset split\ntrain / val / test]
-    E --> F[data.yaml]
-    F --> G[YOLO training\ntrain_yolo.py]
+    E -->     F[data.yaml]
+    F --> G[YOLO training\nPROJECTS/CrowdNav/scripts/train_yolo.py]
     G --> H[Weights\nbest.pt / last.pt]
     H --> I[Inference\ncollision_avoidance.py]
 ```
@@ -129,7 +164,7 @@ dvc pull
 
 ### Pushing Data (After Adding/Updating Datasets)
 ```bash
-# 1. Track new or updated data with DVC
+# 1. Track new or updated data with DVC (paths may live under PROJECTS/CrowdNav — adjust to your layout)
 dvc add data/raw
 dvc add data/processed
 dvc add models/
@@ -142,7 +177,7 @@ git commit -m "Update dataset v2"
 dvc push
 
 # 4. Push Git changes
-git push origin develop
+git push origin master
 ```
 
 ### For New Team Members
@@ -183,7 +218,7 @@ git push origin develop
 Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Crowd Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and crowded areas. Using transfer learning on the JRDB dataset, the model is fine-tuned to recognize pedestrian dynamics within crowded transport environments. Rather than relying on heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing pedestrian scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, increasing independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
 
 ### Approach
-*   **Single-Stage Detection:** Using YOLO (v8/v10) via transfer learning for high-speed detection of pedestrians in crowds.
+*   **Single-Stage Detection:** **YOLOv8** (default fine-tune: `yolov8m`) via transfer learning for high-speed person detection in crowds.
 *   **Wheelchair POV Optimization:** Tailored model calibration for low-angle perspectives to ensure reliable detection of proximity obstacles.
 *   **Bounding-Box Scaling Heuristic:** Estimating proximity based on the relative size of detected bounding boxes within the frame.
 *   **Depth Thresholding:** Implementing a simple linear heuristic where proximity alerts are triggered once a pedestrian's bounding box area exceeds a predefined threshold.
@@ -204,14 +239,21 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 
 ## Repository Layout
 
-The project follows a structured directory format to align with the assignment deliverables:
-
 ```text
 .
-├── PROJECTS/      # Project Management & Additional Docs
-│   ├── PRD.md     # Product Requirements Document
-│   └── TechSpec.md # Technical Specifications
-└── README.md
+├── README.md                 # This file — assignment + CrowdNav overview
+├── requirements.txt         # (optional) root; primary ML stack: PROJECTS/CrowdNav/requirements.txt
+├── .github/                  # CI (e.g. build-check for CrowdNav)
+└── PROJECTS/
+    ├── PRD.md
+    ├── TechSpec.md
+    └── CrowdNav/             # Main code: data pipeline, YOLO training, inference, deploy/
+        ├── scripts/          # train_yolo.py, self_train_loop.py, automate_preprocessing.py
+        ├── src/              # data/, inference/, mlops/ (TrainPipeline, training_device)
+        ├── deploy/          # Dockerfile (PyTorch + CUDA 12.1), docker-compose
+        ├── notebooks/       # SageMaker / local training notes
+        ├── data/            # raw + processed (often gitignored / DVC)
+        └── PROJECTS/        # SysML + docs (e.g. data_pipeline_diagram.md)
 ```
 
 ---
@@ -446,7 +488,7 @@ sequenceDiagram
     end
 
     rect rgb(255,248,240)
-    note right of Split: Path B — Keras Training (SageMaker)
+    note right of Split: Path B — Keras (optional, local or SageMaker if configured)
     participant COCO as yolo_to_coco converter
     participant KT as train_keras (SageMaker)
     participant KOut as Keras ModelOut (SavedModel)
