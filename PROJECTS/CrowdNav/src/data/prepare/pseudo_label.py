@@ -14,11 +14,11 @@ from typing import Sequence
 
 def run(
     *,
-    model: str = "yolov8x.pt",
+    model: str = "yolov8m.pt",
     src_dir: Path = Path("data/raw/images"),
     out_dir: Path = Path("data/processed/labels"),
-    conf_thresh: float = 0.5,
-    manual_thresh: float = 0.8,
+    conf_thresh: float = 0.4,
+    manual_thresh: float = 0.6,
     device: str = "cuda",
     debug: bool = False,
     debug_dir: Path = Path("data/processed/debug_previews"),

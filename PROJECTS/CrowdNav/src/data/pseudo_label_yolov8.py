@@ -23,13 +23,13 @@ CLASS_MAP = {"person": 0}
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI argument parser for the pseudo-labeling pipeline."""
     parser = argparse.ArgumentParser(description="Pseudo-label JRDB subset using YOLOv8.")
-    parser.add_argument("--model", type=str, default="yolov8x.pt", help="YOLO model path or name")
+    parser.add_argument("--model", type=str, default="yolov8m.pt", help="YOLO model path or name")
     parser.add_argument("--src-dir", type=Path, default=Path("data/raw/images"), help="Source images directory")
     parser.add_argument("--out-dir", type=Path, default=Path("data/processed/labels"), help="Output labels directory")
     parser.add_argument("--debug", action="store_true", help="Enable visual sanity check previews")
     parser.add_argument("--debug-dir", type=Path, default=Path("data/processed/debug_previews"), help="Debug previews directory")
-    parser.add_argument("--conf-thresh", type=float, default=0.5, help="Confidence threshold for detection")
-    parser.add_argument("--manual-thresh", type=float, default=0.8, help="Confidence threshold below which manual review is flagged")
+    parser.add_argument("--conf-thresh", type=float, default=0.4, help="Confidence threshold for detection")
+    parser.add_argument("--manual-thresh", type=float, default=0.6, help="Confidence threshold below which manual review is flagged")
     parser.add_argument(
         "--device",
         type=str,

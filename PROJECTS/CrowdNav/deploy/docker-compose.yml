@@ -3,23 +3,23 @@ version: '3.8'
 services:
   # CrowdNav 프로젝트 전용 Jupyter 개발 환경 서비스입니다.
   crowdnav-jupyter:
-    # 빌드 대상 폴더를 deploy 폴더로 지정합니다.
+    # Build from CrowdNav project root (parent of deploy/) so requirements.txt is available.
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deploy/Dockerfile
     # 컨테이너의 이름을 보기 쉽게 지정합니다.
     container_name: crowdnav_jupyter_env
     # 호스트(본인 PC)의 포트(8888)를 컨테이너 내부의 Jupyter 포트(8888)와 연결합니다.
     ports:
       - "8888:8888"
-    # (선택) GPU 사용 가능 환경일 경우 주석을 해제하여 사용할 수 있습니다.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    # NVIDIA GPU (Linux + nvidia-container-toolkit; e.g. L4 on g6)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     # 로컬 디렉토리 전체(상위 폴더 포함)를 컨테이너 안의 /opt/program/ 에 마운트합니다.
     # 이를 통해 컨테이너 안에서 작성/수정한 코드가 여러분의 PC에도 그대로 저장됩니다.
     volumes:

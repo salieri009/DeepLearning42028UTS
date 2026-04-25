@@ -1,4 +1,4 @@
-"""10-cycle self-training loop for JRDB pseudo-labeling.
+"""Multi-cycle self-training loop for JRDB pseudo-labeling.
 
 Cycle definition:
   (train -> pseudo-label regenerate -> split regenerate) = 1 cycle
@@ -37,18 +37,24 @@ class CycleSummary:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run a multi-cycle self-training loop (train->relabel->split).")
-    p.add_argument("--cycles", type=int, default=10, help="Number of self-training cycles")
-    p.add_argument("--base-model", type=str, default="yolov8x.pt", help="Base model for cycle 0")
+    p.add_argument("--cycles", type=int, default=5, help="Number of self-training cycles")
+    p.add_argument("--base-model", type=str, default="yolov8m.pt", help="Base model for cycle 0")
     p.add_argument("--device", type=str, default="0", help="Training device for Ultralytics (e.g. 0, 0,1, cpu)")
-    p.add_argument("--epochs", type=int, default=5, help="Epochs per cycle")
+    p.add_argument("--epochs", type=int, default=15, help="Epochs per cycle")
     p.add_argument("--imgsz", type=int, default=640, help="Training image size")
     p.add_argument("--batch", type=int, default=16, help="Training batch size")
-    p.add_argument("--patience", type=int, default=50, help="Early stopping patience")
+    p.add_argument("--patience", type=int, default=20, help="Early stopping patience")
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="DataLoader workers (keep low on 16GB RAM, e.g. g6.xlarge)",
+    )
     p.add_argument("--labels-dir", type=Path, default=Path("data/processed/labels"), help="Pseudo-label output dir")
     p.add_argument("--splits-dir", type=Path, default=Path("data/processed/splits"), help="Split output dir")
     p.add_argument("--raw-images", type=Path, default=Path("data/raw/images"), help="Raw images root dir")
-    p.add_argument("--conf-thresh", type=float, default=0.5, help="Pseudo-label confidence threshold")
-    p.add_argument("--manual-thresh", type=float, default=0.8, help="Manual-review threshold")
+    p.add_argument("--conf-thresh", type=float, default=0.4, help="Pseudo-label confidence threshold")
+    p.add_argument("--manual-thresh", type=float, default=0.6, help="Manual-review threshold")
     p.add_argument("--overwrite-labels", action="store_true", help="Overwrite existing labels each cycle")
     p.add_argument("--checkpoint-interval", type=int, default=500, help="Pseudo-label checkpoint interval")
     p.add_argument("--no-clearml", action="store_true", help="Disable ClearML in pseudo-labeling")
@@ -115,6 +121,7 @@ def main() -> int:
             name=run_name,
             patience=args.patience,
             exist_ok=True,
+            workers=args.workers,
         )
         artifacts = pipeline.train()
 

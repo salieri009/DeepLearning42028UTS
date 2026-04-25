@@ -43,7 +43,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--val-json", type=str, required=True, help="Path to COCO val.json")
     p.add_argument("--images-root", type=str, required=True, help="Root directory containing images referenced by COCO JSON")
 
-    p.add_argument("--epochs", type=int, default=1)
+    p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--imgsz", type=int, default=640)
     p.add_argument("--batch", type=int, default=8)
     p.add_argument("--lr", type=float, default=1e-3)

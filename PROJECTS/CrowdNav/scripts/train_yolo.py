@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-cfg",
         default=default_model_path(),
-        help="Base model path or Ultralytics model name (default: local yolov8x.pt or yolov8n.pt)",
+        help="Base model path or Ultralytics model name (default: local yolov8m.pt or yolov8m)",
     )
     parser.add_argument(
         "--data-yaml",
@@ -26,13 +26,19 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to YOLO data.yaml produced by the split step",
     )
-    parser.add_argument("--epochs", type=int, default=1, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size")
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
     parser.add_argument("--device", default=None, help="Device to use, for example cpu, 0, or 0,1")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="DataLoader workers (keep low on 16GB RAM instances, e.g. g6.xlarge)",
+    )
     parser.add_argument("--project", default="runs/train", help="Ultralytics project output directory")
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
-    parser.add_argument("--patience", type=int, default=50, help="Early stopping patience")
+    parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
     parser.add_argument(
         "--no-exist-ok",
         action="store_true",
@@ -65,6 +71,7 @@ def main() -> int:
         name=args.name,
         patience=args.patience,
         exist_ok=not args.no_exist_ok,
+        workers=args.workers,
     )
 
     artifacts = pipeline.train()

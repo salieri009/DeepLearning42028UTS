@@ -35,8 +35,9 @@ class TrainPipeline:
         device: str | int | None = None,
         project: str = "runs/train",
         name: str = "crowdnav_yolo",
-        patience: int = 50,
+        patience: int = 20,
         exist_ok: bool = True,
+        workers: int = 4,
     ) -> None:
         self.model_cfg = model_cfg
         self.data_yaml = data_yaml
@@ -48,6 +49,7 @@ class TrainPipeline:
         self.name = name
         self.patience = patience
         self.exist_ok = exist_ok
+        self.workers = workers
         self._model: YOLO | None = None
         self._trained_model: YOLO | None = None
         self._last_artifacts: TrainArtifacts | None = None
@@ -84,6 +86,7 @@ class TrainPipeline:
             name=self.name,
             patience=self.patience,
             exist_ok=self.exist_ok,
+            workers=self.workers,
         )
 
         save_dir = Path(getattr(results, "save_dir", Path(self.project) / self.name))
@@ -135,7 +138,7 @@ class TrainPipeline:
 def default_model_path() -> str:
     """Pick a local default model if one is present in the repo root."""
     repo_root = Path(__file__).resolve().parents[2]
-    local_weight = repo_root / "yolov8x.pt"
+    local_weight = repo_root / "yolov8m.pt"
     if local_weight.exists():
         return str(local_weight)
-    return "yolov8n.pt"
+    return "yolov8m.pt"

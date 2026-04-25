@@ -22,13 +22,13 @@ def write_data_yaml(
 ) -> Path:
     """Write a YOLO-compatible ``data.yaml`` to *output_dir*.
 
-    The ``path`` field is set to the resolved absolute posix path of
-    *output_dir* so that both local and SageMaker training can locate the
-    images relative to the YAML file.
+    The ``path`` field is set to ``.`` (current directory) so the YAML is
+    portable across Windows, Linux, and cloud paths; train/val/test are
+    relative to *output_dir* / this file’s location.
     """
     yaml_path = output_dir / "data.yaml"
     content = {
-        "path": output_dir.resolve().as_posix(),
+        "path": ".",
         "train": train_images,
         "val": val_images,
         "test": test_images,
