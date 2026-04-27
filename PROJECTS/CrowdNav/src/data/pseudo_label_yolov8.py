@@ -30,6 +30,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--debug-dir", type=Path, default=Path("data/processed/debug_previews"), help="Debug previews directory")
     parser.add_argument("--conf-thresh", type=float, default=0.4, help="Confidence threshold for detection")
     parser.add_argument("--manual-thresh", type=float, default=0.6, help="Confidence threshold below which manual review is flagged")
+    parser.add_argument("--imgsz", type=int, default=640, help="Inference image size (longer side); larger -> better recall but slower")
+    parser.add_argument("--iou", type=float, default=0.7, help="NMS IoU threshold; lower -> fewer overlapping boxes (good for crowds)")
+    parser.add_argument("--augment", action="store_true", help="Enable Test-Time Augmentation (TTA) for higher recall at extra cost")
     parser.add_argument(
         "--device",
         type=str,
@@ -122,8 +125,14 @@ def main() -> None:
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    batch_size = 16 if "cuda" in str(device) or (isinstance(device, int)) else 4
-    print(f"Using device: {device} | Batch Size: {batch_size}")
+    base_batch = 16 if "cuda" in str(device) or (isinstance(device, int)) else 4
+    # Halve batch when TTA is on (augment doubles+ memory) or when imgsz > 640.
+    if args.augment:
+        base_batch = max(1, base_batch // 4)
+    elif args.imgsz > 640:
+        base_batch = max(1, base_batch // 2)
+    batch_size = base_batch
+    print(f"Using device: {device} | Batch Size: {batch_size} | imgsz: {args.imgsz} | iou: {args.iou} | augment: {args.augment}")
     
     model = YOLO(args.model)
     
@@ -195,6 +204,9 @@ def main() -> None:
             source=batch_paths,
             device=device,
             conf=args.conf_thresh,
+            iou=args.iou,
+            imgsz=args.imgsz,
+            augment=args.augment,
             classes=target_classes,
             persist=True,
             verbose=False,

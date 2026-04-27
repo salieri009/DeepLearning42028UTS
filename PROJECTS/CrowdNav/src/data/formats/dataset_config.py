@@ -28,7 +28,7 @@ def write_data_yaml(
     """
     yaml_path = output_dir / "data.yaml"
     content = {
-        "path": ".",
+        "path": str(Path(output_dir).resolve()),
         "train": train_images,
         "val": val_images,
         "test": test_images,

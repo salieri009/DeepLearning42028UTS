@@ -13,9 +13,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.prepare import pseudo_label as pseudo_label_api
 from src.data.prepare import split as split_api
@@ -61,6 +66,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--raw-images", type=Path, default=Path("data/raw/images"), help="Raw images root dir")
     p.add_argument("--conf-thresh", type=float, default=0.4, help="Pseudo-label confidence threshold")
     p.add_argument("--manual-thresh", type=float, default=0.6, help="Manual-review threshold")
+    p.add_argument("--label-imgsz", type=int, default=640, help="Pseudo-label inference image size")
+    p.add_argument("--label-iou", type=float, default=0.7, help="Pseudo-label NMS IoU threshold")
+    p.add_argument("--label-augment", action="store_true", help="Enable TTA during pseudo-labeling")
     p.add_argument("--overwrite-labels", action="store_true", help="Overwrite existing labels each cycle")
     p.add_argument("--checkpoint-interval", type=int, default=500, help="Pseudo-label checkpoint interval")
     p.add_argument("--no-clearml", action="store_true", help="Disable ClearML in pseudo-labeling")
@@ -151,6 +159,9 @@ def main() -> int:
             no_clearml=args.no_clearml,
             checkpoint_interval=args.checkpoint_interval,
             overwrite_existing=args.overwrite_labels,
+            imgsz=args.label_imgsz,
+            iou=args.label_iou,
+            augment=args.label_augment,
         )
 
         # Split regenerate (merge both camera views into one splits dir)
@@ -196,4 +207,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
