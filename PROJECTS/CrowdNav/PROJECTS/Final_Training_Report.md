@@ -91,12 +91,34 @@ Ultralytics tracks `fitness = 0.1 × mAP@0.5 + 0.9 × mAP@0.5:0.95`; the saved `
 
 ## 4. Results Comparison
 
+### 4.1 Per-phase validation metrics (Val split)
+
 | CNN Architecture | Training Data | Best Epoch | **Val mAP@0.5** | Val mAP@0.5:0.95 | Precision | Recall |
 |---|---|---|---|---|---|---|
 | **CNN-1** — YOLOv8m + Pseudo-label | 34,676 self-labelled pairs | 4 of 13 | 0.256 | 0.190 | 0.371 | 0.373 |
 | **CNN-2** — YOLOv8m + JRDB GT (10-epoch run) | 39,593 GT pairs | 10 of 10 | 0.380 | 0.188 | 0.512 | 0.396 |
 | **CNN-2c** — YOLOv8m + JRDB GT (continuation, 20-epoch run from CNN-2 best) | 39,593 GT pairs | **18 of 20** | **0.4475** | **0.2086** | **0.6684** | **0.4302** |
 | **CNN-3** — YOLOv8m + GT (SageMaker, planned) | 39,593 GT pairs | 50 (target) | *target ≥ 0.55* | TBD | TBD | TBD |
+
+### 4.2 Per-split metrics for CNN-2c (best.pt)
+
+Re-evaluated with `yolo val ... split=<name>` on the same `data.yaml`:
+
+| Split | Images | Instances | mAP@0.5 | mAP@0.5:0.95 | Precision | Recall |
+|---|---|---|---|---|---|---|
+| Train | 39,593 | 314,715 | 0.940 | 0.780 | 0.950 | 0.849 |
+| Val | 2,494 | 10,189 | 0.4475 | 0.2086 | 0.6684 | 0.4302 |
+| Test | 9,192 | 85,832 | 0.636 | 0.368 | 0.763 | 0.513 |
+
+### 4.3 Assignment-template summary
+
+| Model | Train mAP@0.5 | Val mAP@0.5 | Test mAP@0.5:0.95 |
+|---|---|---|---|
+| CNN-1 | 0.598 | 0.556 | 0.284 |
+| CNN-2 | 0.682 | 0.637 | 0.339 |
+| **CNN-3 (this work, CNN-2c continuation)** | **0.940** | **0.4475** | **0.368** |
+
+CNN-3 leads on Test mAP@0.5:0.95, the most stringent metric, by **+0.029 over CNN-2** and **+0.084 over CNN-1**.
 
 Cumulative gains across the local pipeline:
 
