@@ -126,7 +126,7 @@ def main() -> None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
     base_batch = 16 if "cuda" in str(device) or (isinstance(device, int)) else 4
-    # Halve batch when TTA is on (augment doubles+ memory) or when imgsz > 640.
+    # Quarter batch when TTA is on (augment quadruples memory) or halve when imgsz > 640.
     if args.augment:
         base_batch = max(1, base_batch // 4)
     elif args.imgsz > 640:

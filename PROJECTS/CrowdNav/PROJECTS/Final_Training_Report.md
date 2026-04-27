@@ -117,7 +117,7 @@ Cumulative gains across the local pipeline:
 
 ## 6. Next Steps — Cloud Scale-up
 
-The migration plan and full command reference are recorded in [`SageMaker_Migration_Plan.md`](../../notebooks/SageMaker_Migration_Plan.md).
+The migration plan and full command reference are recorded in [`SageMaker_Migration_Plan.md`](../deploy/SageMaker_Migration_Plan.md).
 
 Recommended SageMaker baseline:
 
@@ -170,8 +170,8 @@ python scripts/train_yolo.py \
 
 ## 8. Artefacts
 
-- Trained weights (best & last): `runs/detect/runs/train/crowdnav_yolo/weights/`
-- Training curves and confusion matrix: `runs/detect/runs/train/crowdnav_yolo/`
-- Final validation metrics: `runs/detect/val2/`
+- Trained weights (best & last): `runs/train/crowdnav_yolo/weights/`
+- Training curves and confusion matrix: `runs/train/crowdnav_yolo/`
+- Final validation metrics: `runs/train/crowdnav_yolo/val/`
 - Conversion script: `scripts/jrdb_train_to_yolo.py`
 - SageMaker entry point and launcher: `deploy/sagemaker_train.py`, `deploy/sagemaker_launch.py`
