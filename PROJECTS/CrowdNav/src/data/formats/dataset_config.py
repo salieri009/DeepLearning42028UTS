@@ -22,13 +22,13 @@ def write_data_yaml(
 ) -> Path:
     """Write a YOLO-compatible ``data.yaml`` to *output_dir*.
 
-    The ``path`` field is set to ``.`` (current directory) so the YAML is
-    portable across Windows, Linux, and cloud paths; train/val/test are
-    relative to *output_dir* / this file’s location.
+    The ``path`` field is set to the absolute resolved path of *output_dir*
+    so that Ultralytics does not incorrectly resolve relative train/val/test
+    paths against the current working directory at runtime.
     """
     yaml_path = output_dir / "data.yaml"
     content = {
-        "path": ".",
+        "path": str(Path(output_dir).resolve()),
         "train": train_images,
         "val": val_images,
         "test": test_images,

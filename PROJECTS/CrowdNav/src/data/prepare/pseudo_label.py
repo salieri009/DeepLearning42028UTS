@@ -27,6 +27,9 @@ def run(
     checkpoint_interval: int = 500,
     max_images: int = 0,
     overwrite_existing: bool = False,
+    imgsz: int = 640,
+    iou: float = 0.7,
+    augment: bool = False,
     extra_argv: Sequence[str] = (),
 ) -> int:
     """Run the pseudo-labeling pipeline programmatically.
@@ -47,7 +50,11 @@ def run(
         "--manual-thresh", str(manual_thresh),
         "--device", device,
         "--checkpoint-interval", str(checkpoint_interval),
+        "--imgsz", str(imgsz),
+        "--iou", str(iou),
     ]
+    if augment:
+        argv.append("--augment")
     if debug:
         argv += ["--debug", "--debug-dir", str(debug_dir)]
     if no_clearml:
