@@ -137,8 +137,9 @@ class TrainPipeline:
 
 def default_model_path() -> str:
     """Pick a local default model if one is present in the repo root."""
-    repo_root = Path(__file__).resolve().parents[2]
-    local_weight = repo_root / "yolov8m.pt"
+    from src.repo_paths import repo_root
+
+    local_weight = repo_root() / "yolov8m.pt"
     if local_weight.exists():
         return str(local_weight)
     return "yolov8m.pt"

@@ -4,7 +4,7 @@ Cycle definition:
   (train -> pseudo-label regenerate -> split regenerate) = 1 cycle
 
 This script is intentionally lightweight and delegates to existing CLIs/APIs:
-- Train: src.mlops.train_pipeline.TrainPipeline
+- Train: src.training.train_pipeline.TrainPipeline
 - Pseudo-label: src.data.prepare.pseudo_label.run()
 - Split: src.data.prepare.split.run()
 """
@@ -25,9 +25,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.prepare import pseudo_label as pseudo_label_api
 from src.data.prepare import split as split_api
-from src.mlops.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
-from src.mlops.train_pipeline import TrainPipeline
-from src.mlops.training_device import describe_runtime, resolve_training_device
+from src.training.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
+from src.training.train_pipeline import TrainPipeline
+from src.training.training_device import describe_runtime, resolve_training_device
 
 
 @dataclass(frozen=True)

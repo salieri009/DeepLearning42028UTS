@@ -26,7 +26,7 @@ Python package for JRDB → YOLO labels → train/val/test → **Ultralytics YOL
 | `src/data/prepare/` | `pseudo_label`, `split`, COCO conversion APIs |
 | `src/data/preprocessing/` | JRDB JSON → YOLO internals |
 | `src/inference/` | Depth / collision-avoidance / alerts |
-| `src/mlops/` | `TrainPipeline`, `training_device`, cycle logging |
+| `src/training/` | `TrainPipeline`, `training_device`, cycle logging |
 | `src/repo_paths.py` | Resolves repo root for default `data/...` paths |
 | `scripts/` | CLIs: `train_yolo.py`, `self_train_loop.py`, … |
 | `notebooks/` | SageMaker / local CUDA notes |
@@ -41,7 +41,7 @@ Python package for JRDB → YOLO labels → train/val/test → **Ultralytics YOL
 | `data.yaml` | `<repo>/data/processed/splits/data.yaml` | `path: .` inside splits dir |
 | Epochs / patience | 100 / 20 | Early stopping |
 | Batch / workers | 16 / 4 | Fits **ml.g4dn.xlarge** |
-| Device | Auto | `src/mlops/training_device.py` |
+| Device | Auto | `src/training/training_device.py` |
 
 ## Primary commands
 
