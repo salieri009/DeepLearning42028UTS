@@ -3,6 +3,7 @@ last_updated: 2026-05-02
 related_code:
   - train/src/data/pseudo_label_yolov8.py
   - train/src/data/split_by_sequence.py
+  - train/src/training/train_pipeline.py
   - train/scripts/train_yolo.py
   - infra/sagemaker/sagemaker_train.py
 related_diagram:
@@ -27,7 +28,7 @@ The system is divided into three primary components:
 - **Architecture:** YOLOv8 (Ultralytics, PyTorch-based). `yolov8x.pt` is used as the pre-trained base for fine-tuning.
 - **Detection Target:** `person` class only. A spatial cluster of multiple detected person bounding boxes within a frame region is classified as a **crowd**.
 - **Training Strategy:** Transfer learning — YOLOv8x pre-trained on COCO is fine-tuned on JRDB pedestrian sequences (local GPU, SageMaker Notebook, or **SageMaker Training Job** with S3 data).
-- **Training stack:** **Ultralytics YOLO** on **PyTorch**. Managed SageMaker jobs use [`infra/sagemaker/sagemaker_train.py`](infra/sagemaker/sagemaker_train.py); local runs use [`train/scripts/train_yolo.py`](train/scripts/train_yolo.py).
+- **Training stack:** **Ultralytics YOLO** on **PyTorch**. Core runner: [`train/src/training/train_pipeline.py`](train/src/training/train_pipeline.py) (`TrainPipeline`). Managed SageMaker jobs use [`infra/sagemaker/sagemaker_train.py`](infra/sagemaker/sagemaker_train.py); local runs use [`train/scripts/train_yolo.py`](train/scripts/train_yolo.py) (imports the public [`train/src/training/__init__.py`](train/src/training/__init__.py) surface).
 - **Inputs:** RGB frames (640 × 640).
 - **Outputs:** Bounding boxes with class (`person`) and confidence scores. Crowd density estimated from bounding box cluster density per region.
 

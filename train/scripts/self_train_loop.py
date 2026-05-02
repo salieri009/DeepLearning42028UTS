@@ -4,7 +4,7 @@ Cycle definition:
   (train -> pseudo-label regenerate -> split regenerate) = 1 cycle
 
 This script is intentionally lightweight and delegates to existing CLIs/APIs:
-- Train: src.training.train_pipeline.TrainPipeline
+- Train: src.training.TrainPipeline (public package API)
 - Pseudo-label: src.data.prepare.pseudo_label.run()
 - Split: src.data.prepare.split.run()
 """
@@ -23,11 +23,16 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.prepare import pseudo_label as pseudo_label_api
-from src.data.prepare import split as split_api
-from src.training.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
-from src.training.train_pipeline import TrainPipeline
-from src.training.training_device import describe_runtime, resolve_training_device
+from src.data.prepare import pseudo_label as pseudo_label_api  # noqa: E402
+from src.data.prepare import split as split_api  # noqa: E402
+from src.training import (  # noqa: E402
+    CycleMetrics,
+    TrainPipeline,
+    append_cycle_metrics_csv,
+    describe_runtime,
+    resolve_training_device,
+    write_cycle_metrics_json,
+)
 
 
 @dataclass(frozen=True)

@@ -11,8 +11,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.training.train_pipeline import TrainPipeline, default_model_path
-from src.training.training_device import describe_runtime, resolve_training_device
+from src.training import (  # noqa: E402
+    TrainPipeline,
+    default_model_path,
+    describe_runtime,
+    resolve_training_device,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
