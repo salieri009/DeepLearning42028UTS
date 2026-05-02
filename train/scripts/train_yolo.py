@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.repo_paths import default_data_yaml  # noqa: E402
+from src.repo_paths import default_data_yaml, repo_root  # noqa: E402
 from src.training import (  # noqa: E402
     TrainPipeline,
     default_model_path,
@@ -52,10 +52,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=4,
         help="DataLoader workers (keep low on 16 GB system RAM, e.g. ml.g4dn.xlarge)",
     )
-    parser.add_argument("--project", default="runs/train", help="Ultralytics project output directory")
+    parser.add_argument(
+        "--project",
+        default=str(repo_root() / "runs" / "train"),
+        help="Ultralytics project output directory (default: <repo>/runs/train, absolute to avoid global runs_dir prefix)",
+    )
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
     parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
-    parser.add_argument(
+    exist_group = parser.add_mutually_exclusive_group()
+    exist_group.add_argument(
+        "--exist-ok",
+        action="store_true",
+        help="Allow reusing an existing run directory (default when neither flag is set).",
+    )
+    exist_group.add_argument(
         "--no-exist-ok",
         action="store_true",
         help="Fail if the run directory already exists",

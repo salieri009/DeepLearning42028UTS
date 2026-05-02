@@ -33,19 +33,21 @@ class TrainPipeline:
         *,
         batch: int = 16,
         device: str | int | None = None,
-        project: str = "runs/train",
+        project: str | None = None,
         name: str = "crowdnav_yolo",
         patience: int = 20,
         exist_ok: bool = True,
         workers: int = 4,
     ) -> None:
+        from src.repo_paths import repo_root
+
         self.model_cfg = model_cfg
         self.data_yaml = data_yaml
         self.epochs = epochs
         self.imgsz = imgsz
         self.batch = batch
         self.device = device
-        self.project = project
+        self.project = project if project is not None else str(repo_root() / "runs" / "train")
         self.name = name
         self.patience = patience
         self.exist_ok = exist_ok

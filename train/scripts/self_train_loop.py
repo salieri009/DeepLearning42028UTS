@@ -23,6 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.repo_paths import repo_root  # noqa: E402
 from src.data.prepare import pseudo_label as pseudo_label_api  # noqa: E402
 from src.data.prepare import split as split_api  # noqa: E402
 from src.training import (  # noqa: E402
@@ -93,7 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--overwrite-labels", action="store_true", help="Overwrite existing labels each cycle")
     p.add_argument("--checkpoint-interval", type=int, default=500, help="Pseudo-label checkpoint interval")
     p.add_argument("--no-clearml", action="store_true", help="Disable ClearML in pseudo-labeling")
-    p.add_argument("--project", type=str, default="runs/train", help="Ultralytics project output directory")
+    p.add_argument(
+        "--project",
+        type=str,
+        default=str(repo_root() / "runs" / "train"),
+        help="Ultralytics project output directory (default: <repo>/runs/train)",
+    )
     p.add_argument("--name-prefix", type=str, default="selftrain", help="Run name prefix")
     p.add_argument(
         "--log-dir",
