@@ -337,7 +337,7 @@ sequenceDiagram
   ```
 
 ## 5. Notes & Assumptions
-- Remote base branch used for PR creation is `master` (no `origin/main` and no `origin/develop` at time of creation).
+- Default branch for PRs is `main`; integration work may use `dev` (at time of last update).
 - Diagram structure reflects current scaffold state: class-level interfaces may still raise `NotImplementedError` by design.
 - `ruff check` passes; `mypy --strict` is integrated into CI and requires code-level type cleanup to pass consistently.
 - External services (ClearML server/runtime dependencies) are modeled as external artifacts, not internal blocks.

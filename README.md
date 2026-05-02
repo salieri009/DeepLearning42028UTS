@@ -42,7 +42,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-> **Default branch** for this repo is `master` unless your fork uses another name.
+> **Default branch** is **`main`**; integration branch **`dev`** tracks ongoing work.
 
 ## ClearML (Experiment Tracking)
 
@@ -177,7 +177,7 @@ git commit -m "Update dataset v2"
 dvc push
 
 # 4. Push Git changes
-git push origin master
+git push origin main
 ```
 
 ### For New Team Members
