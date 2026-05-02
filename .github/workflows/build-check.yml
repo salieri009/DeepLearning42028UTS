@@ -6,11 +6,15 @@ on:
       - main
       - dev
       - develop
+      - part-c
+      - refactor/train-layout
   pull_request:
     branches:
       - main
       - dev
       - develop
+      - part-c
+      - refactor/train-layout
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
