@@ -1,13 +1,24 @@
-# CrowdNav Java API (mock)
+# CrowdNav Java API
 
-Spring Boot service exposing `POST /api/v1/analyze-frame` with a **mock** response matching [`docs/TechSpec.md`](../../docs/TechSpec.md) §7. React Native should call this host only; Python inference will be wired later via [`application/inference-service`](../inference-service), which will use **`best.pt` from completed AWS SageMaker training** (local copy of the job checkpoint — see TechSpec §4.2).
+Spring Boot service exposing `POST /api/v1/analyze-frame` per [`docs/TechSpec.md`](../../docs/TechSpec.md) §7.
 
-## Endpoints (mock ignores payload)
+## Modes
+
+| Mode | Behaviour |
+|------|-----------|
+| `mock` (default) | Static TechSpec-shaped JSON; ignores image payload. |
+| `onnx` | Loads YOLO ONNX (Ultralytics export with **NMS embedded**). Requires image bytes. |
+
+**Artifacts:** Train with `train/scripts/train_yolo.py`, export ONNX with `train/scripts/eval_yolo.py --export-onnx` (see [`docs/runbooks/post_train_spring_onnx.md`](../../docs/runbooks/post_train_spring_onnx.md)).
+
+## Endpoints
 
 | Content-Type | Body |
 |--------------|------|
 | `application/json` | Optional `{ "frame_base64": "..." }` |
 | `multipart/form-data` | Optional part `image` (file) |
+
+ONNX mode: image body is **required** (multipart file or base64).
 
 ## Run
 
@@ -23,5 +34,7 @@ Default port: `8080`.
 
 See [`crowdnav-api/src/main/resources/application.yml`](crowdnav-api/src/main/resources/application.yml).
 
-- `app.inference.mode: mock` — default static JSON (current).
-- `app.inference.base-url` — placeholder for future `mode: remote` + `WebClient` to Python (`inference-service`, default `http://127.0.0.1:9000`).
+- `app.inference.mode` — `mock` or `onnx`.
+- `app.inference.onnx-model-path` — filesystem path to `.onnx` (or env `CROWDNAV_ONNX_PATH`).
+- `app.inference.imgsz` — input size (default 640; match training/export).
+- `app.inference.conf-threshold` — detection confidence floor (default 0.25).

@@ -258,7 +258,7 @@ yolo val model=runs\sagemaker\best.pt data=data\processed\splits\data.yaml imgsz
 ## Phase 7 — Deployment (export for inference)
 
 ```powershell
-# ONNX (cross-platform inference, FastAPI/edge deployment)
+# ONNX (cross-platform inference, Spring Boot / ONNX Runtime)
 yolo export model=runs\sagemaker\best.pt format=onnx imgsz=640
 
 # TorchScript (C++ / mobile)

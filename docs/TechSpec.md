@@ -69,7 +69,7 @@ The system is divided into three primary components:
 3. Output: fine-tuned model `.pt` / `.onnx` for deployment.
 
 > [!NOTE]
-> **Inference weights (current plan):** Real-time inference uses the **`best.pt` checkpoint produced when AWS SageMaker training finishes** (Ultralytics/YOLO usual artifact under the job output path). That file is **copied or downloaded to the machine running the Python inference service**, then loaded locally — **no separate SageMaker inference endpoint is assumed** for this project phase.
+> **Inference weights (current plan):** Real-time inference uses the **`best.pt`** checkpoint from training (local or SageMaker). For the **Spring Boot** runtime, export **`best.pt` → ONNX** (Ultralytics, NMS embedded) and load that file in **`crowdnav-api`** via ONNX Runtime Java — **no Python web service** and **no separate SageMaker inference endpoint** for this project phase.
 
 ### 4.3 Dataset Split
 `train/src/data/split_by_sequence.py` splits data at the sequence level:
@@ -85,14 +85,14 @@ The system is divided into three primary components:
 | Cloud Training | AWS SageMaker PyTorch estimator (`infra/sagemaker/sagemaker_train.py`) |
 | Data Storage | S3 (training data), local `data/processed/` |
 | Computer Vision | OpenCV (frame extraction, preprocessing) |
-| Backend API (planned) | Spring Boot (`application/backend/crowdnav-api`) — Python inference behind optional internal service |
+| Backend API | Spring Boot (`application/backend/crowdnav-api`) — ONNX Runtime inference from exported YOLO weights |
 | Frontend (planned) | React Native |
 
 ## 6. Real-Time Inference Criteria
 - **Hardware Accelerator:** GPU (CUDA compatible) required for latency-sensitive processing.
 - **Latency Target:** Processing time per frame under 100ms (10 FPS minimum) for real-time navigation.
-- **Model artifact:** Use **`best.pt` from the completed AWS SageMaker training job** for inference weights (see §4.2 note). Load it on the **local** inference host next to the Spring/Java stack (or ONNX export on CPU as fallback).
-- **Optimization (optional future):** Alternatively deploy fine-tuned weights to GPU-backed AWS inference endpoints; local loading from `best.pt` is the baseline plan for integration.
+- **Model artifact:** Use **`best.pt`** from training, **export to ONNX** for the JVM, and configure **`crowdnav-api`** with that path (see [`docs/runbooks/post_train_spring_onnx.md`](runbooks/post_train_spring_onnx.md)).
+- **Optimization (optional future):** GPU-backed AWS inference endpoints; baseline is Spring + ONNX on the app host.
 
 ## 7. API Design Outline (Draft)
 - `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and crowd density scores.

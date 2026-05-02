@@ -6,9 +6,11 @@ on:
     branches:
       - part-c
       - refactor/train-layout
+      - feat/best-pt-spring-inference
     paths:
       - 'train/src/training/**'
       - 'train/src/repo_paths.py'
+      - 'train/scripts/eval_yolo.py'
       - 'train/notebooks/01_sagemaker_clearml_launcher.ipynb'
       - 'infra/sagemaker/**'
       - '.github/workflows/train-pipeline.yml'
@@ -18,9 +20,11 @@ on:
       - dev
       - part-c
       - refactor/train-layout
+      - feat/best-pt-spring-inference
     paths:
       - 'train/src/training/**'
       - 'train/src/repo_paths.py'
+      - 'train/scripts/eval_yolo.py'
       - 'train/notebooks/01_sagemaker_clearml_launcher.ipynb'
       - 'infra/sagemaker/**'
       - '.github/workflows/train-pipeline.yml'
@@ -44,7 +48,7 @@ jobs:
 
       - name: Ruff (training + SageMaker scripts)
         run: |
-          python -m ruff check train/src/training infra/sagemaker/sagemaker_launch.py infra/sagemaker/sagemaker_train.py
+          python -m ruff check train/src/training infra/sagemaker/sagemaker_launch.py infra/sagemaker/sagemaker_train.py train/scripts/eval_yolo.py
 
       - name: Byte-compile training helpers (isolated from full-package mypy)
         working-directory: ./train
@@ -53,6 +57,8 @@ jobs:
           python -m py_compile src/training/sagemaker_cli.py
           python -m py_compile src/training/subprocess_runner.py
           python -m py_compile src/training/protocols.py
+          python -m py_compile src/training/train_pipeline.py
+          python -m py_compile scripts/eval_yolo.py
 
       - name: Byte-compile SageMaker entrypoints
         run: |

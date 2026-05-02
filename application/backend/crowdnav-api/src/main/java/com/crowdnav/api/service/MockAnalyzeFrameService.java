@@ -14,7 +14,7 @@ import com.crowdnav.api.dto.PersonDetection;
 public class MockAnalyzeFrameService implements AnalyzeFrameService {
 
 	@Override
-	public AnalyzeFrameResponse analyzeFrame() {
+	public AnalyzeFrameResponse analyzeFrame(byte[] imageBytes, String contentType) {
 		return new AnalyzeFrameResponse(
 				List.of(
 						new PersonDetection(

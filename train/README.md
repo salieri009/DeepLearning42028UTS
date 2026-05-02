@@ -2,6 +2,7 @@
 last_updated: 2026-05-02
 related_code:
   - scripts/train_yolo.py
+  - scripts/eval_yolo.py
   - scripts/self_train_loop.py
   - scripts/automate_preprocessing.py
   - src/
@@ -28,7 +29,7 @@ Python package for JRDB → YOLO labels → train/val/test → **Ultralytics YOL
 | `src/inference/` | Depth / collision-avoidance / alerts |
 | `src/training/` | `TrainPipeline`, `training_device`, cycle logging |
 | `src/repo_paths.py` | Resolves repo root for default `data/...` paths |
-| `scripts/` | CLIs: `train_yolo.py`, `self_train_loop.py`, … |
+| `scripts/` | CLIs: `train_yolo.py`, `eval_yolo.py`, `self_train_loop.py`, … |
 | `notebooks/` | SageMaker / local CUDA notes |
 
 **Elsewhere in the repo:** `application/` (API + clients), `infra/` (Docker, SageMaker), `docs/`.
@@ -60,6 +61,9 @@ python src/data/split_by_sequence.py \
 
 # 3) Train
 python scripts/train_yolo.py --model-cfg yolov8m.pt --epochs 100 --batch 16 --workers 4
+
+# 3b) Val / export ONNX from checkpoint (no training)
+python scripts/eval_yolo.py --weights runs/train/<run>/weights/best.pt --export-onnx
 
 # 4) Self-train loop
 python scripts/self_train_loop.py

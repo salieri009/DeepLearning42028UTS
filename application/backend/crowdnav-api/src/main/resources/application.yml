@@ -5,12 +5,14 @@ spring:
   application:
     name: crowdnav-api
 
-# mock: static TechSpec-shaped response.
-# remote (future): call Python inference at base-url via WebClient.
+# mock: static TechSpec-shaped response (default).
+# onnx: load Ultralytics-exported YOLO ONNX (nms=True) via ONNX Runtime Java.
 app:
   inference:
     mode: mock
-    base-url: http://127.0.0.1:9000
+    onnx-model-path: ${CROWDNAV_ONNX_PATH:}
+    imgsz: 640
+    conf-threshold: 0.25
   cors:
     # Comma-separated list of allowed origins. Use * only for local dev.
     allowed-origins: "http://localhost:3000,http://localhost:8081"

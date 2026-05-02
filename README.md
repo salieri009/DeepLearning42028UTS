@@ -23,7 +23,7 @@
 
 ## Environment Setup
 
-The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (Spring API, RN sample, inference stub), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (Spring API + ONNX inference, RN sample), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
 
 ```bash
 # 1. Clone the repository
@@ -246,9 +246,8 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 ├── data/                     # Dataset root (gitignored large files; DVC) — see docs/DATA.md
 ├── train/                    # Python: src/, scripts/, notebooks/, ML stack
 ├── application/
-│   ├── backend/crowdnav-api/ # Spring Boot API
-│   ├── frontend/rn-client-sample/
-│   └── inference-service/    # Python FastAPI stub
+│   ├── backend/crowdnav-api/ # Spring Boot API (mock or ONNX inference)
+│   └── frontend/rn-client-sample/
 ├── infra/
 │   ├── docker/               # Dockerfile, docker-compose.yml
 │   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
@@ -268,7 +267,7 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 | `PROJECTS/CrowdNav/deploy/` | `infra/docker/`, `infra/sagemaker/` |
 | `PROJECTS/CrowdNav/notebooks/` | `train/notebooks/` |
 | `PROJECTS/CrowdNav/backend/` | `application/backend/` |
-| `PROJECTS/CrowdNav/inference-service/` | `application/inference-service/` |
+| `PROJECTS/CrowdNav/inference-service/` | *(removed — use Spring + ONNX, see `docs/runbooks/post_train_spring_onnx.md`)* |
 | `PROJECTS/CrowdNav/rn-client-sample/` | `application/frontend/rn-client-sample/` |
 | `PROJECTS/CrowdNav/PROJECTS/docs/` … | `docs/architecture/`, `docs/runbooks/`, … |
 | `PROJECTS/TechSpec.md` | `docs/TechSpec.md` |

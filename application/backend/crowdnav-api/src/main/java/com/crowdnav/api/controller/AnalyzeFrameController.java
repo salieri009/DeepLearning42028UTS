@@ -1,5 +1,7 @@
 package com.crowdnav.api.controller;
 
+import java.util.Base64;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,14 +29,25 @@ public class AnalyzeFrameController {
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public AnalyzeFrameResponse analyzeFrameJson(@RequestBody(required = false) AnalyzeFrameRequest request) {
-		return analyzeFrameService.analyzeFrame();
+		byte[] bytes = null;
+		if (request != null && request.frameBase64() != null && !request.frameBase64().isBlank()) {
+			bytes = Base64.getDecoder().decode(request.frameBase64());
+		}
+		return analyzeFrameService.analyzeFrame(bytes, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 	}
 
 	/**
-	 * Multipart upload (optional {@code image} part). Mock stage ignores bytes.
+	 * Multipart upload (optional {@code image} part).
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public AnalyzeFrameResponse analyzeFrameMultipart(@RequestPart(value = "image", required = false) MultipartFile image) {
-		return analyzeFrameService.analyzeFrame();
+	public AnalyzeFrameResponse analyzeFrameMultipart(@RequestPart(value = "image", required = false) MultipartFile image)
+			throws java.io.IOException {
+		byte[] bytes = null;
+		String ct = null;
+		if (image != null && !image.isEmpty()) {
+			bytes = image.getBytes();
+			ct = image.getContentType();
+		}
+		return analyzeFrameService.analyzeFrame(bytes, ct);
 	}
 }

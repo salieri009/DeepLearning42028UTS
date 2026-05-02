@@ -140,6 +140,61 @@ class TrainPipeline:
         return str(exported)
 
 
+def validate_checkpoint(
+    weights_path: str | Path,
+    data_yaml: str | Path,
+    *,
+    imgsz: int = 640,
+    batch: int = 16,
+    device: str | int | None = None,
+) -> dict[str, float]:
+    """Run Ultralytics val() on a checkpoint without training (offline metrics)."""
+    from ultralytics import YOLO
+
+    w = Path(weights_path)
+    if not w.is_file():
+        raise FileNotFoundError(f"weights not found: {w}")
+    y = Path(data_yaml)
+    if not y.is_file():
+        raise FileNotFoundError(f"data.yaml not found: {y}")
+
+    model = YOLO(str(w))
+    results = model.val(data=str(y), imgsz=imgsz, batch=batch, device=device)
+    metrics: dict[str, float] = {}
+    results_dict = getattr(results, "results_dict", None)
+    if isinstance(results_dict, dict):
+        for key, value in results_dict.items():
+            if isinstance(value, (int, float)):
+                metrics[str(key)] = float(value)
+        return metrics
+    for key in ("map50", "map", "precision", "recall", "fitness"):
+        value = getattr(results, key, None)
+        if isinstance(value, (int, float)):
+            metrics[key] = float(value)
+    return metrics
+
+
+def export_checkpoint(
+    weights_path: str | Path,
+    fmt: str,
+    *,
+    imgsz: int = 640,
+    nms: bool = True,
+) -> str:
+    """Export a checkpoint to onnx/torchscript/etc. without training."""
+    from ultralytics import YOLO
+
+    w = Path(weights_path)
+    if not w.is_file():
+        raise FileNotFoundError(f"weights not found: {w}")
+    model = YOLO(str(w))
+    if fmt.lower() == "onnx":
+        exported = model.export(format=fmt, imgsz=imgsz, nms=nms, simplify=True)
+    else:
+        exported = model.export(format=fmt, imgsz=imgsz)
+    return str(exported)
+
+
 def default_model_path() -> str:
     """Pick a local default model if one is present in the repo root."""
     from src.repo_paths import repo_root
