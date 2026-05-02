@@ -1,10 +1,12 @@
 # Final Training Report — CrowdNav YOLOv8m on JRDB
 
-*Last updated: 2026-04-27*
+*Last updated: 2026-05-02*
 
 ## 1. Executive Summary
 
 We trained a single-class **person detector** for the CrowdNav accessibility-navigation system on the JRDB dataset (Stanford robot egocentric video). The pipeline progressed through three training phases on a local RTX 3050 Laptop GPU (4 GB VRAM), each phase building on the weights of the previous one. The final model reaches **mAP@0.5 = 0.4475** and **mAP@0.5:0.95 = 0.2086** on the held-out validation split, a **+75 % improvement over the pseudo-label baseline** at the same hardware budget. Cloud scale-up on AWS SageMaker (`ml.g4dn.xlarge`, T4 16 GB) is the planned next step to push accuracy further by training a larger backbone with a higher batch size for the full 50-epoch schedule the local laptop cannot accommodate.
+
+**Integration note (backend / inference, no frontend):** When SageMaker training completes, the **artifact used for real inference is `best.pt` from that job’s output** (downloaded or copied from S3/job output to the machine running the Python inference service). The stack does **not** rely on a separate SageMaker inference endpoint — local loading of that checkpoint is the planned path (see also `PROJECTS/TechSpec.md` §4.2 / §6).
 
 ## 2. Data Pipeline
 
@@ -192,7 +194,8 @@ python scripts/train_yolo.py \
 
 ## 8. Artefacts
 
-- Trained weights (best & last): `runs/train/crowdnav_yolo/weights/`
+- **AWS SageMaker (when run):** canonical inference file for the app pipeline is **`best.pt` at training job completion** — export from job output/S3 and point the inference service at that path.
+- Trained weights (best & last, local runs): `runs/train/crowdnav_yolo/weights/`
 - Training curves and confusion matrix: `runs/train/crowdnav_yolo/`
 - Final validation metrics: `runs/train/crowdnav_yolo/val/`
 - Conversion script: `scripts/jrdb_train_to_yolo.py`

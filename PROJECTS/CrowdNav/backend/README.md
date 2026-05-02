@@ -1,6 +1,6 @@
 # CrowdNav Java API (mock)
 
-Spring Boot service exposing `POST /api/v1/analyze-frame` with a **mock** response matching [`PROJECTS/TechSpec.md`](../../TechSpec.md) §7. React Native should call this host only; Python inference will be wired later via [`../inference-service`](../inference-service).
+Spring Boot service exposing `POST /api/v1/analyze-frame` with a **mock** response matching [`PROJECTS/TechSpec.md`](../../TechSpec.md) §7. React Native should call this host only; Python inference will be wired later via [`../inference-service`](../inference-service), which will use **`best.pt` from completed AWS SageMaker training** (local copy of the job checkpoint — see TechSpec §4.2).
 
 ## Endpoints (mock ignores payload)
 
