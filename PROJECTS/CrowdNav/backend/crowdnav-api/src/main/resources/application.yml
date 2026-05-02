@@ -1,0 +1,11 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: crowdnav-api
+
+# mock: default static response; future: remote Python inference
+app:
+  inference:
+    mode: mock
