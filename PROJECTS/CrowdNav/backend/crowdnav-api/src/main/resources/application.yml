@@ -5,7 +5,9 @@ spring:
   application:
     name: crowdnav-api
 
-# mock: default static response; future: remote Python inference
+# mock: static TechSpec-shaped response.
+# remote (future): call Python inference at base-url via WebClient.
 app:
   inference:
     mode: mock
+    base-url: http://127.0.0.1:9000
