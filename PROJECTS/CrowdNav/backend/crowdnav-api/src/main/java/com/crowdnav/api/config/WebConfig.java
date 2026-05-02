@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-	@Value("#{'\${app.cors.allowed-origins}'.split(',')}")
+	@Value("#{'${app.cors.allowed-origins:http://localhost:3000}'.split(',')}")
 	private String[] allowedOrigins;
 
 	@Override
@@ -16,6 +16,6 @@ public class WebConfig implements WebMvcConfigurer {
 		registry.addMapping("/api/**")
 				.allowedOrigins(allowedOrigins)
 				.allowedMethods("GET", "POST", "OPTIONS")
-				.allowedHeaders("Content-Type", "Accept");
+				.allowedHeaders("*");
 	}
 }

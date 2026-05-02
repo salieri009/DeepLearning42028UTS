@@ -12,6 +12,5 @@ app:
     mode: mock
     base-url: http://127.0.0.1:9000
   cors:
-    # Comma-separated list of allowed origins.
-    # Override in production (e.g. APP_CORS_ALLOWED_ORIGINS env var or a profile-specific yml).
-    allowed-origins: http://localhost:3000,http://localhost:8081
+    # Comma-separated list of allowed origins. Use * only for local dev.
+    allowed-origins: "http://localhost:3000,http://localhost:8081"
