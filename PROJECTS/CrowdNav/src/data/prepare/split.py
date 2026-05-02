@@ -18,8 +18,8 @@ def run(
     output_dir: Path = Path("data/processed/splits"),
     stem_prefix: str = "",
     seed: int = 42,
-    train_ratio: float = 0.7,
-    val_ratio: float = 0.2,
+    train_ratio: float = 0.8,
+    val_ratio: float = 0.1,
     extra_argv: Sequence[str] = (),
 ) -> None:
     """Run the dataset split programmatically.

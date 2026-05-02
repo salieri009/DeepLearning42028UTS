@@ -24,8 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional prefix added to every output stem to avoid filename collisions (example: image0 or image2)",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed for splitting sequences")
-    parser.add_argument("--train-ratio", type=float, default=0.7, help="Train split ratio")
-    parser.add_argument("--val-ratio", type=float, default=0.2, help="Validation split ratio")
+    parser.add_argument("--train-ratio", type=float, default=0.8, help="Train split ratio")
+    parser.add_argument("--val-ratio", type=float, default=0.1, help="Validation split ratio")
     return parser
 
 

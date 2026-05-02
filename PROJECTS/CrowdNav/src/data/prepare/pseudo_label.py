@@ -14,11 +14,11 @@ from typing import Sequence
 
 def run(
     *,
-    model: str = "yolov8x.pt",
+    model: str = "yolov8m.pt",
     src_dir: Path = Path("data/raw/images"),
     out_dir: Path = Path("data/processed/labels"),
-    conf_thresh: float = 0.5,
-    manual_thresh: float = 0.8,
+    conf_thresh: float = 0.4,
+    manual_thresh: float = 0.6,
     device: str = "cuda",
     debug: bool = False,
     debug_dir: Path = Path("data/processed/debug_previews"),
@@ -27,6 +27,9 @@ def run(
     checkpoint_interval: int = 500,
     max_images: int = 0,
     overwrite_existing: bool = False,
+    imgsz: int = 640,
+    iou: float = 0.7,
+    augment: bool = False,
     extra_argv: Sequence[str] = (),
 ) -> int:
     """Run the pseudo-labeling pipeline programmatically.
@@ -47,7 +50,11 @@ def run(
         "--manual-thresh", str(manual_thresh),
         "--device", device,
         "--checkpoint-interval", str(checkpoint_interval),
+        "--imgsz", str(imgsz),
+        "--iou", str(iou),
     ]
+    if augment:
+        argv.append("--augment")
     if debug:
         argv += ["--debug", "--debug-dir", str(debug_dir)]
     if no_clearml:

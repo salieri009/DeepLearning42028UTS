@@ -80,7 +80,7 @@ The system is divided into three primary components:
 | Cloud Training | AWS SageMaker (Keras/TF wrapper) |
 | Data Storage | S3 (training data), local `data/processed/` |
 | Computer Vision | OpenCV (frame extraction, preprocessing) |
-| Backend API (planned) | FastAPI or Flask |
+| Backend API (planned) | Spring Boot (`PROJECTS/CrowdNav/backend/crowdnav-api`) — Python inference behind optional internal service |
 | Frontend (planned) | React Native |
 
 ## 6. Real-Time Inference Criteria

@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.mlops.train_pipeline import TrainPipeline, default_model_path
+from src.mlops.training_device import describe_runtime, resolve_training_device
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18,7 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-cfg",
         default=default_model_path(),
-        help="Base model path or Ultralytics model name (default: local yolov8x.pt or yolov8n.pt)",
+        help="Base model path or Ultralytics model name (default: local yolov8m.pt or yolov8m)",
     )
     parser.add_argument(
         "--data-yaml",
@@ -26,13 +27,26 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to YOLO data.yaml produced by the split step",
     )
-    parser.add_argument("--epochs", type=int, default=1, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size")
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
-    parser.add_argument("--device", default=None, help="Device to use, for example cpu, 0, or 0,1")
+    parser.add_argument(
+        "--device",
+        default=None,
+        help=(
+            "Ultralytics device: cpu, 0, cuda:0, etc. "
+            "If omitted: CROWDNAV_DEVICE env, else CUDA:0 if available, else cpu."
+        ),
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="DataLoader workers (keep low on 16 GB system RAM, e.g. ml.g4dn.xlarge)",
+    )
     parser.add_argument("--project", default="runs/train", help="Ultralytics project output directory")
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
-    parser.add_argument("--patience", type=int, default=50, help="Early stopping patience")
+    parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
     parser.add_argument(
         "--no-exist-ok",
         action="store_true",
@@ -54,17 +68,21 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
 
+    device = resolve_training_device(args.device)
+    print(f"[CrowdNav] runtime={describe_runtime()} device={device!r} (set --device or CROWDNAV_DEVICE to override auto)")
+
     pipeline = TrainPipeline(
         model_cfg=args.model_cfg,
         data_yaml=str(args.data_yaml),
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
-        device=args.device,
+        device=device,
         project=args.project,
         name=args.name,
         patience=args.patience,
         exist_ok=not args.no_exist_ok,
+        workers=args.workers,
     )
 
     artifacts = pipeline.train()

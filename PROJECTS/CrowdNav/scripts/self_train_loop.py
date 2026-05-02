@@ -1,4 +1,4 @@
-"""10-cycle self-training loop for JRDB pseudo-labeling.
+"""Multi-cycle self-training loop for JRDB pseudo-labeling.
 
 Cycle definition:
   (train -> pseudo-label regenerate -> split regenerate) = 1 cycle
@@ -13,14 +13,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.data.prepare import pseudo_label as pseudo_label_api
 from src.data.prepare import split as split_api
-from src.mlops.train_pipeline import TrainPipeline
 from src.mlops.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
+from src.mlops.train_pipeline import TrainPipeline
+from src.mlops.training_device import describe_runtime, resolve_training_device
 
 
 @dataclass(frozen=True)
@@ -37,18 +43,32 @@ class CycleSummary:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run a multi-cycle self-training loop (train->relabel->split).")
-    p.add_argument("--cycles", type=int, default=10, help="Number of self-training cycles")
-    p.add_argument("--base-model", type=str, default="yolov8x.pt", help="Base model for cycle 0")
-    p.add_argument("--device", type=str, default="0", help="Training device for Ultralytics (e.g. 0, 0,1, cpu)")
-    p.add_argument("--epochs", type=int, default=5, help="Epochs per cycle")
+    p.add_argument("--cycles", type=int, default=5, help="Number of self-training cycles")
+    p.add_argument("--base-model", type=str, default="yolov8m.pt", help="Base model for cycle 0")
+    p.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Training device; if omitted, same auto rule as train_yolo (CUDA 0 or cpu).",
+    )
+    p.add_argument("--epochs", type=int, default=15, help="Epochs per cycle")
     p.add_argument("--imgsz", type=int, default=640, help="Training image size")
     p.add_argument("--batch", type=int, default=16, help="Training batch size")
-    p.add_argument("--patience", type=int, default=50, help="Early stopping patience")
+    p.add_argument("--patience", type=int, default=20, help="Early stopping patience")
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="DataLoader workers (keep low on 16GB system RAM, e.g. ml.g4dn.xlarge)",
+    )
     p.add_argument("--labels-dir", type=Path, default=Path("data/processed/labels"), help="Pseudo-label output dir")
     p.add_argument("--splits-dir", type=Path, default=Path("data/processed/splits"), help="Split output dir")
     p.add_argument("--raw-images", type=Path, default=Path("data/raw/images"), help="Raw images root dir")
-    p.add_argument("--conf-thresh", type=float, default=0.5, help="Pseudo-label confidence threshold")
-    p.add_argument("--manual-thresh", type=float, default=0.8, help="Manual-review threshold")
+    p.add_argument("--conf-thresh", type=float, default=0.4, help="Pseudo-label confidence threshold")
+    p.add_argument("--manual-thresh", type=float, default=0.6, help="Manual-review threshold")
+    p.add_argument("--label-imgsz", type=int, default=640, help="Pseudo-label inference image size")
+    p.add_argument("--label-iou", type=float, default=0.7, help="Pseudo-label NMS IoU threshold")
+    p.add_argument("--label-augment", action="store_true", help="Enable TTA during pseudo-labeling")
     p.add_argument("--overwrite-labels", action="store_true", help="Overwrite existing labels each cycle")
     p.add_argument("--checkpoint-interval", type=int, default=500, help="Pseudo-label checkpoint interval")
     p.add_argument("--no-clearml", action="store_true", help="Disable ClearML in pseudo-labeling")
@@ -99,6 +119,9 @@ def _count_split_pairs(splits_dir: Path, split_name: str) -> int:
 def main() -> int:
     args = build_parser().parse_args()
 
+    train_device = resolve_training_device(args.device)
+    print(f"[CrowdNav] self_train runtime={describe_runtime()} device={train_device!r}")
+
     model_for_cycle = args.base_model
     for cycle in range(args.cycles):
         started = time.time()
@@ -110,11 +133,12 @@ def main() -> int:
             epochs=args.epochs,
             imgsz=args.imgsz,
             batch=args.batch,
-            device=args.device,
+            device=train_device,
             project=args.project,
             name=run_name,
             patience=args.patience,
             exist_ok=True,
+            workers=args.workers,
         )
         artifacts = pipeline.train()
 
@@ -135,6 +159,9 @@ def main() -> int:
             no_clearml=args.no_clearml,
             checkpoint_interval=args.checkpoint_interval,
             overwrite_existing=args.overwrite_labels,
+            imgsz=args.label_imgsz,
+            iou=args.label_iou,
+            augment=args.label_augment,
         )
 
         # Split regenerate (merge both camera views into one splits dir)
@@ -180,4 +207,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

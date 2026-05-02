@@ -3,14 +3,14 @@
 This script is designed to run under the SageMaker Training Toolkit.
 It expects COCO JSON annotation files and an images root directory.
 
-Recommended workflow:
-1) Prepare data locally:
+Recommended workflow (no S3 required):
+1) Prepare data on local disk or EBS:
    - pseudo-label -> split -> convert to COCO JSON
-2) Upload `data/processed/coco/*.json` and `data/processed/splits/*/images` to S3
-3) Launch a SageMaker training job that calls this script.
+2) Point `--train-json`, `--val-json`, `--images-root` at those paths (or SageMaker
+   channel paths if you use managed training with mounted data).
 
 Artifacts:
-- Model is saved to SM_MODEL_DIR (uploaded to S3 automatically)
+- Model is saved to SM_MODEL_DIR (or a local path if not using SageMaker)
 - Metrics JSON is written to SM_OUTPUT_DATA_DIR for easy retrieval
 """
 
@@ -43,7 +43,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--val-json", type=str, required=True, help="Path to COCO val.json")
     p.add_argument("--images-root", type=str, required=True, help="Root directory containing images referenced by COCO JSON")
 
-    p.add_argument("--epochs", type=int, default=1)
+    p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--imgsz", type=int, default=640)
     p.add_argument("--batch", type=int, default=8)
     p.add_argument("--lr", type=float, default=1e-3)
