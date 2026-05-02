@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Jupyter dev environment (GPU optional via block below)
+  crowdnav-jupyter:
+    # Build from repository root (parent of infra/docker/) so train/requirements.txt is available.
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    container_name: crowdnav_jupyter_env
+    # Map host:8888 -> container Jupyter
+    ports:
+      - "8888:8888"
+    # NVIDIA GPU (Linux + nvidia-container-toolkit; e.g. T4 on g4dn)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    working_dir: /opt/program/train
+    # Mount repository at /opt/program (edit on host, visible in container)
+    volumes:
+      - ../../:/opt/program/
+    # Start Jupyter Lab on launch
+    command: >
+      jupyter lab
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --allow-root
+      --NotebookApp.token=''
+      --NotebookApp.password=''

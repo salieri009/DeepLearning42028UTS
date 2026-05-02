@@ -23,24 +23,23 @@
 
 ## Environment Setup
 
-The application code for training and inference lives under **`PROJECTS/CrowdNav`**. Create the virtual environment at the repo root or inside that folder; below uses the **repo root** and installs [`PROJECTS/CrowdNav/requirements.txt`](PROJECTS/CrowdNav/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (Spring API, RN sample, inference stub), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
 
 ```bash
 # 1. Clone the repository
 git clone <repo-url> "Assignment 3"
 cd "Assignment 3"
 
-# 2. (Optional) Work in the CrowdNav package
-cd PROJECTS/CrowdNav
-
-# 3. Create and activate a virtual environment
+# 2. Create and activate a virtual environment (repo root)
 python -m venv .venv
 .venv\Scripts\activate   # Windows
 # source .venv/bin/activate  # macOS/Linux
 
-# 4. Install dependencies (use CrowdNav requirements for ML stack)
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
+
+Day-to-day training: `cd train` and run `python scripts/train_yolo.py` (dataset lives in **`data/`** at repo root — see [`docs/DATA.md`](docs/DATA.md)).
 
 > **Default branch** is **`main`**; integration branch **`dev`** tracks ongoing work.
 
@@ -62,37 +61,37 @@ set CLEARML_OFFLINE_MODE=1
 
 ### 2) Smoke test (creates a Task and logs metrics)
 
-Run from **`PROJECTS/CrowdNav`** (so `src` resolves on `PYTHONPATH`):
+Run from **`train/`** (so `src` resolves on `PYTHONPATH`):
 
 ```bash
-cd PROJECTS/CrowdNav
+cd train
 python -m src.clearml_smoketest
 ```
 
 ## Training (YOLO) — quick reference
 
-Training is implemented with **Ultralytics YOLO** and `scripts/train_yolo.py` inside [`PROJECTS/CrowdNav`](PROJECTS/CrowdNav). Typical setup:
+Training is implemented with **Ultralytics YOLO** and [`train/scripts/train_yolo.py`](train/scripts/train_yolo.py). Typical setup:
 
 | Topic | Details |
 |--------|--------|
 | **Default model** | `yolov8m.pt` (override with `--model-cfg`) |
-| **Data config** | `data/processed/splits/data.yaml` with `path: .` (portable across machines) |
-| **Split ratio** | Train / val / test **8 : 1 : 1** (see `src/data/split_by_sequence.py`) |
+| **Data config** | `<repo>/data/processed/splits/data.yaml` with `path: .` (portable across machines) |
+| **Split ratio** | Train / val / test **8 : 1 : 1** (see `train/src/data/split_by_sequence.py`) |
 | **Defaults** | 100 epochs, early-stop patience 20, batch 16, dataloader `workers` 4 (suits **ml.g4dn.xlarge**: T4, 16 GB system RAM) |
 | **Device** | Omit `--device` to auto-select **CUDA** if available, else CPU; or `--device 0` / `CROWDNAV_DEVICE=cpu` |
 | **Cloud** | **AWS SageMaker** Notebook/Studio on **ml.g4dn.xlarge** — run the same command on the instance; **no S3** required (data on EBS next to the repo) |
 | **Local** | Same commands on a machine with **NVIDIA CUDA** installed |
 
-**One-shot train** (from `PROJECTS/CrowdNav`):
+**One-shot train** (from `train/`):
 
 ```bash
+cd train
 python scripts/train_yolo.py \
-  --data-yaml data/processed/splits/data.yaml \
   --model-cfg yolov8m.pt \
   --epochs 100 --batch 16 --workers 4
 ```
 
-Full pipeline diagram and pseudo-labeling thresholds are documented in [`PROJECTS/CrowdNav/PROJECTS/docs/data_pipeline_diagram.md`](PROJECTS/CrowdNav/PROJECTS/docs/data_pipeline_diagram.md). Orchestration notes: [`notebooks/01_sagemaker_clearml_launcher.ipynb`](PROJECTS/CrowdNav/notebooks/01_sagemaker_clearml_launcher.ipynb).
+Full pipeline diagram: [`docs/architecture/data_pipeline_diagram.md`](docs/architecture/data_pipeline_diagram.md). Notebook: [`train/notebooks/01_sagemaker_clearml_launcher.ipynb`](train/notebooks/01_sagemaker_clearml_launcher.ipynb).
 
 ## Data Version Control (DVC)
 
@@ -107,7 +106,7 @@ graph LR
     C --> D[Preprocessing validation\nclasses.txt + label checks]
     D --> E[Dataset split\ntrain / val / test]
     E -->     F[data.yaml]
-    F --> G[YOLO training\nPROJECTS/CrowdNav/scripts/train_yolo.py]
+    F --> G[YOLO training\ntrain/scripts/train_yolo.py]
     G --> H[Weights\nbest.pt / last.pt]
     H --> I[Inference\ncollision_avoidance.py]
 ```
@@ -164,7 +163,7 @@ dvc pull
 
 ### Pushing Data (After Adding/Updating Datasets)
 ```bash
-# 1. Track new or updated data with DVC (paths may live under PROJECTS/CrowdNav — adjust to your layout)
+# 1. Track new or updated data with DVC (large assets under repo-root data/ — see docs/DATA.md)
 dvc add data/raw
 dvc add data/processed
 dvc add models/
@@ -241,20 +240,40 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 
 ```text
 .
-├── README.md                 # This file — assignment + CrowdNav overview
-├── requirements.txt         # (optional) root; primary ML stack: PROJECTS/CrowdNav/requirements.txt
-├── .github/                  # CI (e.g. build-check for CrowdNav)
-└── PROJECTS/
-    ├── PRD.md
-    ├── TechSpec.md
-    └── CrowdNav/             # Main code: data pipeline, YOLO training, inference, deploy/
-        ├── scripts/          # train_yolo.py, self_train_loop.py, automate_preprocessing.py
-        ├── src/              # data/, inference/, mlops/ (TrainPipeline, training_device)
-        ├── deploy/          # Dockerfile (PyTorch + CUDA 12.1), docker-compose
-        ├── notebooks/       # SageMaker / local training notes
-        ├── data/            # raw + processed (often gitignored / DVC)
-        └── PROJECTS/        # SysML + docs (e.g. data_pipeline_diagram.md)
+├── README.md
+├── requirements.txt          # -r train/requirements.txt
+├── project_logo.svg
+├── data/                     # Dataset root (gitignored large files; DVC) — see docs/DATA.md
+├── train/                    # Python: src/, scripts/, notebooks/, ML stack
+├── application/
+│   ├── backend/crowdnav-api/ # Spring Boot API
+│   ├── frontend/rn-client-sample/
+│   └── inference-service/    # Python FastAPI stub
+├── infra/
+│   ├── docker/               # Dockerfile, docker-compose.yml
+│   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
+│   └── setup.sh
+├── docs/                     # TechSpec, PRD, architecture, runbooks, SysML
+├── .github/workflows/
+└── .dvc/                     # DVC config (repo root)
 ```
+
+### Path migration (old → new)
+
+| Before | After |
+|--------|--------|
+| `PROJECTS/CrowdNav/` (monolith) | `train/` + `application/` + `infra/` + `docs/` |
+| `PROJECTS/CrowdNav/scripts/` | `train/scripts/` |
+| `PROJECTS/CrowdNav/src/` | `train/src/` |
+| `PROJECTS/CrowdNav/deploy/` | `infra/docker/`, `infra/sagemaker/` |
+| `PROJECTS/CrowdNav/notebooks/` | `train/notebooks/` |
+| `PROJECTS/CrowdNav/backend/` | `application/backend/` |
+| `PROJECTS/CrowdNav/inference-service/` | `application/inference-service/` |
+| `PROJECTS/CrowdNav/rn-client-sample/` | `application/frontend/rn-client-sample/` |
+| `PROJECTS/CrowdNav/PROJECTS/docs/` … | `docs/architecture/`, `docs/runbooks/`, … |
+| `PROJECTS/TechSpec.md` | `docs/TechSpec.md` |
+
+**Architecture / layout note (for future development):** the tree above replaced the old `PROJECTS/CrowdNav` monolith. CI, Docker build context, import paths, and doc links all follow the new layout. For boundaries, data root, and what to do with stale paths, read [`docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md`](docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md).
 
 ---
 

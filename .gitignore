@@ -25,8 +25,12 @@ desktop.ini
 /data/raw/*
 !/data/raw/.gitkeep
 
-# CrowdNav (monorepo path): do not commit raw image frames; use DVC or local only
-PROJECTS/CrowdNav/data/raw/images/
+# Training / ML (large local artifacts under train/)
+train/runs/
+train/scratch/
+
+# Legacy monolith directory (local data / DVC tmp only — not part of new layout)
+PROJECTS/CrowdNav/
 /data/processed/*
 !/data/processed/.gitkeep
 /models/*

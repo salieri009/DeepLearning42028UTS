@@ -1,0 +1,49 @@
+# =============================================================================
+# PR Checklist — auto-comment on new pull requests
+# =============================================================================
+
+name: PR Checklist
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  post-checklist:
+    name: Post Review Checklist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post PR checklist comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const body = `## PR checklist
+
+            Please review before approving:
+
+            - [ ] Does the feature work as intended?
+            - [ ] Does it follow project coding conventions?
+            - [ ] Have relevant tests been added or updated?
+            - [ ] Have unnecessary comments and debug code been removed?
+            - [ ] Is README or other documentation updated if needed?
+
+            ---
+            > Check off each item as you review.
+            > *This comment was posted automatically by GitHub Actions.*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+            console.log('PR checklist comment posted.');

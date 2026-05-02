@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./PROJECTS/CrowdNav
+        working-directory: ./train
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,9 +44,6 @@ jobs:
           if [ -d src ]; then
             TARGETS="$TARGETS src"
           fi
-          if [ -d models ]; then
-            TARGETS="$TARGETS models"
-          fi
           if [ -n "$TARGETS" ]; then
             black --check $TARGETS
           else
@@ -58,9 +55,6 @@ jobs:
           TARGETS=""
           if [ -d src ]; then
             TARGETS="$TARGETS src"
-          fi
-          if [ -d models ]; then
-            TARGETS="$TARGETS models"
           fi
           if [ -n "$TARGETS" ]; then
             flake8 $TARGETS --max-line-length=88
@@ -84,24 +78,11 @@ jobs:
             echo "No src directory found to run Mypy."
           fi
 
-      # DVC / ClearML 환경 변수(Secret) 주입 가이드
-      # GitHub Repository Settings > Secrets and variables > Actions에 아래 시크릿을 추가.
-      # - name: Setup DVC and ClearML
-      #   env:
-      #     GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
-      #     CLEARML_API_ACCESS_KEY: ${{ secrets.CLEARML_API_ACCESS_KEY }}
-      #     CLEARML_API_SECRET_KEY: ${{ secrets.CLEARML_API_SECRET_KEY }}
-      #     CLEARML_WEB_HOST: ${{ secrets.CLEARML_WEB_HOST }}
-      #     CLEARML_API_HOST: ${{ secrets.CLEARML_API_HOST }}
-      #     CLEARML_FILES_HOST: ${{ secrets.CLEARML_FILES_HOST }}
-      #   run: |
-      #     dvc pull
-      #     # 필요 시 clearml-init 관련 스크립트 실행
   frontend-build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./PROJECTS/CrowdNav/frontend
+        working-directory: ./application/frontend/rn-client-sample
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

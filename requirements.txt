@@ -1,24 +1,2 @@
-# Data Version Control
-dvc[gdrive]
-
-# Deep Learning
-torch
-torchvision
-ultralytics
-
-# Computer Vision
-opencv-python
-
-# Backend API
-fastapi
-uvicorn
-
-# Utilities
-numpy
-pandas
-matplotlib
-tqdm
-pyyaml
-
-# Experiment Tracking
-clearml
+# Meta-requirements: ML stack lives under train/
+-r train/requirements.txt

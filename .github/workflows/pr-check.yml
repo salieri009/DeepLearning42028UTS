@@ -1,0 +1,168 @@
+# =============================================================================
+# PR Check Workflow (PR 유효성 검사)
+# =============================================================================
+# 용도: PR이 열리거나 업데이트될 때 자동으로 실행되어 아래 항목을 검증합니다.
+#   1. 머지 충돌(Merge Conflict) 여부 감지 및 코멘트
+#   2. PR 제목이 Conventional Commits 형식을 따르는지 검사
+#   3. 변경된 파일 목록을 PR 코멘트로 요약 출력
+# =============================================================================
+
+name: PR Check
+
+# PR이 열리거나 업데이트될 때 실행
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - dev
+
+# 권한 설정 — PR 코멘트 작성을 위해 write 권한 필요
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: 리포지토리 체크아웃
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 전체 히스토리 가져오기 (머지 충돌 감지용)
+
+      # -----------------------------------------------------------------------
+      # Step 2: 머지 충돌 감지 (Merge Conflict Detection)
+      # 현재 PR 브랜치가 base 브랜치(main)와 충돌하는지 시뮬레이션
+      # -----------------------------------------------------------------------
+      - name: Check for merge conflicts
+        id: conflict-check
+        run: |
+          echo "🔍 머지 충돌 여부를 확인합니다..."
+
+          # base 브랜치 정보 가져오기
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+          # 머지 시뮬레이션 (실제 머지하지 않음)
+          if git merge-tree $(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }}) HEAD origin/${{ github.event.pull_request.base.ref }} | grep -q "^<<<<<<<"; then
+            echo "has_conflict=true" >> $GITHUB_OUTPUT
+            echo "❌ 머지 충돌이 감지되었습니다!"
+          else
+            echo "has_conflict=false" >> $GITHUB_OUTPUT
+            echo "✅ 머지 충돌이 없습니다."
+          fi
+
+      # 충돌 감지 시 PR 코멘트 작성
+      - name: Comment on merge conflict
+        if: steps.conflict-check.outputs.has_conflict == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ⚠️ Merge Conflict Detected / 머지 충돌 감지
+
+            This PR has merge conflicts with the \`${{ github.event.pull_request.base.ref }}\` branch.
+            Please resolve the conflicts before merging.
+
+            > 이 PR은 \`${{ github.event.pull_request.base.ref }}\` 브랜치와 충돌이 있습니다.
+            > 머지 전에 충돌을 해결해주세요.`
+            });
+
+      # -----------------------------------------------------------------------
+      # Step 3: PR 제목 컨벤션 검사 (Conventional Commits)
+      # 허용 형식: feat:, fix:, docs:, refactor:, style:, test:, chore:, perf:, ci:, build:, revert:
+      # 선택적 scope 허용: feat(api): ...
+      # -----------------------------------------------------------------------
+      - name: Validate PR title convention
+        id: title-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = context.payload.pull_request.title;
+            // Conventional Commits 정규식 패턴
+            const pattern = /^(feat|fix|docs|refactor|style|test|chore|perf|ci|build|revert)(\(.+\))?!?: .+/;
+
+            if (!pattern.test(title)) {
+              // 컨벤션 위반 시 코멘트 작성
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `## ❌ PR Title Convention Error / PR 제목 컨벤션 오류
+
+            **Current title / 현재 제목:** \`${title}\`
+
+            PR title must follow **Conventional Commits** format:
+            > PR 제목은 **Conventional Commits** 형식을 따라야 합니다:
+
+            | Prefix | Description / 설명 |
+            |--------|-------------------|
+            | \`feat:\` | New feature / 새로운 기능 |
+            | \`fix:\` | Bug fix / 버그 수정 |
+            | \`docs:\` | Documentation / 문서 변경 |
+            | \`refactor:\` | Code refactoring / 코드 리팩토링 |
+            | \`style:\` | Code style / 코드 스타일 변경 |
+            | \`test:\` | Tests / 테스트 추가/수정 |
+            | \`chore:\` | Misc changes / 기타 변경 |
+            | \`perf:\` | Performance / 성능 개선 |
+            | \`ci:\` | CI/CD changes / CI/CD 변경 |
+            | \`build:\` | Build system / 빌드 시스템 변경 |
+            | \`revert:\` | Revert / 되돌리기 |
+
+            **Example / 예시:** \`feat: add crowd detection model\` or \`fix(api): resolve timeout issue\``
+              });
+              core.setFailed(`PR title "${title}" does not follow Conventional Commits format.`);
+            } else {
+              console.log(`✅ PR title "${title}" follows Conventional Commits format.`);
+            }
+
+      # -----------------------------------------------------------------------
+      # Step 4: 변경된 파일 목록 요약 코멘트 (Changed Files Summary)
+      # -----------------------------------------------------------------------
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+
+      - name: Comment changed files summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const allChanged = `${{ steps.changed-files.outputs.all_changed_files }}`;
+            const added = `${{ steps.changed-files.outputs.added_files }}`;
+            const modified = `${{ steps.changed-files.outputs.modified_files }}`;
+            const deleted = `${{ steps.changed-files.outputs.deleted_files }}`;
+
+            // 파일 목록을 배열로 변환하는 헬퍼 함수
+            const toList = (str) => str.trim() ? str.trim().split(' ').map(f => `- \`${f}\``).join('\n') : '_None_';
+
+            const totalCount = allChanged.trim() ? allChanged.trim().split(' ').length : 0;
+
+            const body = `## 📋 Changed Files Summary / 변경 파일 요약
+
+            **Total changed files / 총 변경 파일 수:** ${totalCount}
+
+            ### ➕ Added / 추가된 파일
+            ${toList(added)}
+
+            ### ✏️ Modified / 수정된 파일
+            ${toList(modified)}
+
+            ### 🗑️ Deleted / 삭제된 파일
+            ${toList(deleted)}`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
