@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-04-22
+last_updated: 2026-05-02
 related_code:
   - src/data/pseudo_label_yolov8.py
   - src/data/split_by_sequence.py
@@ -66,6 +66,9 @@ The system is divided into three primary components:
 2. SageMaker Training Job runs YOLOv8 fine-tuning using `data.yaml`.
 3. Output: fine-tuned model `.pt` / `.onnx` for deployment.
 
+> [!NOTE]
+> **Inference weights (current plan):** Real-time inference uses the **`best.pt` checkpoint produced when AWS SageMaker training finishes** (Ultralytics/YOLO usual artifact under the job output path). That file is **copied or downloaded to the machine running the Python inference service**, then loaded locally — **no separate SageMaker inference endpoint is assumed** for this project phase.
+
 ### 4.3 Dataset Split
 `src/data/split_by_sequence.py` splits data at the sequence level:
 - Train: 70%, Val: 20%, Test: 10%
@@ -86,7 +89,8 @@ The system is divided into three primary components:
 ## 6. Real-Time Inference Criteria
 - **Hardware Accelerator:** GPU (CUDA compatible) required for latency-sensitive processing.
 - **Latency Target:** Processing time per frame under 100ms (10 FPS minimum) for real-time navigation.
-- **Optimization:** Deploy fine-tuned model to GPU-backed AWS endpoints (SageMaker inference endpoint). ONNX export available as a CPU fallback path.
+- **Model artifact:** Use **`best.pt` from the completed AWS SageMaker training job** for inference weights (see §4.2 note). Load it on the **local** inference host next to the Spring/Java stack (or ONNX export on CPU as fallback).
+- **Optimization (optional future):** Alternatively deploy fine-tuned weights to GPU-backed AWS inference endpoints; local loading from `best.pt` is the baseline plan for integration.
 
 ## 7. API Design Outline (Draft)
 - `POST /api/v1/analyze-frame`: Uploads a single frame or base64 string and returns bounding box coordinates and crowd density scores.
