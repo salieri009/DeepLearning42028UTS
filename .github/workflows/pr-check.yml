@@ -16,6 +16,8 @@ on:
     branches:
       - main
       - dev
+      - part-c
+      - refactor/train-layout
 
 # 권한 설정 — PR 코멘트 작성을 위해 write 권한 필요
 permissions:

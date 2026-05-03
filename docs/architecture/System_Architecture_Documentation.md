@@ -3,7 +3,7 @@ last_updated: 2026-05-02
 related_code:
   - train/src/data/preprocessing/
   - train/src/inference/
-  - train/src/mlops/train_pipeline.py
+  - train/src/training/train_pipeline.py
   - train/scripts/train_yolo.py
 related_diagram:
   - docs/architecture/System_Architecture_Documentation.md
@@ -25,7 +25,7 @@ The preprocessing layer reads JSON, normalizes raw records into typed domain mod
 Separation goals:
 - Parsing and format conversion remain in preprocessing modules
 - Runtime risk and output routing remain in inference modules
-- Experiment tracking and lifecycle orchestration remain in mlops/utils modules
+- Experiment tracking remains in utils (ClearML); training execution lives in `training/` modules
 - CI quality gates (ruff + mypy strict) validate Python quality in build workflows
 
 ## 2. Block Definition Diagram (BDD)
@@ -217,8 +217,8 @@ flowchart LR
     subgraph MLOpsSubsystem
       Smoke[clearml_smoketest.py\nmain]
       Setup[utils/clearml_setup.py\ninit_clearml_task]
-      Pipeline[mlops/train_pipeline.py\nTrainPipeline]
-      MockGen[mlops/mock_generator.py\nMockYOLOGenerator export]
+      Pipeline[training/train_pipeline.py\nTrainPipeline]
+      MockGen[training/mock_generator.py\nMockYOLOGenerator export]
       SMTrain[infra/sagemaker/sagemaker_train.py\nSageMaker YOLO job]
       ClearML[(ClearML Task/Logger)]
       ModelOut[(Saved model artifact)]

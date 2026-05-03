@@ -1,0 +1,64 @@
+# Validate training package + SageMaker entrypoints (no GPU in CI).
+name: Train Pipeline
+
+on:
+  push:
+    branches:
+      - part-c
+      - refactor/train-layout
+    paths:
+      - 'train/src/training/**'
+      - 'train/src/repo_paths.py'
+      - 'train/notebooks/01_sagemaker_clearml_launcher.ipynb'
+      - 'infra/sagemaker/**'
+      - '.github/workflows/train-pipeline.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+      - part-c
+      - refactor/train-layout
+    paths:
+      - 'train/src/training/**'
+      - 'train/src/repo_paths.py'
+      - 'train/notebooks/01_sagemaker_clearml_launcher.ipynb'
+      - 'infra/sagemaker/**'
+      - '.github/workflows/train-pipeline.yml'
+
+jobs:
+  train-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff python-dotenv
+
+      - name: Ruff (training + SageMaker scripts)
+        run: |
+          python -m ruff check train/src/training infra/sagemaker/sagemaker_launch.py infra/sagemaker/sagemaker_train.py
+
+      - name: Byte-compile training helpers (isolated from full-package mypy)
+        working-directory: ./train
+        run: |
+          python -m py_compile src/training/hyperparams.py
+          python -m py_compile src/training/sagemaker_cli.py
+          python -m py_compile src/training/subprocess_runner.py
+          python -m py_compile src/training/protocols.py
+
+      - name: Byte-compile SageMaker entrypoints
+        run: |
+          python -m py_compile infra/sagemaker/sagemaker_launch.py
+          python -m py_compile infra/sagemaker/sagemaker_train.py
+
+      - name: Smoke import training from train cwd
+        working-directory: ./train
+        run: python -c "from src.training import default_training_presets; print(default_training_presets()['g4dn_notebook'])"

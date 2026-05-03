@@ -4,7 +4,7 @@ Cycle definition:
   (train -> pseudo-label regenerate -> split regenerate) = 1 cycle
 
 This script is intentionally lightweight and delegates to existing CLIs/APIs:
-- Train: src.mlops.train_pipeline.TrainPipeline
+- Train: src.training.TrainPipeline (public package API)
 - Pseudo-label: src.data.prepare.pseudo_label.run()
 - Split: src.data.prepare.split.run()
 """
@@ -23,11 +23,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.prepare import pseudo_label as pseudo_label_api
-from src.data.prepare import split as split_api
-from src.mlops.cycle_logging import CycleMetrics, append_cycle_metrics_csv, write_cycle_metrics_json
-from src.mlops.train_pipeline import TrainPipeline
-from src.mlops.training_device import describe_runtime, resolve_training_device
+from src.repo_paths import repo_root  # noqa: E402
+from src.data.prepare import pseudo_label as pseudo_label_api  # noqa: E402
+from src.data.prepare import split as split_api  # noqa: E402
+from src.training import (  # noqa: E402
+    CycleMetrics,
+    TrainPipeline,
+    append_cycle_metrics_csv,
+    describe_runtime,
+    resolve_training_device,
+    write_cycle_metrics_json,
+)
 
 
 @dataclass(frozen=True)
@@ -88,7 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--overwrite-labels", action="store_true", help="Overwrite existing labels each cycle")
     p.add_argument("--checkpoint-interval", type=int, default=500, help="Pseudo-label checkpoint interval")
     p.add_argument("--no-clearml", action="store_true", help="Disable ClearML in pseudo-labeling")
-    p.add_argument("--project", type=str, default="runs/train", help="Ultralytics project output directory")
+    p.add_argument(
+        "--project",
+        type=str,
+        default=str(repo_root() / "runs" / "train"),
+        help="Ultralytics project output directory (default: <repo>/runs/train)",
+    )
     p.add_argument("--name-prefix", type=str, default="selftrain", help="Run name prefix")
     p.add_argument(
         "--log-dir",

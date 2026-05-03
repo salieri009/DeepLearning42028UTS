@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.mlops.train_pipeline import TrainPipeline, default_model_path
-from src.mlops.training_device import describe_runtime, resolve_training_device
+from src.repo_paths import default_data_yaml, repo_root  # noqa: E402
+from src.training import (  # noqa: E402
+    TrainPipeline,
+    default_model_path,
+    describe_runtime,
+    resolve_training_device,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,9 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--data-yaml",
-        default=REPO_ROOT / "data/processed/splits/data.yaml",
+        default=None,
         type=Path,
-        help="Path to YOLO data.yaml produced by the split step (default: <repo>/data/processed/splits/data.yaml)",
+        help=(
+            "Path to YOLO data.yaml (default: CROWDNAV_DATA_YAML env, else <repo>/data/processed/splits/data.yaml)"
+        ),
     )
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size")
@@ -45,10 +52,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=4,
         help="DataLoader workers (keep low on 16 GB system RAM, e.g. ml.g4dn.xlarge)",
     )
-    parser.add_argument("--project", default="runs/train", help="Ultralytics project output directory")
+    parser.add_argument(
+        "--project",
+        default=str(repo_root() / "runs" / "train"),
+        help="Ultralytics project output directory (default: <repo>/runs/train, absolute to avoid global runs_dir prefix)",
+    )
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
     parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
-    parser.add_argument(
+    exist_group = parser.add_mutually_exclusive_group()
+    exist_group.add_argument(
+        "--exist-ok",
+        action="store_true",
+        help="Allow reusing an existing run directory (default when neither flag is set).",
+    )
+    exist_group.add_argument(
         "--no-exist-ok",
         action="store_true",
         help="Fail if the run directory already exists",
@@ -66,15 +83,39 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_data_yaml(path: Path | None) -> Path:
+    if path is not None:
+        return path.expanduser().resolve()
+    env = os.environ.get("CROWDNAV_DATA_YAML")
+    if env:
+        return Path(env).expanduser().resolve()
+    return default_data_yaml().resolve()
+
+
 def main() -> int:
     args = build_parser().parse_args()
 
+    data_yaml = _resolve_data_yaml(args.data_yaml)
+    if not data_yaml.is_file():
+        print(f"[CrowdNav] ERROR: data.yaml not found: {data_yaml}", file=sys.stderr)
+        print(
+            "[CrowdNav] Prepare YOLO splits: <repo>/data/processed/splits/data.yaml plus "
+            "train/val/test images/ and labels/. See docs/DATA.md and train/README.md.",
+            file=sys.stderr,
+        )
+        print(
+            "[CrowdNav] Override with --data-yaml PATH or CROWDNAV_DATA_YAML.",
+            file=sys.stderr,
+        )
+        return 2
+
     device = resolve_training_device(args.device)
     print(f"[CrowdNav] runtime={describe_runtime()} device={device!r} (set --device or CROWDNAV_DEVICE to override auto)")
+    print(f"[CrowdNav] data_yaml={data_yaml}")
 
     pipeline = TrainPipeline(
         model_cfg=args.model_cfg,
-        data_yaml=str(args.data_yaml),
+        data_yaml=str(data_yaml),
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,

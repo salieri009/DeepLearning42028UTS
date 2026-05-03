@@ -60,6 +60,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--model", default="yolov8l.pt", help="Base model (yolov8m/l/x.pt)")
     p.add_argument("--workers", type=int, default=8)
     p.add_argument(
+        "--patience",
+        type=int,
+        default=20,
+        help="Early stopping patience (passed to sagemaker_train.py)",
+    )
+    p.add_argument(
         "--max-runtime-hr",
         type=int,
         default=12,
@@ -115,6 +121,7 @@ def main() -> int:
             "imgsz": args.imgsz,
             "model": args.model,
             "workers": args.workers,
+            "patience": args.patience,
             "name": "crowdnav_yolo",
         },
         "max_run": args.max_runtime_hr * 3600,

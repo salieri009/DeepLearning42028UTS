@@ -16,6 +16,8 @@ on:
     branches:
       - main
       - dev
+      - part-c
+      - refactor/train-layout
     paths:
       - 'train/**/*.py'
       - 'application/**/*.py'

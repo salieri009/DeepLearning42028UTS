@@ -268,7 +268,7 @@ data/processed/splits/
 
 > **S3 is not required.** On **AWS SageMaker**, use a GPU notebook instance such as **ml.g4dn.xlarge** (NVIDIA T4), clone the repo onto the instance volume, and run `train_yolo.py` **directly on the instance**. The same script runs on a **local CUDA** machine.
 
-- **Device:** If `--device` is omitted, `src/mlops/training_device.py` picks a CUDA GPU when available, otherwise CPU. Use `--device cpu` or `CROWDNAV_DEVICE=cpu` to force CPU.
+- **Device:** If `--device` is omitted, `src/training/training_device.py` picks a CUDA GPU when available, otherwise CPU. Use `--device cpu` or `CROWDNAV_DEVICE=cpu` to force CPU.
 - **Data:** Store `data/processed/splits/` on **EBS** (SageMaker), local disk, or a Docker volume.
 - **Defaults:** `batch=16`, `workers=4` are a reasonable fit for **ml.g4dn.xlarge** (16 GB system RAM, T4 16 GB VRAM). Reduce batch if you hit OOM.
 
