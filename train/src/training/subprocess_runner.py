@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from src.repo_paths import repo_root
+from src.repo_paths import default_data_yaml, repo_root
 from src.training.hyperparams import TrainingHyperParams
 
 
@@ -24,7 +24,7 @@ def run_train_yolo_subprocess(
     script = train_dir / "scripts" / "train_yolo.py"
     if not script.is_file():
         raise FileNotFoundError(script)
-    yaml_path = data_yaml or (root / "data" / "processed" / "splits" / "data.yaml")
+    yaml_path = data_yaml or default_data_yaml()
     cmd: list[str] = [
         sys.executable,
         str(script),

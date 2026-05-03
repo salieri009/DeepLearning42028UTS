@@ -6,6 +6,6 @@ from typing import Any, Protocol
 
 
 class SupportsYoloTraining(Protocol):
-    """Minimal surface scripts rely on from ``TrainPipeline``."""
+    """Minimal surface that scripts rely on from ``TrainPipeline``."""
 
     def train(self) -> Any: ...

@@ -40,15 +40,9 @@ def main() -> int:
     )
     p.add_argument(
         "--nms",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        help="Embed NMS in ONNX export (default: true)",
-    )
-    p.add_argument(
-        "--no-nms",
-        action="store_false",
-        dest="nms",
-        help="Raw ONNX (Spring decoder expects NMS export)",
+        help="Embed NMS in ONNX export (default: true; use --no-nms for raw ONNX)",
     )
     args = p.parse_args()
 
