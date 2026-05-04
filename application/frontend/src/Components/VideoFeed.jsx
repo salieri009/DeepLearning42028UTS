@@ -31,6 +31,15 @@ const Placeholder = styled.div`
   color: gray;
 `;
 
+//to show the direction of move with arrows icon - for now
+const directionMap ={
+  forward: "⬆️",
+  up: "⬆️",
+  left: "⬅️",
+  right: "➡️",
+  back: "⬇️"
+
+}
 
 // will update on this further once backend connected 
 export default function VideoFeed({ running, data }) {
@@ -42,7 +51,7 @@ export default function VideoFeed({ running, data }) {
         <>
           {/* live video stream */}
           <Stream src="" />
-          {/* http://localhost:/video_feed */}
+          {/*backend stream here: http://localhost:/video_feed */}
 
           {/* bounding boxes */}
           {data?.boxes?.map((b, i) => (
@@ -59,11 +68,9 @@ export default function VideoFeed({ running, data }) {
 
           {/* navigation arrow */}
           <Arrow>
-            {data?.direction === "forward" && "⬆️"}
-            {data?.direction === "left" && "⬅️"}
-            {data?.direction === "right" && "➡️"}
-            {data?.direction === "back" && "⬇️"}
+            {directionMap[data?.direction] || "None"}
           </Arrow>
+
         </>
       )}
     </Container>

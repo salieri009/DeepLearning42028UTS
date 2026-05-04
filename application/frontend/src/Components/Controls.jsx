@@ -3,22 +3,26 @@ import styled from "styled-components";
 const Btn = styled.button`
   padding: 10px 16px;
   margin: 10px 10px 10px 0;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
-  background: #2563eb;
+  border: 1px solid #0021f8;
+  background: #0021f8;
   color: white;
 
   &:hover {
-    background: #1d4ed8;
+    background: #3700ff;
+    font-weight: bold;
+    border: 1px solid #3700ff;
   }
 `;
 
 const Stop = styled(Btn)`
-  background: #444;
+  background: #ff0000;
+  border: 1px solid #ff0000;
 
   &:hover {
-    background: #666;
+    background: #9e1e1e;
+    border: 1px solid #9e1e1e;
   }
 `;
 
