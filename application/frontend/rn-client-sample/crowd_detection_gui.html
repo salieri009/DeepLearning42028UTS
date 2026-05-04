@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrowdNav — Crowd Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f0ede8; font-family: 'DM Sans', sans-serif; font-size: 13px; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 24px; }
+  .app { background: #f8f7f4; border-radius: 14px; padding: 18px; width: 100%; max-width: 960px; border: 0.5px solid #e2e0db; }
+
+  .hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .hdr-logo { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.02em; }
+  .hdr-logo span { color: #2563eb; }
+  .live-pill { display: flex; align-items: center; gap: 6px; background: #fff; border: 0.5px solid #e2e0db; border-radius: 20px; padding: 4px 12px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #d1d5db; transition: background .3s; }
+  .live-dot.on { background: #16a34a; }
+  .live-txt { font-size: 11px; color: #9ca3af; font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+
+  .alert-strip { display: none; background: #fef2f2; border: 0.5px solid #fca5a5; border-radius: 8px; padding: 9px 14px; text-align: center; font-size: 12px; color: #dc2626; font-family: 'Space Grotesk', sans-serif; font-weight: 500; margin-bottom: 12px; letter-spacing: 0.01em; }
+  .alert-strip.on { display: block; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .alert-strip.on { animation: blink 1.4s infinite; }
+
+  .grid { display: grid; grid-template-columns: 1fr 210px; gap: 12px; }
+
+  .cam-wrap { background: #1c1917; border-radius: 10px; overflow: hidden; }
+  .cam-view { width: 100%; aspect-ratio: 16/9; background: #0c0a09; display: flex; align-items: center; justify-content: center; position: relative; }
+  .cam-ph { text-align: center; }
+  .cam-ph-txt { color: #44403c; font-size: 11px; font-family: 'Space Grotesk', sans-serif; margin-top: 10px; }
+  .cam-tl { position: absolute; top: 8px; left: 8px; font-size: 10px; color: #60a5fa; font-family: 'Space Grotesk', sans-serif; font-weight: 500; opacity: .85; }
+  .cam-tr { position: absolute; top: 8px; right: 8px; font-size: 10px; color: #4ade80; font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+  .bb { position: absolute; border: 1.5px solid #60a5fa; border-radius: 2px; }
+  .bb-lbl { position: absolute; top: -17px; left: -1px; background: #2563eb; color: #fff; font-size: 9px; font-family: 'Space Grotesk', sans-serif; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+  .nav-bottom { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); }
+  .nav-chip { background: #16a34a22; border: 0.5px solid #16a34a55; border-radius: 8px; padding: 7px 16px; display: flex; align-items: center; gap: 8px; }
+  .nav-chip.warn { background: #d9770622; border-color: #d9770655; }
+  .nav-chip.stop { background: #dc262622; border-color: #dc262655; }
+  .nav-chip-txt { font-size: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: #16a34a; }
+  .nav-chip-txt.warn { color: #d97706; }
+  .nav-chip-txt.stop { color: #dc2626; }
+
+  .ctrl { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #111827; border-top: 0.5px solid #27272a; }
+  .btn { padding: 6px 16px; border-radius: 6px; border: none; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .btn-go { background: #2563eb; color: #fff; }
+  .btn-go:hover { background: #1d4ed8; }
+  .btn-go.paused { background: #374151; color: #9ca3af; }
+  .btn-stp { background: #27272a; color: #9ca3af; }
+  .btn-stp:hover { background: #3f3f46; }
+  .seg { display: flex; gap: 4px; }
+  .sg { padding: 5px 11px; border-radius: 5px; border: 0.5px solid #374151; background: transparent; color: #6b7280; font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .sg.on { background: #2563eb22; color: #60a5fa; border-color: #2563eb55; }
+  .lv-note { font-size: 10px; color: #57534e; font-family: 'DM Sans', sans-serif; text-align: center; padding: 5px 0 3px; background: #1c1917; }
+
+  .sb { display: flex; flex-direction: column; gap: 10px; }
+  .card { background: #fff; border: 0.5px solid #e2e0db; border-radius: 10px; padding: 12px; }
+  .card-ttl { font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 500; color: #9ca3af; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+
+  .dens-big { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; text-align: center; padding: 6px 0 2px; }
+  .dens-big.low { color: #16a34a; }
+  .dens-big.med { color: #d97706; }
+  .dens-big.high { color: #dc2626; }
+  .dens-sub { font-size: 11px; color: #9ca3af; text-align: center; margin-bottom: 8px; }
+  .dbar { height: 4px; border-radius: 2px; background: #f3f4f6; overflow: hidden; margin-bottom: 4px; }
+  .dfill { height: 100%; border-radius: 2px; transition: width .4s; }
+  .dfill.low { background: #16a34a; width: 25%; }
+  .dfill.med { background: #d97706; width: 60%; }
+  .dfill.high { background: #dc2626; width: 92%; }
+  .dticks { display: flex; justify-content: space-between; font-size: 10px; color: #d1d5db; font-family: 'Space Grotesk', sans-serif; }
+
+  .srow { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 0.5px solid #f3f4f6; }
+  .srow:last-child { border-bottom: none; }
+  .slbl { font-size: 12px; color: #6b7280; }
+  .sval { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 500; color: #1a1a1a; }
+
+  .arr-wrap { text-align: center; padding: 4px 0; }
+  .arr-cap { font-size: 11px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+
+  .log { font-family: 'Space Grotesk', sans-serif; font-size: 10px; line-height: 2; max-height: 90px; overflow: hidden; }
+  .log .ok { color: #16a34a; }
+  .log .wn { color: #d97706; }
+  .log .er { color: #dc2626; }
+  .log .tm { color: #d1d5db; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="hdr-logo">Crowd<span>Nav</span></div>
+    <div class="live-pill">
+      <div class="live-dot" id="dot"></div>
+      <span class="live-txt" id="live-txt">Stopped</span>
+    </div>
+  </div>
+
+  <div class="alert-strip" id="alert">High crowd density detected — please follow navigation guidance below</div>
+
+  <div class="grid">
+    <div class="cam-wrap">
+      <div class="cam-view">
+
+        <div class="cam-ph" id="placeholder">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect x="4" y="12" width="40" height="28" rx="4" stroke="#44403c" stroke-width="2"/>
+            <circle cx="24" cy="26" r="8" stroke="#44403c" stroke-width="2"/>
+            <rect x="16" y="8" width="16" height="6" rx="2" stroke="#44403c" stroke-width="2"/>
+          </svg>
+          <div class="cam-ph-txt">Press Start Detection to begin</div>
+        </div>
+
+        <div id="live-overlay" style="display:none; position:absolute; inset:0;">
+          <div class="cam-tl">CAM_01 · 1920×1080</div>
+          <div class="cam-tr">24 fps</div>
+
+          <div id="bb-low" style="display:none; position:absolute; inset:0;">
+            <div class="bb" style="left:18%;top:20%;width:13%;height:38%;"><div class="bb-lbl">person 0.94</div></div>
+            <div class="bb" style="left:52%;top:18%;width:12%;height:36%;"><div class="bb-lbl">person 0.91</div></div>
+            <div class="bb" style="left:72%;top:22%;width:11%;height:34%;"><div class="bb-lbl">person 0.87</div></div>
+          </div>
+          <div id="bb-med" style="display:none; position:absolute; inset:0;">
+            <div class="bb" style="left:8%;top:18%;width:12%;height:38%;"><div class="bb-lbl">person 0.95</div></div>
+            <div class="bb" style="left:24%;top:20%;width:12%;height:36%;"><div class="bb-lbl">person 0.91</div></div>
+            <div class="bb" style="left:40%;top:16%;width:13%;height:40%;"><div class="bb-lbl">person 0.88</div></div>
+            <div class="bb" style="left:57%;top:20%;width:11%;height:36%;"><div class="bb-lbl">person 0.86</div></div>
+            <div class="bb" style="left:72%;top:18%;width:12%;height:38%;"><div class="bb-lbl">person 0.83</div></div>
+          </div>
+          <div id="bb-high" style="display:none; position:absolute; inset:0;">
+            <div class="bb" style="left:4%;top:15%;width:12%;height:40%;"><div class="bb-lbl">person 0.96</div></div>
+            <div class="bb" style="left:17%;top:18%;width:11%;height:36%;"><div class="bb-lbl">person 0.93</div></div>
+            <div class="bb" style="left:29%;top:14%;width:12%;height:42%;"><div class="bb-lbl">person 0.91</div></div>
+            <div class="bb" style="left:42%;top:19%;width:11%;height:38%;"><div class="bb-lbl">person 0.89</div></div>
+            <div class="bb" style="left:54%;top:16%;width:13%;height:40%;"><div class="bb-lbl">person 0.87</div></div>
+            <div class="bb" style="left:67%;top:18%;width:11%;height:36%;"><div class="bb-lbl">person 0.85</div></div>
+            <div class="bb" style="left:80%;top:20%;width:10%;height:34%;"><div class="bb-lbl">person 0.82</div></div>
+          </div>
+
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,#0c0a0988);pointer-events:none;"></div>
+
+          <div class="nav-bottom">
+            <div class="nav-chip" id="nav-chip">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path id="nav-arrow" d="M12 19V5M6 11l6-6 6 6" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="nav-chip-txt" id="nav-txt">Proceed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <button class="btn btn-go" id="start-btn" onclick="toggleFeed()">Start Detection</button>
+        <button class="btn btn-stp" onclick="stopFeed()">Stop</button>
+        <div style="flex:1"></div>
+        <span style="font-size:10px;color:#6b7280;font-family:'Space Grotesk',sans-serif;margin-right:6px;">Density:</span>
+        <div class="seg">
+          <button class="sg on" onclick="setMode(this,'Low')">Low</button>
+          <button class="sg" onclick="setMode(this,'Med')">Med</button>
+          <button class="sg" onclick="setMode(this,'High')">High</button>
+        </div>
+      </div>
+      <div class="lv-note">Navigation arrow placed at bottom — optimised for wheelchair / low-vantage view</div>
+    </div>
+
+    <div class="sb">
+      <div class="card">
+        <div class="card-ttl">Crowd Density</div>
+        <div class="dens-big low" id="density-level">Low</div>
+        <div class="dens-sub">current level</div>
+        <div class="dbar"><div class="dfill low" id="density-fill"></div></div>
+        <div class="dticks"><span>0</span><span>50</span><span>100%</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-ttl">Detection Stats</div>
+        <div class="srow"><span class="slbl">People detected</span><span class="sval" id="people">—</span></div>
+        <div class="srow"><span class="slbl">Avg confidence</span><span class="sval" id="conf">—</span></div>
+        <div class="srow"><span class="slbl">Proximity risk</span><span class="sval" id="risk" style="color:#16a34a">—</span></div>
+        <div class="srow"><span class="slbl">Model</span><span class="sval">YOLOv8</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-ttl">Navigation</div>
+        <div class="arr-wrap">
+          <svg width="58" height="58" viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="28" fill="#16a34a18" stroke="#16a34a44" stroke-width="0.5" id="arr-circle"/>
+            <path id="arr-path" d="M30 42L30 18 M22 26L30 18L38 26" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="arr-cap" id="arr-cap">Move forward —<br>path is clear</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-ttl">System Log</div>
+        <div class="log" id="log">
+          <div><span class="tm">--:--</span> <span class="ok">✓</span> YOLOv8 model loaded</div>
+          <div><span class="tm">--:--</span> <span class="ok">✓</span> ClearML connected</div>
+          <div><span class="tm">--:--</span> <span class="wn">!</span> Awaiting camera input</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let running = false;
+  let currentMode = 'Low';
+
+  const modes = {
+    Low: {
+      label: 'Low', cls: 'low', people: 3, conf: '0.91',
+      risk: 'Safe', riskColor: '#16a34a',
+      arrPath: 'M30 42L30 18 M22 26L30 18L38 26',
+      arrColor: '#16a34a', circFill: '#16a34a18', circBorder: '#16a34a44',
+      navArrow: 'M12 19V5M6 11l6-6 6 6', navColor: '#16a34a',
+      navTxt: 'Proceed', navCls: '',
+      cap: 'Move forward —<br>path is clear',
+      alert: false, log: '3 persons detected — clear path', lt: 'ok'
+    },
+    Med: {
+      label: 'Medium', cls: 'med', people: 5, conf: '0.87',
+      risk: 'Warning', riskColor: '#d97706',
+      arrPath: 'M18 30L42 30 M34 22L42 30L34 38',
+      arrColor: '#d97706', circFill: '#d9770618', circBorder: '#d9770644',
+      navArrow: 'M5 12h14M12 5l7 7-7 7', navColor: '#d97706',
+      navTxt: 'Caution', navCls: 'warn',
+      cap: 'Turn left —<br>less crowded area',
+      alert: false, log: '5 persons — moderate density', lt: 'wn'
+    },
+    High: {
+      label: 'High', cls: 'high', people: 7, conf: '0.89',
+      risk: 'Critical', riskColor: '#dc2626',
+      arrPath: 'M30 18L30 42 M22 34L30 42L38 34',
+      arrColor: '#dc2626', circFill: '#dc262618', circBorder: '#dc262644',
+      navArrow: 'M12 19V5M6 11l6-6 6 6', navColor: '#dc2626',
+      navTxt: 'Stop', navCls: 'stop',
+      cap: 'Go back —<br>area too crowded',
+      alert: true, log: 'HIGH density — alert triggered!', lt: 'er'
+    }
+  };
+
+  function setMode(btn, mode) {
+    if (!running) return;
+    document.querySelectorAll('.sg').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    currentMode = mode;
+    applyMode(mode);
+  }
+
+  function applyMode(mode) {
+    const m = modes[mode];
+    document.getElementById('density-level').textContent = m.label;
+    document.getElementById('density-level').className = 'dens-big ' + m.cls;
+    document.getElementById('density-fill').className = 'dfill ' + m.cls;
+    document.getElementById('people').textContent = m.people;
+    document.getElementById('conf').textContent = m.conf;
+    document.getElementById('risk').textContent = m.risk;
+    document.getElementById('risk').style.color = m.riskColor;
+    document.getElementById('arr-path').setAttribute('d', m.arrPath);
+    document.getElementById('arr-path').setAttribute('stroke', m.arrColor);
+    document.getElementById('arr-circle').setAttribute('fill', m.circFill);
+    document.getElementById('arr-circle').setAttribute('stroke', m.circBorder);
+    document.getElementById('nav-arrow').setAttribute('d', m.navArrow);
+    document.getElementById('nav-arrow').setAttribute('stroke', m.navColor);
+    document.getElementById('nav-txt').textContent = m.navTxt;
+    document.getElementById('nav-txt').className = 'nav-chip-txt' + (m.navCls ? ' ' + m.navCls : '');
+    document.getElementById('nav-chip').className = 'nav-chip' + (m.navCls ? ' ' + m.navCls : '');
+    document.getElementById('arr-cap').innerHTML = m.cap;
+    document.getElementById('alert').classList.toggle('on', m.alert);
+    ['bb-low','bb-med','bb-high'].forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('bb-' + mode.toLowerCase()).style.display = 'block';
+    addLog(m.log, m.lt);
+  }
+
+  function toggleFeed() {
+    if (!running) startFeed(); else stopFeed();
+  }
+
+  function startFeed() {
+    running = true;
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('live-overlay').style.display = 'block';
+    document.getElementById('dot').classList.add('on');
+    document.getElementById('live-txt').textContent = 'Live';
+    document.getElementById('start-btn').textContent = 'Pause';
+    document.getElementById('start-btn').classList.add('paused');
+    applyMode(currentMode);
+    addLog('Detection started', 'ok');
+  }
+
+  function stopFeed() {
+    running = false;
+    document.getElementById('placeholder').style.display = 'flex';
+    document.getElementById('live-overlay').style.display = 'none';
+    document.getElementById('dot').classList.remove('on');
+    document.getElementById('live-txt').textContent = 'Stopped';
+    document.getElementById('start-btn').textContent = 'Start Detection';
+    document.getElementById('start-btn').classList.remove('paused');
+    document.getElementById('people').textContent = '—';
+    document.getElementById('conf').textContent = '—';
+    document.getElementById('risk').textContent = '—';
+    document.getElementById('alert').classList.remove('on');
+    ['bb-low','bb-med','bb-high'].forEach(id => document.getElementById(id).style.display = 'none');
+    addLog('Detection stopped', 'wn');
+  }
+
+  function addLog(msg, type) {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2,'0');
+    const mn = now.getMinutes().toString().padStart(2,'0');
+    const icons = { ok: '✓', wn: '!', er: '✕' };
+    const log = document.getElementById('log');
+    const div = document.createElement('div');
+    div.innerHTML = `<span class="tm">${h}:${mn}</span> <span class="${type}">${icons[type]}</span> ${msg}`;
+    log.appendChild(div);
+    while (log.children.length > 5) log.removeChild(log.firstChild);
+  }
+</script>
+</body>
+</html>
