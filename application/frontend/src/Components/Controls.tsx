@@ -1,5 +1,11 @@
 import styled from "styled-components";
 
+type ControlsProps = {
+  running: boolean;
+  onStart: () => void | Promise<void>;
+  onStop: () => void;
+};
+
 const Btn = styled.button`
   padding: 10px 16px;
   margin: 10px 10px 10px 0;
@@ -26,7 +32,7 @@ const Stop = styled(Btn)`
   }
 `;
 
-export default function Controls({ running, onStart, onStop }) {
+export default function Controls({ running, onStart, onStop }: ControlsProps) {
   return (
     <div>
       {!running ? (
@@ -37,3 +43,4 @@ export default function Controls({ running, onStart, onStop }) {
     </div>
   );
 }
+

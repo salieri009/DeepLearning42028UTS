@@ -7,9 +7,14 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies (large, reproducible from lockfile)
 node_modules
+
+# Build outputs (generated, platform-specific)
 dist
 dist-ssr
+
+# Local-only overrides (may contain machine-specific config or secrets)
 *.local
 
 # Editor directories and files

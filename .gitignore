@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+# Environment files can contain secrets (API keys, tokens, endpoints)
 .env
 .venv/
 pip-log.txt
@@ -49,7 +50,10 @@ PROJECTS/CrowdNav/
 
 
 # Node.js and React Native
+# Dependencies (large, reproducible from lockfile)
 node_modules/
+
+# Expo local state/build outputs (generated)
 .expo/
 npm-debug.log*
 yarn-debug.log*
