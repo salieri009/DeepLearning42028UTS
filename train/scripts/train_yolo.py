@@ -7,12 +7,10 @@ import os
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.repo_paths import default_data_yaml, repo_root  # noqa: E402
-from src.training import (  # noqa: E402
+# `crowdnav-train` is installed via `pip install -e ./train` (see ADR-0010).
+# `src.*` packages resolve without sys.path manipulation.
+from src.repo_paths import default_data_yaml, repo_root
+from src.training import (
     TrainPipeline,
     default_model_path,
     describe_runtime,

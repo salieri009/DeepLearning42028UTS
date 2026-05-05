@@ -1,2 +1,5 @@
-# Meta-requirements: ML stack lives under train/
--r train/requirements.txt
+# Meta-requirements: ML stack lives under train/.
+# Editable install of the `crowdnav-train` package (see ADR-0010).
+# `train/pyproject.toml` dynamically resolves dependencies from `train/requirements.txt`,
+# so installing `-e ./train` covers both the `src.*` package and its deps.
+-e ./train

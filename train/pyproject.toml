@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crowdnav-train"
+version = "0.1.0"
+description = "CrowdNav training, preprocessing, and inference packages (UTS 42028 DL A3)"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+# Approach C (ADR-0010): keep `src/` directory and `from src.X` imports as-is.
+# `pip install -e ./train` exposes the `src` package and its sub-packages.
+# This eliminates the sys.path.insert hacks in train/run_auto_labeling.py,
+# train/scripts/{train_yolo, self_train_loop, automate_preprocessing}.py, and
+# the launcher notebook, while keeping git diff minimal.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+namespaces = false

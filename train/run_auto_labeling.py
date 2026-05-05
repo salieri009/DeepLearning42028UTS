@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
-_TRAIN = Path(__file__).resolve().parent
-if str(_TRAIN) not in sys.path:
-    sys.path.insert(0, str(_TRAIN))
-
+# `crowdnav-train` is installed via `pip install -e ./train` (see ADR-0010).
+# `src.*` packages resolve without sys.path manipulation.
 from src.data.preprocessing.auto_labeler import AutoLabeler
 from src.repo_paths import repo_root
 
@@ -138,4 +135,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise Syst
