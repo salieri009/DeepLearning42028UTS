@@ -1,108 +1,95 @@
-import { useEffect, useRef, useState } from "react";
-import VideoFeed from "./components/VideoFeed";
-import Controls from "./components/Controls";
-import StatPanel from "./components/StatPanel";
-import { startDetection, stopDetection } from "./api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import VideoFeed from "./Components/VideoFeed";
+import Controls from "./Components/Controls";
+import StatPanel from "./Components/StatPanel";
+import { analyzeFrame } from "./api";
 
 export default function App() {
   const [running, setRunning] = useState(false);
   const [data, setData] = useState(null);
 
-  const wsRef = useRef(null);
-  const runningRef = useRef(false);
-  const reconnectTimeoutRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const intervalRef = useRef(null);
+  const startingRef = useRef(false);
 
-  // WebSocket connection
-  const connectWS = () => {
-    const ws = new WebSocket("ws://localhost:5000/ws");
+  const captureFrame = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    return canvas.toDataURL("image/jpeg").split(",")[1];
+  }, []);
 
-    ws.onopen = () => {
-      console.log("WS connected");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        setData(parsed);
-      } catch (e) {
-        console.error("Bad WS data:", event.data);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("WS error", err);
-    };
-
-    ws.onclose = () => {
-      console.log("WS closed");
-
-      wsRef.current = null;
-
-      // prevent multiple reconnect loops
-      if (reconnectTimeoutRef.current) return;
-
-      reconnectTimeoutRef.current = setTimeout(() => {
-        reconnectTimeoutRef.current = null;
-
-        if (runningRef.current) {
-          connectWS();
-        }
-      }, 2000);
-    };
-
-    wsRef.current = ws;
-  };
-
-  // Start detection
+  // Start detection: acquire webcam and begin polling the backend
   const start = async () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (startingRef.current || running) return;
+    startingRef.current = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setRunning(true);
 
-    await startDetection();
-
-    connectWS();
-
-    setRunning(true);
-    runningRef.current = true;
+      intervalRef.current = setInterval(async () => {
+        const frame = captureFrame();
+        if (!frame) return;
+        try {
+          const res = await analyzeFrame(frame);
+          setData(res.data);
+        } catch (e) {
+          console.error("Analyze error", e);
+        }
+      }, 500);
+    } catch (e) {
+      console.error("Start error", e);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    } finally {
+      startingRef.current = false;
+    }
   };
 
-  // stop detection
-  const stop = async () => {
-    await stopDetection();
-
-    // close websocket
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+  // Stop detection: always clean up regardless of errors
+  const stop = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-
-    // clear reconnect timer
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
-
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setRunning(false);
-    runningRef.current = false;
     setData(null);
   };
 
-  // cleanup on unmount
+  // Cleanup on unmount — also clears startingRef so reconnect logic cannot fire
   useEffect(() => {
     return () => {
-      wsRef.current?.close();
-
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+      startingRef.current = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
   }, []);
 
-  // Ui render
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h2>CrowdNav</h2>
 
-      <VideoFeed running={running} data={data} />
+      <VideoFeed running={running} data={data} videoRef={videoRef} />
 
       <Controls running={running} onStart={start} onStop={stop} />
 

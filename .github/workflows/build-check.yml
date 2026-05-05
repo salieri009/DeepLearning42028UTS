@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./application/frontend/rn-client-sample
+        working-directory: ./application/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -94,10 +94,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: Install Frontend dependencies (Placeholder)
-        run: echo "No package.json yet. Skipping install."
+      - name: Install Frontend dependencies
+        run: npm ci
 
-      - name: Build Frontend (Placeholder)
-        run: echo "No build script yet. Skipping build."
+      - name: Build Frontend
+        run: npm run build

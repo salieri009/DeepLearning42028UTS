@@ -13,15 +13,17 @@ const Panel = styled.div`
 export default function StatPanel({ data }) {
   if (!data) return null;
 
+  const personCount = data.persons?.length ?? 0;
+
   return (
     <>
     <h1>Crowd Tracking Statistics</h1>
 
     <Panel>
-      <p><b>People:</b> {data.people}</p>
-      <p><b>Confidence:</b> {data.confidence}</p>
-      <p><b>Density:</b> {data.density}</p>
-      <p><b>Risk:</b> {data.risk}</p>
+      <p><b>People:</b> {personCount}</p>
+      <p><b>Crowd Density:</b> {data.crowd_density}</p>
+      <p><b>Max Proximity Risk:</b> {data.max_proximity_risk}</p>
+      <p><b>Recommendation:</b> {data.recommendation}</p>
     </Panel>
 
     </>

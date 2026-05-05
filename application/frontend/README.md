@@ -1,16 +1,54 @@
-# React + Vite
+# CrowdNav Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite browser client for the CrowdNav crowd-detection system.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 20+
+- The [CrowdNav Java API](../backend/README.md) running on `http://localhost:8080`
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+cd application/frontend
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+The dev server starts at `http://localhost:5173` by default.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## How it works
+
+1. Click **Start Detection** — the browser requests webcam access.
+2. The app captures a JPEG frame every 500 ms and POSTs it to `POST http://localhost:8080/api/v1/analyze-frame` as `{ "frame_base64": "..." }`.
+3. The backend response is rendered live:
+   - **People** — number of detected persons
+   - **Crowd Density** — `crowd_density` field (`low` / `medium` / `high`)
+   - **Max Proximity Risk** — `max_proximity_risk` field
+   - **Recommendation** — plain-text guidance from `recommendation` field
+   - **Bounding boxes** — lime-green overlays positioned using the normalised YOLO `bbox` (`x_center`, `y_center`, `width`, `height`) returned for each person
+4. Click **Stop** to halt capture and release the camera.
+
+## Backend API contract
+
+`POST /api/v1/analyze-frame` — accepts `application/json` with optional `frame_base64` or `multipart/form-data` with optional `image` part. Returns:
+
+```json
+{
+  "persons": [
+    { "class": "person", "confidence": 0.95, "bbox": { "x_center": 0.5, "y_center": 0.5, "width": 0.1, "height": 0.2 } }
+  ],
+  "crowd_density": "low",
+  "max_proximity_risk": "none",
+  "recommendation": "Area is safe. No action required."
+}
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with HMR |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |

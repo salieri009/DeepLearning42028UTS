@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -6,21 +7,14 @@ const Container = styled.div`
   background: black;
 `;
 
-const Stream = styled.img`
+const VideoEl = styled.video`
   width: 100%;
+  display: block;
 `;
 
 const Box = styled.div`
   position: absolute;
   border: 2px solid lime;
-`;
-
-const Arrow = styled.div`
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 40px;
 `;
 
 const Placeholder = styled.div`
@@ -31,48 +25,39 @@ const Placeholder = styled.div`
   color: gray;
 `;
 
-//to show the direction of move with arrows icon - for now
-const directionMap ={
-  forward: "⬆️",
-  up: "⬆️",
-  left: "⬅️",
-  right: "➡️",
-  back: "⬇️"
+// VideoFeed always renders the <video> element so App.jsx can set srcObject
+// before the running state changes. The placeholder overlay is shown on top
+// when the camera is off.
+export default function VideoFeed({ running, data, videoRef }) {
+  // Clear the video source when detection stops
+  useEffect(() => {
+    if (!running && videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, [running, videoRef]);
 
-}
-
-// will update on this further once backend connected 
-export default function VideoFeed({ running, data }) {
   return (
     <Container>
+      {/* Always in DOM so App can attach srcObject before setting running=true */}
+      <VideoEl ref={videoRef} muted playsInline style={{ display: running ? "block" : "none" }} />
+
       {!running && <Placeholder>Camera Off</Placeholder>}
 
-      {running && (
-        <>
-          {/* live video stream */}
-          <Stream src="" />
-          {/*backend stream here: http://localhost:/video_feed */}
-
-          {/* bounding boxes */}
-          {data?.boxes?.map((b, i) => (
-            <Box
-              key={i}
-              style={{
-                left: `${b.x}%`,
-                top: `${b.y}%`,
-                width: `${b.w}%`,
-                height: `${b.h}%`
-              }}
-            />
-          ))}
-
-          {/* navigation arrow */}
-          <Arrow>
-            {directionMap[data?.direction] || "None"}
-          </Arrow>
-
-        </>
-      )}
+      {/* Bounding boxes from persons[].bbox (YOLO normalized coords) */}
+      {running && data?.persons?.map((person, i) => {
+        const b = person.bbox;
+        return (
+          <Box
+            key={i}
+            style={{
+              left: `${(b.x_center - b.width / 2) * 100}%`,
+              top: `${(b.y_center - b.height / 2) * 100}%`,
+              width: `${b.width * 100}%`,
+              height: `${b.height * 100}%`,
+            }}
+          />
+        );
+      })}
     </Container>
   );
 }
