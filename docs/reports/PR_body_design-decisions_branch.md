@@ -14,7 +14,7 @@ This branch lands the **design-decisions framework** (SKILL, DESIGN, LEGACY_CATA
 | 4 | `669dc49` | chore(infra,train): execute ADR-0009 — remove Keras skeletons |
 | 5 | `7e3a595` | refactor(train): execute ADR-0010 — package via pyproject.toml, drop sys.path hacks |
 | 6 | `2503f8a` | feat(infra,application): execute ADR-0003 — webapp multi-service Docker |
-| 7 | `5917e37` | docs(adr): propose ADR-0005–0007, PR body, inference CPU deps for Docker |
+| 7 | — | docs(adr): propose ADR-0005–0007, PR body, inference CPU deps for Docker |
 
 ## Scope
 
