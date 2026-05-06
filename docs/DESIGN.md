@@ -193,10 +193,10 @@ repo root 에 `yolov8n.pt` (6.5MB) 가 있고, `PROJECTS/CrowdNav/yolov8n.pt` (6
 | 0010 | `train/` 을 `crowdnav-train` editable package 로 전환. 5개 sys.path 핵 제거, `from crowdnav_train.X` 일괄 import | 2026-05-05 | [ADR-0010](decisions/ADR-0010-train-packaging-remove-syspath-hacks.md) |
 
 ### 5.1 Deferred (다음 라운드)
-- **0007** auto_labels_08 라벨 출처 식별 — 사용자: "분명 하나는 직접 JRDB 가 제공한 것" → hash/내용 비교 워커 별도 dispatch 필요
+- **0007** auto_labels_08 라벨 출처 식별 — 사용자: "분명 하나는 직접 JRDB 가 제공한 것" → hash/내용 비교 워커 별도 dispatch 필요 → 초안 [ADR-0007](decisions/ADR-0007-auto-labels-provenance-hash-worker.md)
 - **0004** ClearML required vs optional — 0008 이후 정책으로 분리
-- **0005** Frontend↔Backend API 계약 단일 소스 (OpenAPI) — 0002 통합 작업 중에 자연스럽게 결정
-- **0006** legacy weights (`yolo26n.pt` 등) 처리 — 0009 정리 후 함께
+- **0005** Frontend↔Backend API 계약 단일 소스 (OpenAPI) — 0002 통합 작업 중에 자연스럽게 결정 → 초안 [ADR-0005](decisions/ADR-0005-api-contract-openapi-single-source.md)
+- **0006** legacy weights (`yolo26n.pt` 등) 처리 — 0009 정리 후 함께 → 초안 [ADR-0006](decisions/ADR-0006-legacy-weights-handling.md)
 - **0011** Docker 의 역할 — **0003 에 흡수됨** (해소)
 
 ---

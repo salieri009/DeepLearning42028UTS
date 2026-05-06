@@ -1,3 +1,15 @@
+# Prefer CPU PyTorch wheels in Docker (smaller download; no NVIDIA stack in slim image).
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Web framework
 fastapi>=0.115.0
-uvicorn[st
+uvicorn[standard]>=0.30.0
+
+# Inference stack (ADR-0003 — Ultralytics YOLO in FastAPI)
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
+pydantic>=2.0.0
