@@ -23,7 +23,7 @@
 
 ## Decision
 
-**We will package `train/` as an editable Python package (`crowdnav-train`) via a new `train/pyproject.toml`. After `pip install -e ./train`, every `sys.path.insert` line is removed and modules import as `from crowdnav_train.training import ...`.**
+**We will package `train/` as an editable Python package (`crowdnav-train`) via a new `train/pyproject.toml`. After `pip install -e ./train`, every `sys.path.insert` line is removed. The existing `src/` directory is exposed directly as the `src` package (namespace mapping), so all existing `from src.X` imports continue to work unchanged — no bulk rename is required.**
 
 ## Alternatives Considered
 
@@ -45,22 +45,19 @@
 - **Positive**:
   - 5개 진입점에서 `sys.path` 핵 라인 제거 → 코드 깔끔
   - IDE auto-import / mypy 가 단일 모듈 경로 사용 → 정합성 회복
-  - `application/inference-service/` 가 `crowdnav_train.inference.collision_avoidance` 등을 정식 import 가능 → ADR-0002 의 "Spring↔FastAPI 통합" 가속
+  - `application/inference-service/` 가 `src.inference.collision_avoidance` 등을 정식 import 가능 → ADR-0002 의 "Spring↔FastAPI 통합" 가속
 - **Negative / risks**:
-  - 모듈 경로가 `src.training.X` → `crowdnav_train.training.X` 로 바뀜. **모든 `from src.X` import 를 grep 으로 찾아 수정 필요**
-  - SageMaker job (`infra/sagemaker/sagemaker_train.py`) 환경에 `crowdnav_train` 가 install 되도록 `infra/sagemaker/requirements.txt` 갱신 필요
+  - `from src.X` import 는 **그대로 유지** (rename 없음) — `pyproject.toml` 의 `packages.find` 가 `src` 패키지를 직접 노출하므로 기존 코드 변경 불필요
+  - SageMaker job (`infra/sagemaker/sagemaker_train.py`) 환경에 `crowdnav-train` 가 install 되도록 `infra/sagemaker/requirements.txt` 갱신 필요
   - Docker 이미지 빌드 시 `pip install -e ./train` 또는 wheel 빌드 단계 추가 필요
 - **Follow-up actions** (Accepted 후 단계):
-  1. **신규 파일**: `train/pyproject.toml` — 아래 §A 템플릿 적용
-  2. **디렉토리 rename (선택적)**: `train/src/` → `train/crowdnav_train/`
-     - 또는 `pyproject.toml` 의 `[tool.setuptools.packages.find]` 에 `where = ["src"]` 로 그대로 두고 패키지 이름만 `crowdnav_train` 매핑
-     - **권장: rename 없이 namespace mapping** — diff 최소
-  3. **import 일괄 변경**: `rg -l "from src\.|import src\." train/ application/ infra/` 결과를 한 번에 sed/Edit 로 변환
-  4. **sys.path.insert 5곳 삭제** (notebook 포함)
-  5. **`README.md` 갱신**: 환경 셋업 절차에 `pip install -e ./train` 추가
-  6. **`infra/sagemaker/sagemaker_train.py`** 에서 `from crowdnav_train.X` 경로 사용하도록 보강 + `requirements.txt` 에 `./train` 또는 빌드된 wheel 등록
-  7. **CI**: `.github/workflows/build-check.yml` 에서 `pip install -e ./train` 단계 확인/추가
-  8. **검증**: `python -c "from crowdnav_train.training.train_pipeline import TrainPipeline; print('ok')"` 가 어느 디렉토리에서도 동작
+  1. **신규 파일**: `train/pyproject.toml` — 아래 §A 템플릿 적용 (**완료**)
+  2. **디렉토리 rename**: 불필요 — `pyproject.toml` 의 `[tool.setuptools.packages.find]` 가 `src` 패키지를 직접 expose (**namespace mapping 없이 진행**)
+  3. **sys.path.insert 5곳 삭제** (notebook 포함) (**완료**)
+  4. **`README.md` 갱신**: 환경 셋업 절차에 `pip install -e ./train` 추가
+  5. **`infra/sagemaker/sagemaker_train.py`** `requirements.txt` 에 `./train` 또는 빌드된 wheel 등록
+  6. **CI**: `.github/workflows/build-check.yml` 에서 `pip install -e ./train` 단계 확인/추가
+  7. **검증**: `python -c "from src.training.train_pipeline import TrainPipeline; print('ok')"` 가 어느 디렉토리에서도 동작
 
 ### §A `train/pyproject.toml` 초안
 
