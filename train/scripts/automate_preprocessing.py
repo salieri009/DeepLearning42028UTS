@@ -26,13 +26,12 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from src.data.preprocessing.cli import ConversionSummary, convert  # noqa: E402
+# `crowdnav-train` is installed via `pip install -e ./train` (see ADR-0010).
+# `src.*` packages resolve without sys.path manipulation.
+from src.data.preprocessing.cli import ConversionSummary, convert
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 REPO_ROOT = Path(__file__).resolve().parents[1]

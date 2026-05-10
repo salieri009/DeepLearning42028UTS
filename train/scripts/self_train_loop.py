@@ -13,20 +13,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.repo_paths import repo_root  # noqa: E402
-from src.data.prepare import pseudo_label as pseudo_label_api  # noqa: E402
-from src.data.prepare import split as split_api  # noqa: E402
-from src.training import (  # noqa: E402
+# `crowdnav-train` is installed via `pip install -e ./train` (see ADR-0010).
+# `src.*` packages resolve without sys.path manipulation.
+from src.repo_paths import repo_root
+from src.data.prepare import pseudo_label as pseudo_label_api
+from src.data.prepare import split as split_api
+from src.training import (
     CycleMetrics,
     TrainPipeline,
     append_cycle_metrics_csv,
@@ -34,6 +30,9 @@ from src.training import (  # noqa: E402
     resolve_training_device,
     write_cycle_metrics_json,
 )
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
