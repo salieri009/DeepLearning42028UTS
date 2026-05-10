@@ -15,6 +15,7 @@ class TrainingHyperParams:
     imgsz: int
     workers: int
     patience: int
+    save_period: int = 10
 
     def as_dict(self) -> dict[str, int | str]:
         return {
@@ -24,26 +25,38 @@ class TrainingHyperParams:
             "imgsz": self.imgsz,
             "workers": self.workers,
             "patience": self.patience,
+            "save_period": self.save_period,
         }
 
 
 def default_training_presets() -> dict[str, TrainingHyperParams]:
-    """Presets: SageMaker Notebook (ml.g4dn.xlarge) vs managed training job."""
+    """Presets: local notebook, SageMaker Notebook (ml.g4dn.xlarge), managed training job."""
     return {
+        "local": TrainingHyperParams(
+            model="yolov8m.pt",
+            epochs=150,
+            batch=8,
+            imgsz=640,
+            workers=2,
+            patience=30,
+            save_period=10,
+        ),
         "g4dn_notebook": TrainingHyperParams(
             model="yolov8m.pt",
-            epochs=100,
+            epochs=150,
             batch=16,
             imgsz=640,
             workers=4,
-            patience=20,
+            patience=30,
+            save_period=10,
         ),
         "sagemaker_managed_job": TrainingHyperParams(
             model="yolov8l.pt",
-            epochs=50,
+            epochs=150,
             batch=32,
             imgsz=640,
             workers=8,
-            patience=20,
+            patience=30,
+            save_period=10,
         ),
     }

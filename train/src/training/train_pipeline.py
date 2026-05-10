@@ -35,9 +35,10 @@ class TrainPipeline:
         device: str | int | None = None,
         project: str | None = None,
         name: str = "crowdnav_yolo",
-        patience: int = 20,
+        patience: int = 30,
         exist_ok: bool = True,
         workers: int = 4,
+        save_period: int = 10,
     ) -> None:
         from src.repo_paths import repo_root
 
@@ -52,6 +53,7 @@ class TrainPipeline:
         self.patience = patience
         self.exist_ok = exist_ok
         self.workers = workers
+        self.save_period = save_period
         self._model: YOLO | None = None
         self._trained_model: YOLO | None = None
         self._last_artifacts: TrainArtifacts | None = None
@@ -89,6 +91,7 @@ class TrainPipeline:
             patience=self.patience,
             exist_ok=self.exist_ok,
             workers=self.workers,
+            save_period=self.save_period,
         )
 
         save_dir = Path(getattr(results, "save_dir", Path(self.project) / self.name))
