@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Path to YOLO data.yaml (default: CROWDNAV_DATA_YAML env, else <repo>/data/processed/splits/data.yaml)"
         ),
     )
-    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=150, help="Number of training epochs")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size")
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
     parser.add_argument(
@@ -56,7 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ultralytics project output directory (default: <repo>/runs/train, absolute to avoid global runs_dir prefix)",
     )
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
-    parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
+    parser.add_argument("--patience", type=int, default=30, help="Early stopping patience")
+    parser.add_argument("--save-period", type=int, default=10, help="Save checkpoint every N epochs (Ultralytics save_period)")
     exist_group = parser.add_mutually_exclusive_group()
     exist_group.add_argument(
         "--exist-ok",
@@ -123,6 +124,7 @@ def main() -> int:
         patience=args.patience,
         exist_ok=not args.no_exist_ok,
         workers=args.workers,
+        save_period=args.save_period,
     )
 
     artifacts = pipeline.train()
