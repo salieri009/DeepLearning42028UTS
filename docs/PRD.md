@@ -72,7 +72,7 @@ Develop a computer vision-based crowd analysis and navigation system. The system
 | Metric | Target | Achieved |
 |---|---|---|
 | mAP@IoU=0.5 (person class, val split) | > 0.40 | **0.4475** (Phase C) |
-| mAP@IoU=0.5 (person class, test split) | > 0.50 | **0.636** (Phase C) |
+| mAP@IoU=0.5 (person class, test split) | > 0.50 | **0.6361** (Phase C) |
 | Inference latency per frame | < 500 ms | TBD (see evaluation_metrics.md) |
 | Proximity alert correctness (SAFE/WARNING/DANGER) | Qualitative | Heuristic validated on mock stream |
 | Crowd density classification (LOW/MEDIUM/HIGH) | Qualitative | Rule-based (n≤2 LOW, n≤5 MEDIUM, else HIGH) |

@@ -21,7 +21,7 @@ public class RemoteAnalyzeFrameService implements AnalyzeFrameService {
 	private final RestClient restClient;
 
 	public RemoteAnalyzeFrameService(
-			@Value("${app.inference.base-url:http://127.0.0.1:9000}") String baseUrl) {
+			@Value("${app.inference.url:${app.inference.base-url:http://127.0.0.1:9000}}") String baseUrl) {
 		this.restClient = RestClient.builder()
 				.baseUrl(baseUrl)
 				.build();

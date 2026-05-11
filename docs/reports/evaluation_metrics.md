@@ -20,8 +20,8 @@ The model used is the YOLOv8m checkpoint produced in Phase C (see [Final_Trainin
 |---|---|
 | Architecture | YOLOv8m |
 | Source | Phase C fine-tune on JRDB ground-truth labels |
-| Weights file | `runs/train/crowdnav_yolo/weights/best.pt` |
-| SHA-256 | *(run `sha256sum best.pt` and fill in)* |
+| Weights file | `runs/detect/runs/train/crowdnav_yolo/weights/best.pt` |
+| SHA-256 | `486e9447d17ca75f3ec53e6dcf6016d1b5e73e07b6a17c96c23fc3d21510e7b4` |
 | Trained on | RTX 3050 Laptop 4 GB, CUDA 12.1, PyTorch 2.5.1 |
 
 ---
@@ -50,22 +50,19 @@ print(metrics.results_dict)
 
 | Metric | Value |
 |---|---|
-| mAP@IoU=0.5 | 0.4475 |
+| mAP@IoU=0.5 | **0.4475** |
 | mAP@IoU=0.5:0.95 | 0.2086 |
-| Precision | 0.6684 |
+| Precision | 0.6685 |
 | Recall | 0.4302 |
-| Fitness | *(fill after run)* |
 
 #### Test Split
 
 | Metric | Value |
 |---|---|
-| mAP@IoU=0.5 | 0.636 |
-| mAP@IoU=0.5:0.95 | *(fill after run)* |
-| Precision | *(fill after run)* |
-| Recall | *(fill after run)* |
-
-> Values in the Val column are from Final_Training_Report.md Phase C. Run the command above to confirm or update with current checkpoint.
+| mAP@IoU=0.5 | **0.6361** |
+| mAP@IoU=0.5:0.95 | 0.3684 |
+| Precision | 0.7615 |
+| Recall | 0.5136 |
 
 ---
 

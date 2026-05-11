@@ -40,7 +40,7 @@ RUN useradd --system --create-home --shell /bin/bash inference \
 USER inference
 
 EXPOSE 9000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=5 \
     CMD curl -fsS http://localhost:9000/health >/dev/null || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
