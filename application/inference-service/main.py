@@ -102,8 +102,9 @@ class InferRequest(BaseModel):
 # ---------------------------------------------------------------------------
 @app.get("/health")
 def health() -> dict[str, str]:
-    model_present = Path(MODEL_PATH).exists()
-    return {"status": "ok", "model": "ready" if model_present else "missing"}
+    if not Path(MODEL_PATH).exists():
+        raise HTTPException(status_code=503, detail="Model file not found")
+    return {"status": "ok", "model": "ready"}
 
 
 @app.post("/internal/infer")

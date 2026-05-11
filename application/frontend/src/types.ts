@@ -20,4 +20,3 @@ export type AnalyzeFrameResponse = {
   max_proximity_risk?: string;
   recommendation?: string;
 };
-
