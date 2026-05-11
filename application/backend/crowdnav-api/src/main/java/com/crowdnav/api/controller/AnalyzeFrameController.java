@@ -32,13 +32,14 @@ public class AnalyzeFrameController {
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public AnalyzeFrameResponse analyzeFrameJson(@RequestBody(required = false) AnalyzeFrameRequest request) {
-		byte[] imageBytes = null;
-		if (request != null && request.frameBase64() != null && !request.frameBase64().isBlank()) {
-			try {
-				imageBytes = Base64.getDecoder().decode(request.frameBase64());
-			} catch (IllegalArgumentException e) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid base64 in frame_base64");
-			}
+		if (request == null || request.frameBase64() == null || request.frameBase64().isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "frame_base64 is required");
+		}
+		byte[] imageBytes;
+		try {
+			imageBytes = Base64.getDecoder().decode(request.frameBase64());
+		} catch (IllegalArgumentException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid base64 in frame_base64");
 		}
 		return analyzeFrameService.analyzeFrame(imageBytes, MediaType.IMAGE_JPEG_VALUE);
 	}

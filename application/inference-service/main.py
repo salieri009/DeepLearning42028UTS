@@ -121,6 +121,8 @@ def _recommendation(risk: AlertState) -> str:
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
     return {"status": "ok"}
 
 

@@ -39,6 +39,11 @@ public class RemoteAnalyzeFrameService implements AnalyzeFrameService {
 				.body(Map.of("frame_base64", frameBase64))
 				.retrieve()
 				.onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+					if (res.getStatusCode().is4xxClientError()) {
+						throw new ResponseStatusException(
+								HttpStatus.BAD_REQUEST,
+								"Inference service rejected request: " + res.getStatusCode());
+					}
 					throw new ResponseStatusException(
 							HttpStatus.BAD_GATEWAY,
 							"Inference service returned " + res.getStatusCode());

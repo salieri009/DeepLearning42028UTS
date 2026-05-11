@@ -20,7 +20,7 @@ The model used is the YOLOv8m checkpoint produced in Phase C (see [Final_Trainin
 |---|---|
 | Architecture | YOLOv8m |
 | Source | Phase C fine-tune on JRDB ground-truth labels |
-| Weights file | `runs/detect/runs/train/crowdnav_yolo/weights/best.pt` |
+| Weights file | `runs/train/crowdnav_yolo/weights/best.pt` |
 | SHA-256 | `486e9447d17ca75f3ec53e6dcf6016d1b5e73e07b6a17c96c23fc3d21510e7b4` |
 | Trained on | RTX 3050 Laptop 4 GB, CUDA 12.1, PyTorch 2.5.1 |
 
@@ -115,7 +115,7 @@ print(f'FPS: {N/elapsed:.1f}   Latency: {1000*elapsed/N:.1f} ms')
 | A — Baseline | Pseudo-labels (COCO pretrained) | 20 | 0.2556 | Starting point |
 | B — JRDB GT | Ground-truth JRDB annotations | 50 | 0.4127 | +61% over Phase A |
 | C — Fine-tune | Resume from Phase B | 20 | **0.4475** | +8% over Phase B |
-| feat/full-integration | Same weights as Phase C | — | *(validation TBD)* | Integration branch |
+| feat/full-integration | Same weights as Phase C | — | **0.4475** | Integration branch (same checkpoint) |
 
 ---
 
@@ -144,7 +144,7 @@ APP_INFERENCE_MODE=remote ./gradlew bootRun
 curl -s http://localhost:9000/health
 curl -s -X POST http://localhost:8080/api/v1/analyze-frame \
   -H "Content-Type: application/json" \
-  -d '{"frame_base64": ""}' | python -m json.tool
+  -d "{\"frame_base64\": \"$(python3 -c 'import base64, numpy as np, cv2; img=np.zeros((64,64,3),dtype=np.uint8); _,buf=cv2.imencode(".jpg",img); print(base64.b64encode(buf.tobytes()).decode())')\"}" | python -m json.tool
 ```
 
 ### Docker full-stack
