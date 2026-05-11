@@ -1,5 +1,6 @@
 package com.crowdnav.api.controller;
 
+import java.io.IOException;
 import java.util.Base64;
 
 import org.springframework.http.HttpStatus;
@@ -43,10 +44,19 @@ return analyzeFrameService.analyzeFrame(request.frameBase64());
 }
 
 /**
- * Multipart upload — frame forwarded as null (mock-compatible; use JSON endpoint for remote inference).
+ * Multipart upload: {@code image} part is encoded to base64 and forwarded to the service.
+ * When no image is provided, forwards null (mock returns a fixed response; remote mode returns 400).
  */
 @PostMapping(path = "/analyze-frame", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 public AnalyzeFrameResponse analyzeFrameMultipart(@RequestPart(value = "image", required = false) MultipartFile image) {
-return analyzeFrameService.analyzeFrame(null);
+String frameBase64 = null;
+if (image != null && !image.isEmpty()) {
+try {
+frameBase64 = Base64.getEncoder().encodeToString(image.getBytes());
+} catch (IOException e) {
+throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to read uploaded image");
+}
+}
+return analyzeFrameService.analyzeFrame(frameBase64);
 }
 }
