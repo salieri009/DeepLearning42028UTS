@@ -9,6 +9,7 @@ export type PersonDetection = {
   class: string;
   confidence: number;
   bbox: BBox;
+  risk_level?: string;
 };
 
 export type AnalyzeFrameResponse = {

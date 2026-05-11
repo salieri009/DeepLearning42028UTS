@@ -24,6 +24,12 @@ const Box = styled.div`
   border: 2px solid lime;
 `;
 
+const riskColor = (level?: string): string => {
+  if (level === "DANGER") return "red";
+  if (level === "WARNING") return "yellow";
+  return "lime";
+};
+
 const Placeholder = styled.div`
   height: 400px;
   display: flex;
@@ -62,6 +68,7 @@ export default function VideoFeed({ running, data, videoRef }: VideoFeedProps) {
                 top: `${(b.y_center - b.height / 2) * 100}%`,
                 width: `${b.width * 100}%`,
                 height: `${b.height * 100}%`,
+                borderColor: riskColor(person.risk_level),
               }}
             />
           );
