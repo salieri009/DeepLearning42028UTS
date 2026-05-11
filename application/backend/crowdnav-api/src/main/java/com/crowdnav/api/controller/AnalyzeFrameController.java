@@ -23,18 +23,19 @@ public class AnalyzeFrameController {
 	}
 
 	/**
-	 * JSON body (optional {@code frame_base64}). Mock stage ignores payload.
+	 * JSON body with optional {@code frame_base64}. Frame is forwarded to the inference service.
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public AnalyzeFrameResponse analyzeFrameJson(@RequestBody(required = false) AnalyzeFrameRequest request) {
-		return analyzeFrameService.analyzeFrame();
+		String frame = request != null ? request.frameBase64() : null;
+		return analyzeFrameService.analyzeFrame(frame);
 	}
 
 	/**
-	 * Multipart upload (optional {@code image} part). Mock stage ignores bytes.
+	 * Multipart upload — frame forwarded as null (mock-compatible; remote mode not supported via multipart).
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public AnalyzeFrameResponse analyzeFrameMultipart(@RequestPart(value = "image", required = false) MultipartFile image) {
-		return analyzeFrameService.analyzeFrame();
+		return analyzeFrameService.analyzeFrame(null);
 	}
 }
