@@ -1,192 +1,172 @@
-"""FastAPI inference service — CrowdNav person detection via YOLOv8.
+"""
+FastAPI inference service for CrowdNav.
+Loads best.pt (YOLOv8) and runs person detection + collision-avoidance heuristics.
 
-Endpoints:
-    GET  /health          → liveness probe
-    POST /internal/infer  → run YOLO on a base64-encoded JPEG/PNG frame
+Run:
+    uvicorn main:app --reload --port 9000
 
-Run locally:
-    MODEL_PATH=/path/to/best.pt uvicorn main:app --port 9000
+Environment variables:
+    MODEL_PATH   Path to best.pt (default: ./best.pt)
+    CONF_THRESH  YOLO confidence threshold 0-1 (default: 0.35)
 """
 
 from __future__ import annotations
 
 import base64
-import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import cv2
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-
-from collision_avoidance import AlertState, CollisionAvoidance
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("crowdnav.inference")
-
-MODEL_PATH = os.getenv("MODEL_PATH", "/opt/model/best.pt")
+from pydantic import BaseModel
 
 app = FastAPI(title="CrowdNav Inference", version="1.0.0")
 
-_model: Any = None
-_evaluator = CollisionAvoidance()  # height metric, default thresholds
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+MODEL_PATH = os.environ.get("MODEL_PATH", "./best.pt")
+CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.35"))
+
+# ---------------------------------------------------------------------------
+# Lazy model loader
+# ---------------------------------------------------------------------------
+_model = None
 
 
-@app.on_event("startup")
-def load_model() -> None:
+def _load_model():
     global _model
-    try:
-        from ultralytics import YOLO  # type: ignore[import]
-
-        logger.info("Loading YOLO model from %s", MODEL_PATH)
-        _model = YOLO(MODEL_PATH)
-        logger.info("Model loaded successfully")
-    except Exception as exc:
-        logger.error("Failed to load model: %s", exc)
-        _model = None
-
-
-# ---------------------------------------------------------------------------
-# Pydantic schemas
-# ---------------------------------------------------------------------------
-
-
-class InferRequest(BaseModel):
-    frame_base64: str = Field(..., description="Base64-encoded JPEG or PNG frame")
-
-
-class BBoxOut(BaseModel):
-    x_center: float
-    y_center: float
-    width: float
-    height: float
-
-
-class PersonOut(BaseModel):
-    class_: str = Field(..., alias="class")
-    confidence: float
-    bbox: BBoxOut
-    risk_level: str
-
-    model_config = {"populate_by_name": True}
-
-
-class InferResponse(BaseModel):
-    persons: list[PersonOut]
-    crowd_density: str
-    max_proximity_risk: str
-    recommendation: str
+    if _model is not None:
+        return _model
+    model_path = Path(MODEL_PATH)
+    if not model_path.exists():
+        raise FileNotFoundError(
+            f"Model file not found: {model_path.resolve()}. "
+            "Set MODEL_PATH env var to the correct path."
+        )
+    from ultralytics import YOLO  # imported lazily to allow fast startup
+    _model = YOLO(str(model_path))
+    return _model
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Collision-avoidance heuristics
+# (mirrors train/src/inference/collision_avoidance.py — height-based metric)
 # ---------------------------------------------------------------------------
+_SAFE_MAX = 0.25
+_WARN_MAX = 0.45
 
 
-def _decode_frame(frame_base64: str) -> np.ndarray:
-    """Decode a base64 string to a BGR numpy array."""
-    try:
-        img_bytes = base64.b64decode(frame_base64)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid base64 data: {exc}") from exc
-
-    arr = np.frombuffer(img_bytes, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise HTTPException(status_code=400, detail="Could not decode image from frame_base64")
-    return img
+def _alert_state(norm_height: float) -> str:
+    h = max(0.0, min(1.0, norm_height))
+    if h < _SAFE_MAX:
+        return "SAFE"
+    if h < _WARN_MAX:
+        return "WARNING"
+    return "DANGER"
 
 
-def _crowd_density(n: int) -> str:
-    if n <= 2:
+def _worst_state(states: list[str]) -> str:
+    if "DANGER" in states:
+        return "DANGER"
+    if "WARNING" in states:
+        return "WARNING"
+    return "SAFE"
+
+
+def _crowd_density(n: int, worst: str) -> str:
+    if n == 0:
         return "LOW"
-    if n <= 5:
+    if n >= 6 or worst == "DANGER":
+        return "HIGH"
+    if n >= 3 or worst == "WARNING":
         return "MEDIUM"
-    return "HIGH"
+    return "LOW"
 
 
-def _recommendation(risk: AlertState) -> str:
-    if risk == AlertState.DANGER:
-        return "STOP"
-    if risk == AlertState.WARNING:
-        return "CAUTION"
-    return "PROCEED"
+def _recommendation(worst: str) -> str:
+    return {"SAFE": "PROCEED", "WARNING": "CAUTION", "DANGER": "STOP"}.get(worst, "PROCEED")
+
+
+# ---------------------------------------------------------------------------
+# Request / Response
+# ---------------------------------------------------------------------------
+class InferRequest(BaseModel):
+    frame_base64: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
-
-
 @app.get("/health")
 def health() -> dict[str, str]:
-    if _model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    return {"status": "ok"}
+    if not Path(MODEL_PATH).exists():
+        raise HTTPException(status_code=503, detail="Model file not found")
+    return {"status": "ok", "model": "ready"}
 
 
-@app.post("/internal/infer", response_model=InferResponse)
-def infer(req: InferRequest) -> InferResponse:
-    if _model is None:
-        raise HTTPException(status_code=503, detail="Model not ready — check MODEL_PATH")
+@app.post("/internal/infer")
+def infer(payload: InferRequest) -> dict[str, Any]:
+    if not payload.frame_base64:
+        raise HTTPException(status_code=400, detail="frame_base64 is required")
 
+    # 1. Decode base64 → numpy BGR image
     try:
-        img = _decode_frame(req.frame_base64)
-
-        results = _model(img, verbose=False)
-        boxes = results[0].boxes
-
-        persons: list[PersonOut] = []
-        bboxes_for_crowd: list[list[float]] = []
-
-        if boxes is not None and len(boxes) > 0:
-            xyxyn = boxes.xyxyn.cpu().numpy()   # shape (N, 4): x1n y1n x2n y2n
-            confs = boxes.conf.cpu().numpy()
-            classes = boxes.cls.cpu().numpy()
-
-            for i in range(len(xyxyn)):
-                cls_id = int(classes[i])
-                if cls_id != 0:  # person class only
-                    continue
-
-                x1n, y1n, x2n, y2n = xyxyn[i]
-                x_center = float((x1n + x2n) / 2)
-                y_center = float((y1n + y2n) / 2)
-                width = float(x2n - x1n)
-                height = float(y2n - y1n)
-                bbox_vals = [x_center, y_center, width, height]
-
-                alert = _evaluator.evaluate(bbox_vals)
-                bboxes_for_crowd.append(bbox_vals)
-
-                persons.append(
-                    PersonOut(
-                        class_="person",
-                        confidence=float(confs[i]),
-                        bbox=BBoxOut(
-                            x_center=x_center,
-                            y_center=y_center,
-                            width=width,
-                            height=height,
-                        ),
-                        risk_level=alert.value,
-                    )
-                )
-
-        max_risk = _evaluator.evaluate_many(bboxes_for_crowd)
-        density = _crowd_density(len(persons))
-        recommendation = _recommendation(max_risk)
-
-        return InferResponse(
-            persons=persons,
-            crowd_density=density,
-            max_proximity_risk=max_risk.value,
-            recommendation=recommendation,
-        )
-
-    except HTTPException:
-        raise
+        raw = base64.b64decode(payload.frame_base64)
+        arr = np.frombuffer(raw, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if img is None:
+            raise ValueError("cv2.imdecode returned None")
     except Exception as exc:
-        logger.exception("Inference error: %s", exc)
-        raise HTTPException(status_code=500, detail="Inference error") from exc
+        raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
+
+    # 2. YOLO inference (class 0 = person)
+    try:
+        model = _load_model()
+        results = model.predict(img, conf=CONF_THRESH, classes=[0], verbose=False)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Inference error: {exc}") from exc
+
+    frame_h, frame_w = img.shape[:2]
+    persons: list[dict[str, Any]] = []
+    alert_states: list[str] = []
+
+    for result in results:
+        for box in result.boxes:
+            x1, y1, x2, y2 = (float(v) for v in box.xyxy[0].tolist())
+            conf = float(box.conf[0])
+
+            x_center = ((x1 + x2) / 2) / frame_w
+            y_center = ((y1 + y2) / 2) / frame_h
+            width = (x2 - x1) / frame_w
+            height = (y2 - y1) / frame_h
+
+            state = _alert_state(height)
+            alert_states.append(state)
+
+            persons.append(
+                {
+                    "class": "person",
+                    "confidence": round(conf, 4),
+                    "bbox": {
+                        "x_center": round(x_center, 4),
+                        "y_center": round(y_center, 4),
+                        "width": round(width, 4),
+                        "height": round(height, 4),
+                    },
+                    "proximity_risk": state,
+                }
+            )
+
+    worst = _worst_state(alert_states)
+
+    return {
+        "persons": persons,
+        "crowd_density": _crowd_density(len(persons), worst),
+        "max_proximity_risk": worst,
+        "recommendation": _recommendation(worst),
+    }

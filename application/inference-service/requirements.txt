@@ -3,13 +3,13 @@
 
 # Web framework
 fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
+uvicorn[standard]>=0.32.0
 
 # Inference stack (ADR-0003 — Ultralytics YOLO in FastAPI)
-ultralytics>=8.0.0,<9.0.0
+ultralytics>=8.3.0
 torch>=2.0.0
 torchvision>=0.15.0
-opencv-python-headless>=4.8.0
-numpy>=1.24.0
+opencv-python-headless>=4.10.0
+numpy>=1.26.0
 pillow>=10.0.0
 pydantic>=2.0.0
