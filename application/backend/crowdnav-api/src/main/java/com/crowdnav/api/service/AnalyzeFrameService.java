@@ -4,5 +4,5 @@ import com.crowdnav.api.dto.AnalyzeFrameResponse;
 
 public interface AnalyzeFrameService {
 
-	AnalyzeFrameResponse analyzeFrame(String frameBase64);
+AnalyzeFrameResponse analyzeFrame(String frameBase64);
 }

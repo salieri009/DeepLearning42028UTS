@@ -24,9 +24,15 @@ from pydantic import BaseModel
 
 app = FastAPI(title="CrowdNav Inference", version="1.0.0")
 
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
 MODEL_PATH = os.environ.get("MODEL_PATH", "./best.pt")
 CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.35"))
 
+# ---------------------------------------------------------------------------
+# Lazy model loader
+# ---------------------------------------------------------------------------
 _model = None
 
 
@@ -40,11 +46,15 @@ def _load_model():
             f"Model file not found: {model_path.resolve()}. "
             "Set MODEL_PATH env var to the correct path."
         )
-    from ultralytics import YOLO
+    from ultralytics import YOLO  # imported lazily to allow fast startup
     _model = YOLO(str(model_path))
     return _model
 
 
+# ---------------------------------------------------------------------------
+# Collision-avoidance heuristics
+# (mirrors train/src/inference/collision_avoidance.py — height-based metric)
+# ---------------------------------------------------------------------------
 _SAFE_MAX = 0.25
 _WARN_MAX = 0.45
 
@@ -80,10 +90,16 @@ def _recommendation(worst: str) -> str:
     return {"SAFE": "PROCEED", "WARNING": "CAUTION", "DANGER": "STOP"}.get(worst, "PROCEED")
 
 
+# ---------------------------------------------------------------------------
+# Request / Response
+# ---------------------------------------------------------------------------
 class InferRequest(BaseModel):
     frame_base64: str | None = None
 
 
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 @app.get("/health")
 def health() -> dict[str, str]:
     if not Path(MODEL_PATH).exists():
@@ -96,6 +112,7 @@ def infer(payload: InferRequest) -> dict[str, Any]:
     if not payload.frame_base64:
         raise HTTPException(status_code=400, detail="frame_base64 is required")
 
+    # 1. Decode base64 → numpy BGR image
     try:
         raw = base64.b64decode(payload.frame_base64)
         arr = np.frombuffer(raw, dtype=np.uint8)
@@ -105,6 +122,7 @@ def infer(payload: InferRequest) -> dict[str, Any]:
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
 
+    # 2. YOLO inference (class 0 = person)
     try:
         model = _load_model()
         results = model.predict(img, conf=CONF_THRESH, classes=[0], verbose=False)
@@ -130,17 +148,19 @@ def infer(payload: InferRequest) -> dict[str, Any]:
             state = _alert_state(height)
             alert_states.append(state)
 
-            persons.append({
-                "class": "person",
-                "confidence": round(conf, 4),
-                "bbox": {
-                    "x_center": round(x_center, 4),
-                    "y_center": round(y_center, 4),
-                    "width": round(width, 4),
-                    "height": round(height, 4),
-                },
-                "proximity_risk": state,
-            })
+            persons.append(
+                {
+                    "class": "person",
+                    "confidence": round(conf, 4),
+                    "bbox": {
+                        "x_center": round(x_center, 4),
+                        "y_center": round(y_center, 4),
+                        "width": round(width, 4),
+                        "height": round(height, 4),
+                    },
+                    "proximity_risk": state,
+                }
+            )
 
     worst = _worst_state(alert_states)
 

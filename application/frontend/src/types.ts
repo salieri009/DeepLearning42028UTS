@@ -5,10 +5,13 @@ export type BBox = {
   height: number;
 };
 
+export type ProximityRisk = "SAFE" | "WARNING" | "DANGER";
+
 export type PersonDetection = {
   class: string;
   confidence: number;
   bbox: BBox;
+  proximity_risk?: ProximityRisk;
 };
 
 export type AnalyzeFrameResponse = {
@@ -17,4 +20,3 @@ export type AnalyzeFrameResponse = {
   max_proximity_risk?: string;
   recommendation?: string;
 };
-

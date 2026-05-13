@@ -1,8 +1,8 @@
 import { useEffect, type RefObject } from "react";
 import styled from "styled-components";
-import type { AnalyzeFrameResponse } from "../../types";
+import type { AnalyzeFrameResponse, ProximityRisk } from "../types";
 
-type VideoFeedProps = {
+type Props = {
   running: boolean;
   data: AnalyzeFrameResponse | null;
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -10,64 +10,75 @@ type VideoFeedProps = {
 
 const Container = styled.div`
   position: relative;
-  width: 100%;
-  max-width: ${({ theme }) => theme.layout.mediaMaxWidth};
-  background: ${({ theme }) => theme.color.neutral?.[100] ?? "#000"};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  overflow: hidden;
+  width: 720px;
+  background: black;
 `;
 
-const VideoEl = styled.video<{ $running: boolean }>`
+const VideoEl = styled.video`
   width: 100%;
-  display: ${({ $running }) => ($running ? "block" : "none")};
-`;
-
-const Box = styled.div`
-  position: absolute;
-  border: 2px solid ${({ theme }) => theme.color.overlayBorder};
-  box-shadow: 0 0 0 1px ${({ theme }) => theme.color.overlayBorderSubtle};
-  border-radius: ${({ theme }) => theme.radius.sm};
+  display: block;
 `;
 
 const Placeholder = styled.div`
-  height: 420px;
+  height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.color.textSecondary};
-  background: ${({ theme }) => theme.color.surfaceSubtle};
+  color: gray;
 `;
 
-export default function VideoFeed({ running, data, videoRef }: VideoFeedProps) {
+const RISK_COLOR: Record<ProximityRisk, string> = {
+  SAFE: "#00e676",
+  WARNING: "#ffea00",
+  DANGER: "#ff1744",
+};
+
+export default function VideoFeed({ running, data, videoRef }: Props) {
   useEffect(() => {
-    if (!running && videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    if (!running && videoRef.current) videoRef.current.srcObject = null;
   }, [running, videoRef]);
 
   return (
     <Container>
-      <VideoEl ref={videoRef} muted playsInline $running={running} />
-
+      <VideoEl ref={videoRef} muted playsInline style={{ display: running ? "block" : "none" }} />
       {!running && <Placeholder>Camera Off</Placeholder>}
 
       {running &&
-        data?.persons?.map((person, i) => {
+        (data?.persons ?? []).map((person, i) => {
           const b = person.bbox;
+          const color = RISK_COLOR[(person.proximity_risk as ProximityRisk) ?? "SAFE"];
           return (
-            <Box
-              // backend order is stable enough for UI; index key is acceptable here
+            <div
               key={i}
               style={{
+                position: "absolute",
                 left: `${(b.x_center - b.width / 2) * 100}%`,
                 top: `${(b.y_center - b.height / 2) * 100}%`,
                 width: `${b.width * 100}%`,
                 height: `${b.height * 100}%`,
+                border: `2px solid ${color}`,
+                boxSizing: "border-box",
               }}
-            />
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: -18,
+                  left: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#000",
+                  background: color,
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {person.proximity_risk ?? "SAFE"} {Math.round((person.confidence ?? 0) * 100)}%
+              </span>
+            </div>
           );
         })}
     </Container>
   );
 }
-

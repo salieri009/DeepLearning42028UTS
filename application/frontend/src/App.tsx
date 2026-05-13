@@ -42,8 +42,33 @@ const Side = styled.aside`
   gap: ${({ theme }) => theme.spacing[4]};
 `;
 
+// ---------------------------------------------------------------------------
+// Audio alerts via Web Speech API
+// ---------------------------------------------------------------------------
+const ALERT_MESSAGES: Record<string, string> = {
+  WARNING: "Caution. Pedestrians nearby.",
+  DANGER: "Warning! Crowd detected. Please stop.",
+};
+
+/** Minimum ms between spoken alerts to avoid spamming. */
+const ALERT_COOLDOWN_MS = 5000;
+
+function speak(text: string) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 1.1;
+  utt.volume = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+function tryVibrate(pattern: number[]) {
+  if ("vibrate" in navigator) navigator.vibrate(pattern);
+}
+
+// ---------------------------------------------------------------------------
+
 function reportError(context: string, error: unknown) {
-  // In production, avoid dumping rich error objects that can include request metadata.
   if (import.meta.env.DEV) {
     console.error(context, error);
     return;
@@ -60,6 +85,10 @@ export default function App() {
   const intervalRef = useRef<number | null>(null);
   const startingRef = useRef(false);
 
+  // Track last spoken risk to avoid repeating identical alerts
+  const lastSpokenRiskRef = useRef<string>("SAFE");
+  const lastAlertTimeRef = useRef<number>(0);
+
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return null;
@@ -68,6 +97,25 @@ export default function App() {
     canvas.height = video.videoHeight || 480;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     return canvas.toDataURL("image/jpeg").split(",")[1] ?? null;
+  }, []);
+
+  const triggerAlert = useCallback((risk: string) => {
+    const now = Date.now();
+    const isHigherRisk =
+      (risk === "DANGER") ||
+      (risk === "WARNING" && lastSpokenRiskRef.current === "SAFE");
+    const cooldownPassed = now - lastAlertTimeRef.current > ALERT_COOLDOWN_MS;
+
+    if (isHigherRisk && cooldownPassed) {
+      const msg = ALERT_MESSAGES[risk];
+      if (msg) {
+        speak(msg);
+        if (risk === "DANGER") tryVibrate([200, 100, 200, 100, 400]);
+        else if (risk === "WARNING") tryVibrate([200, 100, 200]);
+      }
+      lastAlertTimeRef.current = now;
+    }
+    lastSpokenRiskRef.current = risk;
   }, []);
 
   const start = async () => {
@@ -81,6 +129,8 @@ export default function App() {
         await videoRef.current.play();
       }
       setRunning(true);
+      lastSpokenRiskRef.current = "SAFE";
+      lastAlertTimeRef.current = 0;
 
       intervalRef.current = window.setInterval(async () => {
         const frame = captureFrame();
@@ -88,6 +138,7 @@ export default function App() {
         try {
           const res = await analyzeFrame(frame);
           setData(res.data);
+          triggerAlert(res.data.max_proximity_risk ?? "SAFE");
         } catch (e) {
           reportError("Analyze error", e);
         }
@@ -115,6 +166,7 @@ export default function App() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    window.speechSynthesis?.cancel();
     setRunning(false);
     setData(null);
   };
@@ -126,6 +178,7 @@ export default function App() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
+      window.speechSynthesis?.cancel();
     };
   }, []);
 
@@ -147,4 +200,3 @@ export default function App() {
     </Page>
   );
 }
-

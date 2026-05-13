@@ -9,8 +9,7 @@ spring:
 # remote (future): call Python inference at base-url via WebClient.
 app:
   inference:
-    mode: mock
-    base-url: http://127.0.0.1:9000
+    mode: ${APP_INFERENCE_MODE:mock}
+    base-url: ${APP_INFERENCE_BASE_URL:http://127.0.0.1:9000}
   cors:
-    # Comma-separated list of allowed origins. Use * only for local dev.
-    allowed-origins: "http://localhost:3000,http://localhost:8081"
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:"http://localhost:3000,http://localhost:8081"}
