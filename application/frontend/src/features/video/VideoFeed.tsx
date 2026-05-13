@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from "react";
 import styled from "styled-components";
-import type { AnalyzeFrameResponse, ProximityRisk } from "../types";
+import type { AnalyzeFrameResponse, ProximityRisk } from "../../types";
 
 type Props = {
   running: boolean;
