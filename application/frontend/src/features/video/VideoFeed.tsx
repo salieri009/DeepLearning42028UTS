@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from "react";
 import styled from "styled-components";
-import type { AnalyzeFrameResponse } from "../types";
+import type { AnalyzeFrameResponse } from "../../types";
 
 type VideoFeedProps = {
   running: boolean;
@@ -10,26 +10,32 @@ type VideoFeedProps = {
 
 const Container = styled.div`
   position: relative;
-  width: 720px;
-  background: black;
+  width: 100%;
+  max-width: ${({ theme }) => theme.layout.mediaMaxWidth};
+  background: ${({ theme }) => theme.color.neutral?.[100] ?? "#000"};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  overflow: hidden;
 `;
 
-const VideoEl = styled.video`
+const VideoEl = styled.video<{ $running: boolean }>`
   width: 100%;
-  display: block;
+  display: ${({ $running }) => ($running ? "block" : "none")};
 `;
 
 const Box = styled.div`
   position: absolute;
-  border: 2px solid lime;
+  border: 2px solid ${({ theme }) => theme.color.overlayBorder};
+  box-shadow: 0 0 0 1px ${({ theme }) => theme.color.overlayBorderSubtle};
+  border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
 const Placeholder = styled.div`
-  height: 400px;
+  height: 420px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: gray;
+  color: ${({ theme }) => theme.color.textSecondary};
+  background: ${({ theme }) => theme.color.surfaceSubtle};
 `;
 
 export default function VideoFeed({ running, data, videoRef }: VideoFeedProps) {
@@ -41,12 +47,7 @@ export default function VideoFeed({ running, data, videoRef }: VideoFeedProps) {
 
   return (
     <Container>
-      <VideoEl
-        ref={videoRef}
-        muted
-        playsInline
-        style={{ display: running ? "block" : "none" }}
-      />
+      <VideoEl ref={videoRef} muted playsInline $running={running} />
 
       {!running && <Placeholder>Camera Off</Placeholder>}
 

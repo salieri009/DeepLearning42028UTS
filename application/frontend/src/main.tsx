@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "styled-components";
 import App from "./App";
+import { GlobalStyle } from "./design/GlobalStyle";
+import { theme } from "./design/theme";
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
@@ -9,7 +12,10 @@ if (!rootEl) {
 
 createRoot(rootEl).render(
   <StrictMode>
-    <App />
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 );
 
