@@ -17,7 +17,7 @@ dev = [
 ]
 
 [tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+dependencies = { file = ["requirements-pkg.txt"] }
 
 # Approach C (ADR-0010): keep `src/` directory and `from src.X` imports as-is.
 # `pip install -e ./train` exposes the `src` package and its sub-packages.

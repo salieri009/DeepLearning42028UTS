@@ -58,6 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--name", default="crowdnav_yolo", help="Run name")
     parser.add_argument("--patience", type=int, default=30, help="Early stopping patience")
     parser.add_argument("--save-period", type=int, default=10, help="Save checkpoint every N epochs (Ultralytics save_period)")
+    parser.add_argument("--lr0", type=float, default=0.01, help="Initial learning rate (Ultralytics default 0.01; use ~0.001 when fine-tuning from a checkpoint)")
+    parser.add_argument("--lrf", type=float, default=0.01, help="Final LR as a fraction of lr0 via cosine decay (final_lr = lr0 * lrf)")
     exist_group = parser.add_mutually_exclusive_group()
     exist_group.add_argument(
         "--exist-ok",
@@ -125,6 +127,8 @@ def main() -> int:
         exist_ok=not args.no_exist_ok,
         workers=args.workers,
         save_period=args.save_period,
+        lr0=args.lr0,
+        lrf=args.lrf,
     )
 
     artifacts = pipeline.train()

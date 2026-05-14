@@ -1,0 +1,15 @@
+dvc[gdrive]
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics
+opencv-python
+fastapi
+uvicorn
+numpy
+pandas
+matplotlib
+tqdm
+pyyaml
+typing_extensions>=4.6.0
+clearml
+python-dotenv
