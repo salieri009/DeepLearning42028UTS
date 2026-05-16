@@ -2,6 +2,8 @@
 
 React + Vite browser client for the CrowdNav crowd-detection system.
 
+UI/design refactor guide: [`DESIGN.md`](./DESIGN.md)
+
 ## Requirements
 
 - Node.js 20+

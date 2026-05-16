@@ -1,9 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import VideoFeed from "./Components/VideoFeed";
-import Controls from "./Components/Controls";
-import StatPanel from "./Components/StatPanel";
+import styled from "styled-components";
+import VideoFeed from "./features/video/VideoFeed";
+import Controls from "./features/controls/Controls";
+import StatPanel from "./features/stats/StatPanel";
 import { analyzeFrame } from "./api";
 import type { AnalyzeFrameResponse } from "./types";
+import { Title } from "./ui/Typography";
+
+const Page = styled.div`
+  padding: ${({ theme }) => theme.spacing[5]};
+  max-width: ${({ theme }) => theme.layout.maxWidth};
+  margin: 0 auto;
+`;
+
+const Header = styled.header`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing[4]};
+  margin-bottom: ${({ theme }) => theme.spacing[5]};
+`;
+
+const Status = styled.span<{ $running: boolean }>`
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  color: ${({ theme, $running }) => ($running ? theme.color.successText : theme.color.textSecondary)};
+`;
+
+const Content = styled.main`
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: ${({ theme }) => theme.spacing[5]};
+
+  @media (max-width: 920px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Side = styled.aside`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[4]};
+`;
 
 // ---------------------------------------------------------------------------
 // Audio alerts via Web Speech API
@@ -146,14 +183,20 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h2>CrowdNav</h2>
+    <Page>
+      <Header>
+        <Title>CrowdNav</Title>
+        <Status $running={running}>{running ? "Running" : "Idle"}</Status>
+      </Header>
 
-      <VideoFeed running={running} data={data} videoRef={videoRef} />
+      <Content>
+        <VideoFeed running={running} data={data} videoRef={videoRef} />
 
-      <Controls running={running} onStart={start} onStop={stop} />
-
-      <StatPanel data={data} />
-    </div>
+        <Side>
+          <Controls running={running} onStart={start} onStop={stop} />
+          <StatPanel data={data} />
+        </Side>
+      </Content>
+    </Page>
   );
 }
