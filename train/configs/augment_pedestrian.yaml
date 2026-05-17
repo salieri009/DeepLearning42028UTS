@@ -1,0 +1,26 @@
+# Augmentation overrides for JRDB pedestrian detection
+# Passed directly to Ultralytics model.train() via --aug-cfg flag.
+# Only keys that differ from Ultralytics defaults are listed here.
+# Reference: https://docs.ultralytics.com/modes/train/#augmentation-settings
+
+# ── Geometric ────────────────────────────────────────────────────────────────
+fliplr: 0.5      # 좌우 반전 — 사람은 좌우 대칭 (기본값 유지)
+flipud: 0.0      # 상하 반전 비활성 — 서 있는 사람에게 무의미
+degrees: 5.0     # 회전 ±5° — 카메라 기울기 대응
+translate: 0.15  # 평행이동 — 프레임 내 위치 다양성
+scale: 0.6       # 스케일 변동 — 가까운/먼 보행자 대응
+shear: 2.0       # 전단 변환 — 약한 원근 왜곡 시뮬레이션
+perspective: 0.0 # 원근 변환 비활성 (shear로 충분)
+
+# ── Color jitter ─────────────────────────────────────────────────────────────
+hsv_h: 0.015     # 색조 ±1.5% — 조명 색온도 변화
+hsv_s: 0.7       # 채도 ±70% — 흐린 날/실내 조명 대응
+hsv_v: 0.4       # 명도 ±40% — 역광/그림자 대응
+
+# ── Mosaic & copy-paste ───────────────────────────────────────────────────────
+mosaic: 1.0      # 모자이크 augment — 혼잡한 군중 장면 학습에 유리
+mixup: 0.1       # 약한 mixup — 과한 값은 오히려 recall 저하
+copy_paste: 0.1  # 보행자 복사 붙여넣기 — 밀집 환경 대응
+
+# ── Occlusion robustness ─────────────────────────────────────────────────────
+erasing: 0.3     # random erasing — 부분 가려짐 대응 (recall 향상 핵심)

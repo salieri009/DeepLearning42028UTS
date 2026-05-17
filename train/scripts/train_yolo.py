@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 # `crowdnav-train` is installed via `pip install -e ./train` (see ADR-0010).
 # `src.*` packages resolve without sys.path manipulation.
@@ -81,7 +82,34 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run validation after training",
     )
+    parser.add_argument(
+        "--aug-cfg",
+        default=None,
+        type=Path,
+        help=(
+            "Path to augmentation YAML override (Ultralytics format). "
+            "Keys are merged into model.train() kwargs. "
+            "Example: train/configs/augment_pedestrian.yaml"
+        ),
+    )
     return parser
+
+
+def _load_aug_cfg(path: Path | None) -> dict[str, Any]:
+    """Load augmentation overrides from a YAML file.
+
+    Returns an empty dict if *path* is None.
+    """
+    if path is None:
+        return {}
+    resolved = path.expanduser().resolve()
+    if not resolved.is_file():
+        print(f"[CrowdNav] ERROR: aug-cfg not found: {resolved}", file=sys.stderr)
+        raise SystemExit(2)
+    import yaml  # soft import — yaml is bundled with ultralytics
+    overrides: dict[str, Any] = yaml.safe_load(resolved.read_text(encoding="utf-8")) or {}
+    print(f"[CrowdNav] aug-cfg={resolved} ({len(overrides)} overrides: {list(overrides)})")
+    return overrides
 
 
 def _resolve_data_yaml(path: Path | None) -> Path:
@@ -114,6 +142,8 @@ def main() -> int:
     print(f"[CrowdNav] runtime={describe_runtime()} device={device!r} (set --device or CROWDNAV_DEVICE to override auto)")
     print(f"[CrowdNav] data_yaml={data_yaml}")
 
+    extra_kwargs = _load_aug_cfg(args.aug_cfg)
+
     pipeline = TrainPipeline(
         model_cfg=args.model_cfg,
         data_yaml=str(data_yaml),
@@ -129,6 +159,7 @@ def main() -> int:
         save_period=args.save_period,
         lr0=args.lr0,
         lrf=args.lrf,
+        extra_kwargs=extra_kwargs,
     )
 
     artifacts = pipeline.train()
