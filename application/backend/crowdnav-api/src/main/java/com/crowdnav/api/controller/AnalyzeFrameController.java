@@ -5,6 +5,7 @@ import java.util.Base64;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import com.crowdnav.api.service.AnalyzeFrameService;
 
 @RestController
 @RequestMapping("/api/v1")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:8081"})
 public class AnalyzeFrameController {
 
 private final AnalyzeFrameService analyzeFrameService;
