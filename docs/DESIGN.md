@@ -68,9 +68,9 @@ Domain → Preprocessing → Inference → MLOps
 | Train | `train/src/inference/` (alert_dispatcher, collision_avoidance, depth_estimator) | (라이브러리만) | numpy | **API 바인딩 없음** — train 내부에서만 사용 |
 | Train | `train/scripts/self_train_loop.py` | CLI | ultralytics | 멀티 사이클 self-training |
 | Backend | `application/backend/crowdnav-api/` (Spring Boot 3.5.6) | `@SpringBootApplication`, Gradle | spring-boot-starter-web/validation | 엔드포인트 1개: `POST /api/v1/analyze-frame` |
-| Backend | `RemoteAnalyzeFrameService` | (Spring 빈) | WebClient | **NOT_IMPLEMENTED throw** — 미완성 |
+| Backend | `RemoteAnalyzeFrameService` | (Spring 빈) | RestClient (HTTP/1.1) | **구현 완료** — FastAPI inference 호출, `remote` 기본 모드 |
 | Frontend | `application/frontend/src/App.tsx` | Vite 6 | React 19.2.5, axios 1.16, styled-components 6.4 | 컴포넌트 3개 (VideoFeed, Controls, StatPanel), 모두 stateless |
-| Inference svc | `application/inference-service/main.py` | FastAPI 0.115 | uvicorn | **STUB only** — `/health`, `/internal/infer` mock JSON |
+| Inference svc | `application/inference-service/main.py` | FastAPI 0.115 | uvicorn + ultralytics | **구현 완료** — `/internal/infer` 가 YOLOv8 person detection + proximity heuristics 수행 |
 | Infra | `infra/docker/` | `docker-compose.yml` (Jupyter Lab) | pytorch:2.5.1-cuda12.1 | **학습 미수행** — dev 환경 전용 |
 | Infra | `infra/sagemaker/sagemaker_launch.py` → `sagemaker_train.py` | boto3 + SageMaker SDK | ultralytics | 실제 학습 경로. ml.g5.xlarge 디폴트 |
 | Infra | `infra/train_skeleton.py`, `train_keras_skeleton.py` | (orphan?) | tensorflow/keras | **레거시 후보** — YOLO 라인과 무관 |
@@ -95,14 +95,14 @@ sequenceDiagram
 
     loop every 500ms
         FE->>API: POST /api/v1/analyze-frame {frame: base64}
-        alt mode=mock (현재)
-            API->>MOCK: analyzeFrame(frame)
-            MOCK-->>API: 정적 mock JSON
-        else mode=remote (미구현 — NOT_IMPLEMENTED throw)
+        alt mode=remote (현재 기본값)
             API->>INF: POST /internal/infer
             INF->>YOLO: model.predict(frame)
             YOLO-->>INF: detections
             INF-->>API: persons[], crowd_density, proximity_risk
+        else mode=mock (테스트 전용)
+            API->>MOCK: analyzeFrame(frame)
+            MOCK-->>API: 정적 mock JSON
         end
         API-->>FE: AnalyzeFrameResponse
         FE->>FE: VideoFeed overlay + StatPanel 갱신

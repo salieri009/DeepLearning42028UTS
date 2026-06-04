@@ -6,7 +6,7 @@ The codebase was reorganised from a single **`PROJECTS/CrowdNav`** tree into fou
 
 | Area | Path | Purpose |
 |------|------|---------|
-| Application | [`application/`](../../application/) | Spring API, RN sample client, Python inference stub |
+| Application | [`application/`](../../application/) | Spring API, React (Vite) frontend, Python FastAPI + YOLO inference service (Docker-composed) |
 | Training / ML | [`train/`](../../train/) | YOLO pipeline, `src/`, scripts, notebooks |
 | Infrastructure | [`infra/`](../../infra/) | Docker, SageMaker launcher + training entrypoint |
 | Documentation | [`docs/`](../) | TechSpec, PRD, diagrams, runbooks, SysML |

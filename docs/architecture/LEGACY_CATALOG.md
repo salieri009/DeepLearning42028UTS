@@ -90,13 +90,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 W2·W3 종합 결과:
 
-- `application.yml` 에 `app.inference.mode=mock` 설정 → mock 모드만 동작
-- `RemoteAnalyzeFrameService` 가 **`NOT_IMPLEMENTED` throw** — 실제 HTTP 통합 미구현
-- `application/inference-service/main.py` 의 `/internal/infer` 도 **stub 만** (mock JSON 반환)
-- 프런트엔드에 **vite proxy 없음** → CORS 의존, dev 환경에서 깨질 수 있음
+- `application.yml` 의 `app.inference.mode` 기본값은 **`remote`** (mock 은 테스트 전용)
+- `RemoteAnalyzeFrameService` **구현 완료** — `RestClient`(HTTP/1.1)로 FastAPI inference 호출
+- `application/inference-service/main.py` 의 `/internal/infer` **구현 완료** — YOLOv8 detection + proximity heuristics
+- 프런트엔드는 Docker 배포 시 **nginx 가 `/api/` 를 백엔드로 프록시** (동일 출처)
 
-→ 레거시는 아니지만 **incomplete integration**. 디자인 결정이 빨리 필요한 영역.
-→ 후보 ADR: **ADR-0002-inference-runtime-shape.md** (이미 DESIGN.md §4.1 에 등록)
+> **Update (2026-06):** 위 W2·W3 시점의 "incomplete integration" 은 **해소됨**. 전체 체인
+> (React → Spring → FastAPI/YOLO)이 end-to-end 로 동작하며 `docker compose up --build` 로 검증됨.
+> 설계는 ADR-0002 로 확정 (DESIGN.md §4.1).
 
 ---
 

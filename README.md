@@ -15,6 +15,7 @@
 
 ---
 
+![Live Demo](https://img.shields.io/badge/Live_Demo-Operational-success?style=flat-square)
 ![Assignment Status](https://img.shields.io/badge/Assignment-Part_A_Submission_Pending-orange?style=flat-square)
 ![Subject](https://img.shields.io/badge/Subject-Deep_Learning_42028-blue?style=flat-square)
 ![University](https://img.shields.io/badge/University-UTS_2026-002366?style=flat-square)
@@ -25,6 +26,12 @@
 
 The full demo is three containers wired together by [`application/docker-compose.yml`](application/docker-compose.yml):
 **React UI** → **Spring Boot API** → **FastAPI + YOLO inference**. The easiest way to run everything is Docker.
+
+> **✅ Status: Verified working (2026-06-04).** Built and run end-to-end with
+> `docker compose up --build`: all three containers report healthy, and the full browser
+> path (nginx `:80` → Spring `:8080` → FastAPI `:9000` → YOLO) returns **HTTP 200** on
+> `POST /api/v1/analyze-frame` with a real `persons / crowd_density / max_proximity_risk /
+> recommendation` payload. (An earlier HTTP/2 `h2c` body-drop that caused 400s is fixed.)
 
 ### Quick start (Docker)
 
@@ -260,9 +267,9 @@ git push origin main
 
 | Name | Student ID | Role (Equally Distributed DL Workload) |
 |------|------------|-----------------------------------------|
-| TBD  | TBD        | **Data Engineering & Preprocessing:** Dataset curation (JRDB), POV filtering, and augmentation strategies for wheelchair perspective. |
-| Jungwook Van | 25167747 | **YOLO Transfer Learning (Team Lead):** Fine-tuning YOLO v8/v10 for target classes, model optimization, and latency benchmarking. |
-| TBD  | TBD        | **Inference Logic & Thresholding:** Developing bounding-box scaling heuristics for proximity estimation and building the alerting pipeline. |
+| Phoi Gia Vuong | 25736012 | **Data Engineering & Preprocessing:** Dataset curation (JRDB), POV filtering, augmentation strategies for wheelchair perspective, and **project documentation**. |
+| Jungwook Van | 25167747 | **YOLO Transfer Learning (Team Lead) & Inference Logic:** Fine-tuning YOLO v8/v10, model optimization and latency benchmarking, plus bounding-box scaling heuristics for proximity estimation and the alerting pipeline. |
+| Chihyun | 14707133 | _TBD — to be finalized._ |
 
 > **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
 

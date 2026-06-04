@@ -26,7 +26,7 @@ related_diagram:
 
 - `PROJECTS/CrowdNav/` — 옛 monolith. gitignored 라고 README엔 써있지만 로컬엔 남아있음. 잔여 스크립트(`scratch/test_track.py`)·잔여 데이터(`data/raw/*.jpg`)·잔여 가중치(`yolo26n.pt`) 존재.
 - `train/` — 현재 canonical Python 트리. `src/data/`, `src/inference/`, `src/training/`, `scripts/`.
-- `application/` — Spring API + React frontend + Python inference stub. 서로 다른 빌드 시스템.
+- `application/` — Spring API + React frontend + Python FastAPI/YOLO inference. 서로 다른 빌드 시스템.
 - `infra/` — Docker + SageMaker. 두 갈래의 배포 경로.
 - `docs/` — 이미 PRD, TechSpec, System_Architecture, data_pipeline_diagram 등 존재.
 
