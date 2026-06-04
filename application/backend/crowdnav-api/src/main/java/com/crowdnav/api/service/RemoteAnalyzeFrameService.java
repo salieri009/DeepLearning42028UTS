@@ -1,11 +1,13 @@
 package com.crowdnav.api.service;
 
+import java.net.http.HttpClient;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,8 +26,17 @@ private final RestClient restClient;
 
 public RemoteAnalyzeFrameService(
 @Value("${app.inference.url:${app.inference.base-url:http://127.0.0.1:9000}}") String baseUrl) {
+// Force HTTP/1.1: the JDK HttpClient backing RestClient defaults to HTTP/2 and sends
+// an `Upgrade: h2c` header. uvicorn (FastAPI inference) does not support h2c cleartext
+// upgrade and drops the request body, so inference receives an empty frame_base64 and
+// returns 400. Pinning HTTP/1.1 suppresses the upgrade so the body is preserved.
+// (Regression: this fix from commit a131f86 was lost in merge f22dc11.)
+HttpClient httpClient = HttpClient.newBuilder()
+.version(HttpClient.Version.HTTP_1_1)
+.build();
 this.restClient = RestClient.builder()
 .baseUrl(baseUrl)
+.requestFactory(new JdkClientHttpRequestFactory(httpClient))
 .build();
 }
 

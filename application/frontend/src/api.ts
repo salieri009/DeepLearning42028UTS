@@ -8,5 +8,5 @@ const API = axios.create({
 });
 
 export const analyzeFrame = (frameBase64: string) =>
-  API.post<AnalyzeFrameResponse>("/api/v1/analyze-frame", { frame_base64: frameBase64 });
+  API.post<AnalyzeFrameResponse>("/v1/analyze-frame", { frame_base64: frameBase64 });
 
