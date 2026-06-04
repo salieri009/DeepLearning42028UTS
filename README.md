@@ -21,9 +21,64 @@
 
 > A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time obstacle detection and proximity logic.
 
+## Run the Application (Live Demo)
+
+The full demo is three containers wired together by [`application/docker-compose.yml`](application/docker-compose.yml):
+**React UI** → **Spring Boot API** → **FastAPI + YOLO inference**. The easiest way to run everything is Docker.
+
+### Quick start (Docker)
+
+```bash
+# 1. Provide the trained weights for the inference container.
+#    docker-compose mounts ./models and loads /models/best.pt.
+cd application
+mkdir models
+cp inference-service/best.pt models/best.pt   # Windows: copy inference-service\best.pt models\best.pt
+
+# 2. Build and start all three services.
+docker compose up --build
+```
+
+Then open **http://localhost** in your browser → click **Start Detection** → allow webcam access.
+Bounding boxes and proximity-risk colours (🟢 safe / 🟡 warning / 🔴 danger) render live.
+
+> **Why `--build`?** The prebuilt `ghcr.io/...` images may lag behind the source. `--build` compiles
+> the backend and frontend from this repo so the latest fixes (e.g. the HTTP/1.1 inference fix) are included.
+
+### Where to connect
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| **Frontend (use this)** | **http://localhost** | React UI on port 80 — the app you interact with |
+| Backend API | http://localhost:8080/api/v1/analyze-frame | Spring Boot REST endpoint |
+| Inference | http://localhost:9000/health | FastAPI + YOLO, internal to the backend |
+
+> **Model weights are required.** Without `application/models/best.pt`, the inference container fails its
+> health check and detection returns errors. A copy already ships at
+> [`application/inference-service/best.pt`](application/inference-service/best.pt) — copy it to
+> `application/models/best.pt` as shown above, or drop in your own trained `best.pt`.
+
+### Run locally without Docker (dev)
+
+Start each service in its own terminal:
+
+```bash
+# Inference (Python) — http://localhost:9000
+cd application/inference-service && pip install -r requirements.txt && uvicorn main:app --port 9000
+
+# Backend (Spring Boot) — http://localhost:8080
+cd application/backend/crowdnav-api && ./gradlew bootRun
+
+# Frontend (React + Vite) — http://localhost:5173
+cd application/frontend && npm install && npm run dev
+```
+
+See [`application/frontend/README.md`](application/frontend/README.md) and
+[`application/backend/README.md`](application/backend/README.md) for per-service details.
+
 ## Environment Setup
 
-The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (Spring API, RN sample, inference stub), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
 
 ```bash
 # 1. Clone the repository
@@ -187,6 +242,7 @@ git push origin main
 <details>
 <summary><strong>Table of Contents</strong></summary>
 
+- [Run the Application (Live Demo)](#run-the-application-live-demo)
 - [Team Members](#team-members)
 - [Project Abstract](#project-abstract)
 - [Additional Support Required](#additional-support-required)
@@ -246,14 +302,16 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 ├── data/                     # Dataset root (gitignored large files; DVC) — see docs/DATA.md
 ├── train/                    # Python: src/, scripts/, notebooks/, ML stack
 ├── application/
-│   ├── backend/crowdnav-api/ # Spring Boot API
-│   ├── frontend/rn-client-sample/
-│   └── inference-service/    # Python FastAPI stub
+│   ├── docker-compose.yml    # one-command 3-service demo (see "Run the Application")
+│   ├── backend/crowdnav-api/ # Spring Boot REST API
+│   ├── frontend/             # React + Vite (TypeScript) browser client
+│   ├── inference-service/    # Python FastAPI + Ultralytics YOLO (best.pt)
+│   └── models/               # place best.pt here for Docker (gitignored)
 ├── infra/
 │   ├── docker/               # Dockerfile, docker-compose.yml
 │   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
 │   └── setup.sh
-├── docs/                     # TechSpec, PRD, architecture, runbooks, SysML
+├── docs/                     # TechSpec, PRD, architecture, runbooks, diagrams (UML/SysML)
 ├── .github/workflows/
 └── .dvc/                     # DVC config (repo root)
 ```
@@ -269,7 +327,7 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 | `PROJECTS/CrowdNav/notebooks/` | `train/notebooks/` |
 | `PROJECTS/CrowdNav/backend/` | `application/backend/` |
 | `PROJECTS/CrowdNav/inference-service/` | `application/inference-service/` |
-| `PROJECTS/CrowdNav/rn-client-sample/` | `application/frontend/rn-client-sample/` |
+| `PROJECTS/CrowdNav/rn-client-sample/` | `application/frontend/` (React + Vite) |
 | `PROJECTS/CrowdNav/PROJECTS/docs/` … | `docs/architecture/`, `docs/runbooks/`, … |
 | `PROJECTS/TechSpec.md` | `docs/TechSpec.md` |
 
