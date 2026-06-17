@@ -85,7 +85,7 @@ See [`application/frontend/README.md`](application/frontend/README.md) and
 
 ## Environment Setup
 
-The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (SageMaker training + [`infra/docker/`](infra/docker/) compose wrapper; canonical stack is [`application/docker-compose.yml`](application/docker-compose.yml)), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
 
 ```bash
 # 1. Clone the repository
@@ -315,9 +315,11 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 │   ├── inference-service/    # Python FastAPI + Ultralytics YOLO (best.pt)
 │   └── models/               # place best.pt here for Docker (gitignored)
 ├── infra/
-│   ├── docker/               # Dockerfile, docker-compose.yml
+│   ├── README.md             # infra overview (Docker wrapper + SageMaker)
+│   ├── docker/               # thin compose wrapper → application/docker-compose.yml
+│   ├── scripts/              # fetch_best_pt.* (SageMaker → application/models)
 │   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
-│   └── setup.sh
+│   └── setup.sh              # optional SageMaker Studio lifecycle hook
 ├── docs/                     # TechSpec, PRD, architecture, runbooks, diagrams (UML/SysML)
 ├── .github/workflows/
 └── .dvc/                     # DVC config (repo root)

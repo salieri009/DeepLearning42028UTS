@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-05-05
+last_updated: 2026-06-17
 related_code:
   - infra/sagemaker/sagemaker_launch.py
   - infra/sagemaker/sagemaker_train.py
@@ -39,13 +39,13 @@ sequenceDiagram
     participant YOLO as Ultralytics YOLO
 
     Note over Dev,LAUNCH: 사전 준비: aws configure, IAM role,<br/>data 가 S3 에 업로드됨
-    Dev->>LAUNCH: python sagemaker_launch.py<br/>--role ARN --bucket NAME<br/>--instance-type ml.g5.xlarge<br/>--epochs 50 --model yolov8l.pt
-    LAUNCH->>LAUNCH: infra/sagemaker/ 를<br/>source bundle 로 묶음
-    LAUNCH->>SM: PyTorchEstimator.fit(<br/>entry_point=sagemaker_train.py,<br/>training=s3://bucket/data)
+    Dev->>LAUNCH: python infra/sagemaker/sagemaker_launch.py<br/>--role ARN --bucket NAME
+    LAUNCH->>LAUNCH: repo root 를 source bundle 로 묶음<br/>(.sagemakerignore 적용)
+    LAUNCH->>SM: PyTorchEstimator.fit(<br/>entry_point=infra/sagemaker/sagemaker_train.py,<br/>dependencies=infra/sagemaker/requirements.txt,<br/>training=s3://bucket/data)
     SM->>S3: training data 다운로드<br/>→ /opt/ml/input/data/training/
 
-    SM->>TRAIN: python sagemaker_train.py<br/>--data-dir /opt/ml/input/data/training<br/>--model-dir /opt/ml/model<br/>--epochs 50 --model yolov8l.pt
-    TRAIN->>TRAIN: ensure_data_yaml(data_dir)<br/>(절대경로 data.yaml 재작성)
+    SM->>TRAIN: python infra/sagemaker/sagemaker_train.py<br/>--data-dir /opt/ml/input/data/training
+    TRAIN->>TRAIN: ensure_data_yaml(data_dir)<br/>(기존 yaml path 패치 또는 variant별 생성)
     TRAIN->>TP: TrainPipeline(model_cfg, data_yaml,<br/>epochs, imgsz, batch, device, ...)
     TP->>TP: _resolve_model()<br/>(local .pt? Ultralytics auto-download?)
     TP->>YOLO: model.train(data, epochs, imgsz,<br/>batch, device, project, name, ...)
@@ -59,7 +59,7 @@ sequenceDiagram
     SM-->>LAUNCH: training job complete
     LAUNCH-->>Dev: print artifact location<br/>(S3 URI)
 
-    Note over Dev,S3: ADR-0003 핸드오프:<br/>Dev 가 best.pt 를 S3 에서 받아<br/>application/inference-service Docker 에 mount
+    Note over Dev,S3: ADR-0003 핸드오프:<br/>infra/scripts/fetch_best_pt → application/models/best.pt<br/>→ docker compose up --build
 ```
 
 ## 2. Self-training 다중 사이클 (`self_train_loop.py`)

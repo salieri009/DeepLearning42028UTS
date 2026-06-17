@@ -90,13 +90,22 @@ aws s3 cp yolov8l.pt s3://crowdnav-jrdb-data/weights/yolov8l.pt
 
 ## Phase 2 — Verify SageMaker scripts
 
-The repo now contains:
+The repo contains:
 
 ```
 infra/sagemaker/
-├── sagemaker_train.py     # entry point, runs INSIDE SageMaker container
-├── sagemaker_launch.py    # launcher, runs LOCALLY
-└── requirements.txt       # injected into the container
+├── sagemaker_train.py     # entry point inside SM container (TrainPipeline)
+├── sagemaker_launch.py    # launcher on your laptop
+├── requirements.txt       # -e ./train + pinned ultralytics
+└── README.md
+
+.sagemakerignore           # repo root — excludes data/, application/, runs/, ...
+```
+
+Launcher uploads the **repo root** (not only `infra/sagemaker/`). Install locally first:
+
+```powershell
+pip install -e ./train sagemaker boto3
 ```
 
 Quick sanity check:
@@ -213,6 +222,21 @@ The output is `s3://crowdnav-jrdb-data/output/<job-name>/output/model.tar.gz`.
 
 ### 5.2 Download & extract
 
+**Option A — helper script (recommended):**
+
+```powershell
+# Windows — installs to application/models/best.pt
+.\infra\scripts\fetch_best_pt.ps1 -JobName $JOB
+```
+
+```bash
+# macOS / Linux
+chmod +x infra/scripts/fetch_best_pt.sh
+./infra/scripts/fetch_best_pt.sh "$JOB"
+```
+
+**Option B — manual:**
+
 ```powershell
 $JOB = "<job-name>"
 mkdir runs\sagemaker -Force | Out-Null
@@ -221,8 +245,7 @@ aws s3 cp "s3://crowdnav-jrdb-data/output/$JOB/output/model.tar.gz" `
   "runs\sagemaker\$JOB.tar.gz"
 
 tar -xzf "runs\sagemaker\$JOB.tar.gz" -C "runs\sagemaker"
-ls runs\sagemaker\
-# Expect: best.pt, last.pt, results.csv, results.png, final_val_metrics.txt, ...
+Copy-Item "runs\sagemaker\best.pt" "application\models\best.pt"
 ```
 
 ### 5.3 Inspect the metrics
