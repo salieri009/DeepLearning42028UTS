@@ -4,6 +4,8 @@ name: Train Pipeline
 on:
   push:
     branches:
+      - main
+      - dev
       - part-c
       - refactor/train-layout
     paths:
@@ -37,9 +39,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install tooling
+      - name: Install tooling and crowdnav-train
         run: |
           python -m pip install --upgrade pip
+          pip install -e ./train
           pip install ruff python-dotenv
 
       - name: Ruff (training + SageMaker scripts)
@@ -59,6 +62,23 @@ jobs:
           python -m py_compile infra/sagemaker/sagemaker_launch.py
           python -m py_compile infra/sagemaker/sagemaker_train.py
 
-      - name: Smoke import training from train cwd
+      - name: Smoke import training presets
         working-directory: ./train
         run: python -c "from src.training import default_training_presets; print(default_training_presets()['g4dn_notebook'])"
+
+      - name: Smoke import SageMaker launcher hyperparams
+        run: python -c "from src.training.hyperparams import default_training_presets; print(default_training_presets()['sagemaker_managed_job'])"
+
+      - name: Smoke sagemaker_cli command builder
+        run: |
+          python -c "
+          from pathlib import Path
+          from src.training.sagemaker_cli import build_sagemaker_launch_command
+          cmd = build_sagemaker_launch_command(
+              repo_root=Path('.'),
+              role_arn='arn:aws:iam::123:role/test',
+              bucket='test-bucket',
+          )
+          assert '--data-prefix' in cmd and 'data' in cmd
+          print('ok', len(cmd))
+          "

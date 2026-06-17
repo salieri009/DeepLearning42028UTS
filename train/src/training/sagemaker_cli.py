@@ -7,13 +7,19 @@ from pathlib import Path
 
 from src.training.hyperparams import TrainingHyperParams, default_training_presets
 
+_DATASET_PREFIX = {
+    "person": "data",
+    "3class": "data_3class",
+}
+
 
 def build_sagemaker_launch_command(
     *,
     repo_root: Path,
     role_arn: str,
     bucket: str,
-    data_prefix: str = "processed/splits",
+    data_prefix: str | None = None,
+    dataset_variant: str = "person",
     instance_type: str = "ml.g4dn.xlarge",
     hyperparams: TrainingHyperParams | None = None,
     use_spot: bool = False,
@@ -24,6 +30,9 @@ def build_sagemaker_launch_command(
     script = repo_root / "infra" / "sagemaker" / "sagemaker_launch.py"
     if not script.is_file():
         raise FileNotFoundError(script)
+
+    prefix = data_prefix or _DATASET_PREFIX.get(dataset_variant, "data")
+
     cmd: list[str] = [
         sys.executable,
         str(script),
@@ -32,7 +41,9 @@ def build_sagemaker_launch_command(
         "--bucket",
         bucket,
         "--data-prefix",
-        data_prefix,
+        prefix,
+        "--dataset-variant",
+        dataset_variant,
         "--instance-type",
         instance_type,
         "--epochs",
@@ -47,6 +58,8 @@ def build_sagemaker_launch_command(
         str(hp.workers),
         "--patience",
         str(hp.patience),
+        "--save-period",
+        str(hp.save_period),
     ]
     if use_spot:
         cmd.append("--use-spot")

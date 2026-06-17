@@ -63,13 +63,6 @@ python scripts/train_yolo.py --model-cfg yolov8m.pt --epochs 100 --batch 16 --wo
 
 # 4) Self-train loop
 python scripts/self_train_loop.py
-
-# 5) YOLO → COCO → Keras skeleton (run Keras script from repo root)
-python -m src.data.prepare.yolo_to_coco
-cd .. && python infra/train_keras_skeleton.py \
-  --train-json data/processed/coco/train.json \
-  --val-json data/processed/coco/val.json \
-  --images-root data/processed/splits
 ```
 
 ## Programmatic API (`src/data/prepare/`)

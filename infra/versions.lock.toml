@@ -1,0 +1,17 @@
+# Pinned versions shared across training and inference (ADR-0003).
+# Keep ultralytics in sync when upgrading — SM, local train, and Docker inference
+# must load the same checkpoint format.
+
+[ultralytics]
+version = "8.3.0"
+used_by = [
+  "train/requirements.txt",
+  "train/requirements-pkg.txt",
+  "infra/sagemaker/requirements.txt",
+  "application/inference-service/requirements.txt",
+]
+
+[notes]
+training_local_torch = "2.5.1+cu121 (train/requirements.txt)"
+training_sm_torch = "2.0.1 (SageMaker PyTorch framework image)"
+inference_torch = "CPU wheels via pytorch.org/whl/cpu (inference Dockerfile)"

@@ -1,0 +1,45 @@
+# Exclude large / irrelevant paths from SageMaker source bundle (repo root upload).
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Dataset and run artifacts (training data comes via S3 channel)
+data/
+runs/
+.dvc/
+
+# Application runtime (not needed for training job)
+application/
+
+# Documentation and local tooling
+docs/
+review-alignment-report.md
+*.md
+!train/README.md
+
+# Weight files (downloaded inside container or from S3)
+*.pt
+*.onnx
+*.h5
+
+# Local secrets (never upload to SageMaker bundle)
+.env
+.env.*
+**/*.pem
+**/credentials*
+**/*secret*
+
+# IDE / agent metadata
+.claude/
+.cursor/
+
+# Frontend / backend build outputs
+node_modules/
+**/build/
+**/dist/

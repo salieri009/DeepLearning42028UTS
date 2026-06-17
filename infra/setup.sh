@@ -1,7 +1,9 @@
 #!/bin/bash
 # ==============================================================================
-# Optional: SageMaker Studio / classic Notebook lifecycle (on start)
-# Not for local dev — use only if your admin attaches this to an SM notebook.
+# Optional: SageMaker Studio / classic Notebook lifecycle (on start).
+# Not for local dev or Docker — attach only if your admin wires this to an SM notebook.
+# For the webapp demo use: cd application && docker compose up --build
+# For cloud training see: docs/runbooks/SageMaker_Migration_Plan.md
 # ==============================================================================
 set -e
 

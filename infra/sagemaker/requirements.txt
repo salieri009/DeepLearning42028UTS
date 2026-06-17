@@ -1,4 +1,7 @@
-ultralytics>=8.4.0
+# Installed inside the SageMaker training container (source_dir = repo root).
+# crowdnav-train exposes the `src` package (ADR-0010).
+-e ./train
+ultralytics==8.3.0
 opencv-python-headless
 pyyaml
 numpy

@@ -1,74 +1,21 @@
 # =============================================================================
-# CrowdNav webapp — multi-service compose (ADR-0003).
-#   frontend  : Nginx static + /api reverse-proxy → backend
-#   backend   : Spring Boot 3.5.6 (Java 21), forwards inference to `inference`
-#   inference : FastAPI + Ultralytics YOLO, loads best.pt from a host volume
+# Thin wrapper around the canonical stack in application/docker-compose.yml.
 #
-# Training is NOT performed in this stack. SageMaker produces `best.pt`
-# (see infra/sagemaker/) and the operator drops it into `${MODEL_DIR}/best.pt`
-# on the host before `docker compose up`.
+# Use this entry point when deploying from infra/ (e.g. after SageMaker training)
+# and you want MODEL_DIR to point at extracted job weights instead of
+# application/models/.
 #
-# Run from `infra/docker/`:
-#   MODEL_DIR=$PWD/../../runs/train/best docker compose up --build
-# Or set MODEL_DIR in a `.env` next to this file.
+# Quick start:
+#   cd infra/docker
+#   cp .env.example .env    # optional — edit MODEL_DIR
+#   docker compose up --build
+#   → http://localhost
 # =============================================================================
 
+include:
+  - path: ../../application/docker-compose.yml
+
 services:
-  frontend:
-    build:
-      context: ../../application/frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: /api
-    container_name: crowdnav_frontend
-    depends_on:
-      backend:
-        condition: service_healthy
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-
-  backend:
-    build:
-      context: ../../application/backend/crowdnav-api
-      dockerfile: Dockerfile
-    container_name: crowdnav_backend
-    depends_on:
-      inference:
-        condition: service_healthy
-    environment:
-      APP_INFERENCE_MODE: remote
-      APP_INFERENCE_URL: http://inference:9000
-      SERVER_PORT: "8080"
-      SPRING_PROFILES_ACTIVE: docker
-    expose:
-      - "8080"
-    restart: unless-stopped
-
   inference:
-    build:
-      context: ../../application/inference-service
-      dockerfile: Dockerfile
-    container_name: crowdnav_inference
-    environment:
-      MODEL_PATH: /opt/model/best.pt
-      HOST: 0.0.0.0
-      PORT: "9000"
-    # Mount the trained checkpoint produced by SageMaker (ADR-0003 handoff).
-    # MODEL_DIR must point to a host directory containing `best.pt`.
     volumes:
-      - "${MODEL_DIR:-../../runs/train/crowdnav_yolo/weights}:/opt/model:ro"
-    expose:
-      - "9000"
-    restart: unless-stopped
-    # GPU support (optional). Uncomment if running on a host with NVIDIA + nvidia-container-toolkit.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
-# No named volumes: the only persistent artifact is `best.pt`, which is
-# bind-mounted from MODEL_DIR per ADR-0003 (handoff via filesystem).
+      - ${MODEL_DIR:-../../application/models}:/models:ro

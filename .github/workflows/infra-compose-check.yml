@@ -1,0 +1,51 @@
+name: Infra Compose Check
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+      - part-c
+    paths:
+      - 'application/docker-compose.yml'
+      - 'application/**/Dockerfile'
+      - 'infra/**'
+      - '.github/workflows/infra-compose-check.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
+      - part-c
+    paths:
+      - 'application/docker-compose.yml'
+      - 'application/**/Dockerfile'
+      - 'infra/**'
+      - '.github/workflows/infra-compose-check.yml'
+
+jobs:
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate application compose
+        working-directory: ./application
+        run: docker compose config --quiet
+
+      - name: Validate infra/docker wrapper compose
+        working-directory: ./infra/docker
+        run: docker compose config --quiet
+
+  compose-build:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build application images
+        working-directory: ./application
+        run: docker compose build --pull
