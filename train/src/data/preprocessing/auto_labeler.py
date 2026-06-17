@@ -39,7 +39,7 @@ class AutoLabeler:
             return
 
         try:
-            from ultralytics import YOLO
+            from ultralytics import YOLO  # type: ignore[attr-defined]
         except ImportError as exc:  # pragma: no cover - dependency issue
             raise RuntimeError(
                 "ultralytics is required. Install project requirements first."

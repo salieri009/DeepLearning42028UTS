@@ -13,7 +13,7 @@ from typing import Any
 
 import torch
 from clearml import Task
-from ultralytics import YOLO
+from ultralytics import YOLO  # type: ignore[attr-defined]
 
 from ..repo_paths import repo_root
 from .formats.dataset_config import write_data_yaml_from_class_map
@@ -291,26 +291,27 @@ def main() -> None:
 
             lines = []
             lowest_conf = None
-            for box in boxes:
-                conf = box.conf[0].item()
-                x, y, w, h = box.xywhn[0].tolist()
+            if boxes is not None:
+                for box in boxes:  # type: ignore[union-attr]
+                    conf = box.conf[0].item()
+                    x, y, w, h = box.xywhn[0].tolist()
 
-                if lowest_conf is None or conf < lowest_conf:
-                    lowest_conf = conf
-                if conf < args.manual_thresh:
-                    needs_review = True
+                    if lowest_conf is None or conf < lowest_conf:
+                        lowest_conf = conf
+                    if conf < args.manual_thresh:
+                        needs_review = True
 
-                mapped_id = CLASS_MAP.get("person", 0)
-                track_id = int(box.id[0].item()) if box.id is not None else None
-                line = format_line(
-                    class_id=mapped_id,
-                    x_center=x,
-                    y_center=y,
-                    width=w,
-                    height=h,
-                    track_id=track_id,
-                )
-                lines.append(line)
+                    mapped_id = CLASS_MAP.get("person", 0)
+                    track_id = int(box.id[0].item()) if box.id is not None else None
+                    line = format_line(
+                        class_id=mapped_id,
+                        x_center=x,
+                        y_center=y,
+                        width=w,
+                        height=h,
+                        track_id=track_id,
+                    )
+                    lines.append(line)
 
             if lines:
                 label_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
