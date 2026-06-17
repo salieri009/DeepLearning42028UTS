@@ -4,6 +4,7 @@
   <p align="center"><strong>Real-time crowd & proximity alerts for mobility-impaired travellers.</strong></p>
 </p>
 
+![Release](https://img.shields.io/badge/Release-v2.0.0-blue?style=flat-square)
 ![Live Demo](https://img.shields.io/badge/Live_Demo-Operational-success?style=flat-square)
 ![Subject](https://img.shields.io/badge/Subject-Deep_Learning_42028-blue?style=flat-square)
 ![University](https://img.shields.io/badge/University-UTS_2026-002366?style=flat-square)
