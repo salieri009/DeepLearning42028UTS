@@ -1,0 +1,46 @@
+import { tokens } from "./tokens";
+
+export const theme = {
+  tokens,
+  color: {
+    neutral: tokens.color.neutral,
+    bg: tokens.color.surface.dim,
+    surface: tokens.color.surface.container,
+    surfaceSubtle: tokens.color.surface.containerLow,
+    surfaceHigh: tokens.color.surface.containerHigh,
+    borderSubtle: tokens.color.glass.border,
+    textPrimary: tokens.color.onSurface,
+    textSecondary: tokens.color.onSurfaceVariant,
+    textInverse: tokens.color.neutral[0],
+    primary: tokens.color.primary[60],
+    primaryHover: tokens.color.primary[70],
+    danger: tokens.color.danger[60],
+    dangerHover: tokens.color.danger[70],
+    success: tokens.color.success[60],
+    successText: tokens.color.success[60],
+    warning: tokens.color.accent.warning,
+    overlayBorder: tokens.color.success[60],
+    overlayBorderSubtle: "rgba(36, 161, 72, 0.65)",
+    focus: tokens.color.focus,
+    glass: tokens.color.glass,
+    accent: tokens.color.accent,
+    risk: {
+      SAFE: tokens.color.success[60],
+      WARNING: tokens.color.accent.warning,
+      DANGER: tokens.color.danger[60],
+    },
+  },
+  gradient: tokens.gradient,
+  spacing: tokens.spacing,
+  radius: tokens.radius,
+  shadow: tokens.shadow,
+  typography: {
+    family: tokens.typography.family,
+    size: tokens.typography.size,
+    weight: tokens.typography.weight,
+    lineHeight: tokens.typography.lineHeight,
+  },
+  layout: tokens.layout,
+} as const;
+
+export type AppTheme = typeof theme;

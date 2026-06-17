@@ -44,10 +44,51 @@ Keep a small, consistent scale.
 #### Spacing & layout
 
 - **Spacing scale**: base-4 or base-8 (e.g., 4/8/12/16/24/32).
-- **Layout**: prefer a two-column shell when wide:
-  - left: media (video)
-  - right: stats + controls
-- **Width**: avoid hard-coded `720px` as a global constraint; use a responsive container with a max width, and let the media area define its own aspect constraints.
+- **Layout**: immersive fullscreen dashboard shell:
+  - background: full-viewport live video (`widgets/video-stage`)
+  - right: fixed glass stats sidebar (320px)
+  - bottom: floating glass control bar
+  - top: fixed glass header with status pill
+- Sidebar collapses below 1024px; core monitoring remains via video + bottom controls.
+
+### Feature-Sliced Design (FSD)
+
+The frontend follows [Feature-Sliced Design](https://feature-sliced.design/) with strict import boundaries:
+
+| Layer | Path | Responsibility |
+|-------|------|----------------|
+| `app` | `src/app/` | Providers (`ThemeProvider`, `GlobalStyle`) |
+| `pages` | `src/pages/` | Route-level composition (`dashboard`, `analytics`, `live-map`, `archive`, `settings`) |
+| `widgets` | `src/widgets/` | Composite layout blocks (shell, nav, sidebar, page widgets) |
+| `features` | `src/features/` | User interactions (`crowd-detection`, `risk-alerts`, `alert-history`) |
+| `entities` | `src/entities/` | Domain models/UI (`detection`, `crowd-stats`) |
+| `shared` | `src/shared/` | API client, theme tokens, UI kit, utilities |
+
+**Import rules:** each layer may only import from layers below it (e.g. `widgets` → `features` → `entities` → `shared`). Slices expose a public API via `index.ts`; avoid deep cross-slice imports.
+
+**Path alias:** `@/` maps to `src/` (configured in `tsconfig.json` and `vite.config.ts`).
+
+### Folder + naming conventions (current)
+
+- `src/shared/config/theme/`: tokens, theme, global styles
+- `src/shared/ui/`: reusable primitives (`Button`, `Card`, `GlassPanel`, `Icon`, …)
+- `src/features/`: hooks and feature logic (no layout shells)
+- `src/widgets/`: dashboard layout composition
+- `src/pages/dashboard/`: wires features into widgets
+- `src/pages/analytics/`, `src/pages/live-map/`, `src/pages/archive/`, `src/pages/settings/`: secondary routes via `react-router-dom`
+- `src/app/providers/AppRouter.tsx`: route table
+- `src/app/`: application entry providers
+
+**Rule**: `shared/ui` contains no API calls; `features` may call `shared/api`; `pages` orchestrates features + widgets.
+
+### Refactor checklist (what “done” means)
+
+- FSD folder structure with `@/` path alias and slice `index.ts` barrels.
+- Glassmorphism × Y2K dark dashboard layout (see `docs/DESIGN_RULES.md`).
+- `VideoStage` bbox overlays use `entities/detection` risk tokens (no hardcoded hex).
+- Placeholder controls (Record, Export, Generate Report) are disabled with `title="Coming soon"`.
+- Five routes: `/`, `/analytics`, `/live-map`, `/archive`, `/settings` via `AppRouter`.
+- Interaction states: hover/focus/disabled are consistent and accessible.
 
 ### Component standards (minimum set)
 
@@ -55,8 +96,8 @@ Keep a small, consistent scale.
 
 Variants and states:
 
-- **Primary**: “Start Detection”
-- **Danger**: “Stop”
+- **Primary**: “Start Monitoring”
+- **Danger**: “Stop Monitoring” / Stop icon
 - States: default, hover, active, disabled, focus-visible
 
 Rules:
@@ -71,28 +112,11 @@ Used for “Statistics” surface.
 - consistent padding/radius/border/shadow tokens
 - supports `title`, `content`, and optional `footer`
 
-#### `VideoFeed` container and overlays
+#### `VideoStage` container and overlays
 
-- Media container: `surface` vs `bg` contrast, consistent border radius
-- Bounding boxes:
-  - use semantic token (e.g., `success`) instead of raw `lime`
-  - ensure overlay contrast works in both light/dark backgrounds
-
-### Folder + naming conventions (target)
-
-Current app is a single-screen SPA, so keep structure simple:
-
-- `src/design/`: tokens, theme, global styles
-- `src/ui/`: reusable primitives (`Button`, `Card`, `Typography`)
-- `src/features/`: feature-specific components (video/stats/controls)
-- `src/app/`: app shell / layout
-
-**Rule**: `ui/` contains no API calls; `features/` may compose UI primitives and call app services.
-
-### Refactor checklist (what “done” means)
-
-- No inline style objects for layout/typography in `App.tsx` (moved to styled components using tokens).
-- `Controls`, `StatPanel`, `VideoFeed` consume theme tokens for spacing/color/typography.
-- Component structure matches the target folders, and imports remain clean.
-- Interaction states: hover/focus/disabled are consistent and accessible.
+- Media container: full-viewport `VideoStage` with scanline/grid texture overlays
+- Layout safe zones: `layout.headerHeight`, `layout.sidebarWidth`, `layout.videoSafeInsetBottom`
+- Bounding boxes via `entities/detection/PersonBBox`:
+  - use `theme.color.risk.*` tokens
+  - ensure overlay contrast works over live video (`glass.scrim` on chips)
 
