@@ -41,6 +41,11 @@ this.restClient = RestClient.builder()
 }
 
 @Override
+public AnalyzeFrameResponse analyzeFrame(String frameBase64, Long sessionId) {
+return analyzeFrame(frameBase64);
+}
+
+@Override
 public AnalyzeFrameResponse analyzeFrame(String frameBase64) {
 AnalyzeFrameResponse response = restClient.post()
 .uri("/internal/infer")

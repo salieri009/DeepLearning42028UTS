@@ -40,7 +40,7 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install black flake8 ruff mypy
+          pip install black flake8 ruff mypy types-PyYAML pandas-stubs
 
       - name: Check formatting with Black
         run: |
@@ -77,7 +77,7 @@ jobs:
       - name: Type check with Mypy (strict)
         run: |
           if [ -d src ]; then
-            python -m mypy --strict src
+            python -m mypy --config-file pyproject.toml --strict src
           else
             echo "No src directory found to run Mypy."
           fi
@@ -101,3 +101,24 @@ jobs:
 
       - name: Build Frontend
         run: npm run build
+
+      - name: Test Frontend
+        run: npm test
+
+  backend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./application/backend/crowdnav-api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run Backend tests
+        run: ./gradlew test

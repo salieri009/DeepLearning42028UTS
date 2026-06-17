@@ -8,7 +8,6 @@ from pathlib import Path
 from ..repo_paths import repo_root
 from .formats.dataset_config import write_data_yaml
 
-
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 _REPO = repo_root()
 
@@ -16,8 +15,18 @@ _REPO = repo_root()
 def build_parser() -> argparse.ArgumentParser:
     """Build CLI argument parser for sequence-level dataset splitting."""
     parser = argparse.ArgumentParser(description="Split JRDB dataset by sequences.")
-    parser.add_argument("--src-labels", type=Path, required=True, help="Directory with generated YOLO txt files")
-    parser.add_argument("--src-images", type=Path, required=True, help="Directory containing raw images in sequence folders")
+    parser.add_argument(
+        "--src-labels",
+        type=Path,
+        required=True,
+        help="Directory with generated YOLO txt files",
+    )
+    parser.add_argument(
+        "--src-images",
+        type=Path,
+        required=True,
+        help="Directory containing raw images in sequence folders",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -28,11 +37,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--stem-prefix",
         type=str,
         default="",
-        help="Optional prefix added to every output stem to avoid filename collisions (example: image0 or image2)",
+        help=(
+            "Optional prefix added to every output stem to avoid "
+            "filename collisions (example: image0 or image2)"
+        ),
     )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for splitting sequences")
-    parser.add_argument("--train-ratio", type=float, default=0.8, help="Train split ratio")
-    parser.add_argument("--val-ratio", type=float, default=0.1, help="Validation split ratio")
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for splitting sequences"
+    )
+    parser.add_argument(
+        "--train-ratio", type=float, default=0.8, help="Train split ratio"
+    )
+    parser.add_argument(
+        "--val-ratio", type=float, default=0.1, help="Validation split ratio"
+    )
     return parser
 
 
@@ -41,7 +59,9 @@ def _clamp_ratio(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
-def _copy_pairs(items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_dir: Path) -> int:
+def _copy_pairs(
+    items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_dir: Path
+) -> int:
     """Copy image/label pairs to output directories; return count copied."""
     copied = 0
     out_img_dir.mkdir(parents=True, exist_ok=True)
@@ -53,23 +73,28 @@ def _copy_pairs(items: list[tuple[Path, Path, str]], out_img_dir: Path, out_lbl_
     return copied
 
 
-def _collect_recursive_pairs(src_images: Path, src_labels: Path, stem_prefix: str) -> list[tuple[Path, Path, str]]:
+def _collect_recursive_pairs(
+    src_images: Path, src_labels: Path, stem_prefix: str
+) -> list[tuple[Path, Path, str]]:
     """Recursively match images to labels using flattened stem names."""
     pairs: list[tuple[Path, Path, str]] = []
     for img_path in sorted(src_images.rglob("*")):
         if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
             continue
-        # NOTE: In many JRDB sequences, frame stems repeat across sequences (e.g. 000001.jpg),
+        # NOTE: JRDB frame stems repeat across sequences (e.g. 000001.jpg),
         # so output stems must be unique to avoid overwriting during copy.
-        rel_stem = f"{stem_prefix}{img_path.relative_to(src_images).with_suffix('').as_posix().replace('/', '_')}"
+        rel_posix = img_path.relative_to(src_images).with_suffix("").as_posix()
+        rel_stem = f"{stem_prefix}{rel_posix.replace('/', '_')}"
         lbl_path = src_labels / f"{img_path.stem}.txt"
         if lbl_path.exists():
             pairs.append((img_path, lbl_path, rel_stem))
     return pairs
 
 
-def _split_counts(total: int, train_ratio: float, val_ratio: float) -> tuple[int, int, int]:
-    """Compute (train, val, test) counts ensuring every split has >= 1 item when possible."""
+def _split_counts(
+    total: int, train_ratio: float, val_ratio: float
+) -> tuple[int, int, int]:
+    """Compute train/val/test counts with >= 1 item per split when possible."""
     if total <= 0:
         return 0, 0, 0
     train_count = int(total * train_ratio)
@@ -89,7 +114,9 @@ def _load_class_names(src_labels: Path) -> list[str]:
     classes_path = src_labels / "classes.txt"
     if not classes_path.exists() or not classes_path.is_file():
         return ["person"]
-    lines = [line.strip() for line in classes_path.read_text(encoding="utf-8").splitlines()]
+    lines = [
+        line.strip() for line in classes_path.read_text(encoding="utf-8").splitlines()
+    ]
     names = [line for line in lines if line]
     return names if names else ["person"]
 
@@ -134,7 +161,9 @@ def main() -> None:
         print(f"Found {len(sequences)} sequences for splitting.")
         random.shuffle(sequences)
 
-        train_count, val_count, _ = _split_counts(len(sequences), train_ratio, val_ratio)
+        train_count, val_count, _ = _split_counts(
+            len(sequences), train_ratio, val_ratio
+        )
         train_end = train_count
         val_end = train_count + val_count
         split_sequences = {
@@ -154,10 +183,13 @@ def main() -> None:
             for seq in seqs:
                 seq_dir = src_images / seq
                 for img_path in sorted(seq_dir.iterdir()):
-                    if not img_path.is_file() or img_path.suffix.lower() not in IMAGE_EXTS:
+                    if (
+                        not img_path.is_file()
+                        or img_path.suffix.lower() not in IMAGE_EXTS
+                    ):
                         continue
                     new_stem = f"{stem_prefix}{seq}_{img_path.stem}"
-                    # Prefer labels organized by sequence folder: <labels>/<seq>/<frame>.txt
+                    # Prefer labels by sequence: <labels>/<seq>/<frame>.txt
                     lbl_path = src_labels / seq / f"{img_path.stem}.txt"
                     # Backward-compatible fallbacks (flat label roots)
                     if not lbl_path.exists():
@@ -171,10 +203,15 @@ def main() -> None:
     else:
         recursive_pairs = _collect_recursive_pairs(src_images, src_labels, stem_prefix)
         if recursive_pairs:
-            print(f"Found {len(recursive_pairs)} matched image/label pairs in recursive stem mode.")
+            print(
+                f"Found {len(recursive_pairs)} matched image/label pairs "
+                "in recursive stem mode."
+            )
             random.shuffle(recursive_pairs)
 
-            train_count, val_count, _ = _split_counts(len(recursive_pairs), train_ratio, val_ratio)
+            train_count, val_count, _ = _split_counts(
+                len(recursive_pairs), train_ratio, val_ratio
+            )
             train_end = train_count
             val_end = train_count + val_count
             split_pairs = {
@@ -205,7 +242,9 @@ def main() -> None:
                 return
 
             random.shuffle(flat_pairs)
-            train_count, val_count, _ = _split_counts(len(flat_pairs), train_ratio, val_ratio)
+            train_count, val_count, _ = _split_counts(
+                len(flat_pairs), train_ratio, val_ratio
+            )
             train_end = train_count
             val_end = train_count + val_count
             split_pairs = {
@@ -228,6 +267,7 @@ def main() -> None:
 
     data_yaml = _write_data_yaml(output_dir, class_names)
     print(f"\nYOLO data config written: {data_yaml}")
+
 
 if __name__ == "__main__":
     main()

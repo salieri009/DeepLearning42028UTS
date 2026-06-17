@@ -1,587 +1,76 @@
 <p align="center">
   <img src="./project_logo.svg" alt="Project Logo" width="120" />
   <h1 align="center">Crowd Detection and Accessibility Navigation</h1>
-  <p align="center">
-    <strong>Computer vision system for navigating crowded transport hubs.</strong>
-    <br />
-    <br />
-    <a href="#project-abstract">Explore the docs</a>
-    ·
-    <a href="#faq">View FAQ</a>
-    ·
-    <a href="#contact">Contact</a>
-  </p>
+  <p align="center"><strong>Real-time crowd & proximity alerts for mobility-impaired travellers.</strong></p>
 </p>
 
----
-
 ![Live Demo](https://img.shields.io/badge/Live_Demo-Operational-success?style=flat-square)
-![Assignment Status](https://img.shields.io/badge/Assignment-Part_A_Submission_Pending-orange?style=flat-square)
 ![Subject](https://img.shields.io/badge/Subject-Deep_Learning_42028-blue?style=flat-square)
 ![University](https://img.shields.io/badge/University-UTS_2026-002366?style=flat-square)
 
-> A computer vision system that assists individuals with disabilities in navigating crowded transport hubs (airports, train stations, public spaces) using real-time obstacle detection and proximity logic.
+YOLOv8 person detection + bounding-box proximity heuristics, served as **React → Spring Boot → FastAPI/YOLO**. Fine-tuned on [JRDB](https://jrdb.erc.monash.edu/) (Stanford JackRabbot data, Monash ERC host).
 
-## Run the Application (Live Demo)
-
-The full demo is three containers wired together by [`application/docker-compose.yml`](application/docker-compose.yml):
-**React UI** → **Spring Boot API** → **FastAPI + YOLO inference**. The easiest way to run everything is Docker.
-
-> **✅ Status: Verified working (2026-06-04).** Built and run end-to-end with
-> `docker compose up --build`: all three containers report healthy, and the full browser
-> path (nginx `:80` → Spring `:8080` → FastAPI `:9000` → YOLO) returns **HTTP 200** on
-> `POST /api/v1/analyze-frame` with a real `persons / crowd_density / max_proximity_risk /
-> recommendation` payload. (An earlier HTTP/2 `h2c` body-drop that caused 400s is fixed.)
-
-### Quick start (Docker)
+## Quick start (Docker)
 
 ```bash
-# 1. Provide the trained weights for the inference container.
-#    docker-compose mounts ./models and loads /models/best.pt.
 cd application
-mkdir models
-cp inference-service/best.pt models/best.pt   # Windows: copy inference-service\best.pt models\best.pt
-
-# 2. Build and start all three services.
+mkdir -p models && cp inference-service/best.pt models/best.pt   # Windows: copy inference-service\best.pt models\best.pt
 docker compose up --build
 ```
 
-Then open **http://localhost** in your browser → click **Start Detection** → allow webcam access.
-Bounding boxes and proximity-risk colours (🟢 safe / 🟡 warning / 🔴 danger) render live.
+Open **http://localhost** → **Start Detection** → allow webcam. Needs `application/models/best.pt` (shipped copy in `inference-service/`).
 
-> **Why `--build`?** The prebuilt `ghcr.io/...` images may lag behind the source. `--build` compiles
-> the backend and frontend from this repo so the latest fixes (e.g. the HTTP/1.1 inference fix) are included.
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost |
+| API | http://localhost:8080/api/v1/analyze-frame |
+| Inference (internal) | http://localhost:9000/health |
 
-### Where to connect
+**Local dev:** run [inference-service](application/inference-service/README.md), [backend](application/backend/README.md), and [frontend](application/frontend/README.md) on ports 9000 / 8080 / 5173.
 
-| Service | URL | Notes |
-|---------|-----|-------|
-| **Frontend (use this)** | **http://localhost** | React UI on port 80 — the app you interact with |
-| Backend API | http://localhost:8080/api/v1/analyze-frame | Spring Boot REST endpoint |
-| Inference | http://localhost:9000/health | FastAPI + YOLO, internal to the backend |
-
-> **Model weights are required.** Without `application/models/best.pt`, the inference container fails its
-> health check and detection returns errors. A copy already ships at
-> [`application/inference-service/best.pt`](application/inference-service/best.pt) — copy it to
-> `application/models/best.pt` as shown above, or drop in your own trained `best.pt`.
-
-### Run locally without Docker (dev)
-
-Start each service in its own terminal:
-
-```bash
-# Inference (Python) — http://localhost:9000
-cd application/inference-service && pip install -r requirements.txt && uvicorn main:app --port 9000
-
-# Backend (Spring Boot) — http://localhost:8080
-cd application/backend/crowdnav-api && ./gradlew bootRun
-
-# Frontend (React + Vite) — http://localhost:5173
-cd application/frontend && npm install && npm run dev
-```
-
-See [`application/frontend/README.md`](application/frontend/README.md) and
-[`application/backend/README.md`](application/backend/README.md) for per-service details.
-
-## Environment Setup
-
-The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
-
-```bash
-# 1. Clone the repository
-git clone <repo-url> "Assignment 3"
-cd "Assignment 3"
-
-# 2. Create and activate a virtual environment (repo root)
-python -m venv .venv
-.venv\Scripts\activate   # Windows
-# source .venv/bin/activate  # macOS/Linux
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
-Day-to-day training: `cd train` and run `python scripts/train_yolo.py` (dataset lives in **`data/`** at repo root — see [`docs/DATA.md`](docs/DATA.md)).
-
-> **Default branch** is **`main`**; integration branch **`dev`** tracks ongoing work.
-
-## ClearML (Experiment Tracking)
-
-This project supports experiment tracking with **ClearML**.
-
-### 1) One-time setup (per machine)
-
-```bash
-clearml-init
-```
-
-If you don't have a ClearML server, you can use the free ClearML hosting option during `clearml-init`, or set offline mode in your environment:
-
-```bash
-set CLEARML_OFFLINE_MODE=1
-```
-
-### 2) Smoke test (creates a Task and logs metrics)
-
-Run from **`train/`** (so `src` resolves on `PYTHONPATH`):
-
-```bash
-cd train
-python -m src.clearml_smoketest
-```
-
-## Training (YOLO) — quick reference
-
-Training is implemented with **Ultralytics YOLO** and [`train/scripts/train_yolo.py`](train/scripts/train_yolo.py). Typical setup:
-
-| Topic | Details |
-|--------|--------|
-| **Default model** | `yolov8m.pt` (override with `--model-cfg`) |
-| **Data config** | `<repo>/data/processed/splits/data.yaml` with `path: .` (portable across machines) |
-| **Split ratio** | Train / val / test **8 : 1 : 1** (see `train/src/data/split_by_sequence.py`) |
-| **Defaults** | 100 epochs, early-stop patience 20, batch 16, dataloader `workers` 4 (suits **ml.g4dn.xlarge**: T4, 16 GB system RAM) |
-| **Device** | Omit `--device` to auto-select **CUDA** if available, else CPU; or `--device 0` / `CROWDNAV_DEVICE=cpu` |
-| **Cloud** | **AWS SageMaker** Notebook/Studio on **ml.g4dn.xlarge** — run the same command on the instance; **no S3** required (data on EBS next to the repo) |
-| **Local** | Same commands on a machine with **NVIDIA CUDA** installed |
-
-**One-shot train** (from `train/`):
-
-```bash
-cd train
-python scripts/train_yolo.py \
-  --model-cfg yolov8m.pt \
-  --epochs 100 --batch 16 --workers 4
-```
-
-Full pipeline diagram: [`docs/architecture/data_pipeline_diagram.md`](docs/architecture/data_pipeline_diagram.md). Notebook: [`train/notebooks/01_sagemaker_clearml_launcher.ipynb`](train/notebooks/01_sagemaker_clearml_launcher.ipynb).
-
-## Data Version Control (DVC)
-
-This project uses **DVC** with **Google Drive** as the remote storage for large datasets and model weights.
-
-### Current Data Flow
-
-```mermaid
-graph LR
-    A[Google Drive DVC Remote] --> B[dvc pull]
-    B --> C[data/raw images]
-    C --> D[Preprocessing validation\nclasses.txt + label checks]
-    D --> E[Dataset split\ntrain / val / test]
-    E -->     F[data.yaml]
-    F --> G[YOLO training\ntrain/scripts/train_yolo.py]
-    G --> H[Weights\nbest.pt / last.pt]
-    H --> I[Inference\ncollision_avoidance.py]
-```
-
-### DVC Workflow Overview
-
-```mermaid
-graph TD
-    subgraph "Local PC"
-        Code[Python Code]
-        DVC_Pointer["dataset.dvc (Metadata)"]
-        RawData["data/raw/ (Actual Images)"]
-    end
-
-    subgraph "GitHub (Public/Private Repo)"
-        GitRepo["Git Repository"]
-    end
-
-    subgraph "Google Drive (Cloud Storage)"
-        GDrive["GDrive Remote Hub (Hashed Files)"]
-    end
-
-    Code -->|git push| GitRepo
-    DVC_Pointer -->|git push| GitRepo
-    RawData -.->|dvc push| GDrive
-    DVC_Pointer ---|Points to| GDrive
-```
-
-<details>
-<summary><strong>DVC vs Git (expand)</strong></summary>
-
-### Roles
-- **Git (GitHub):** Source code, docs, and small **pointers** (`*.dvc`) that record where a dataset version lives in remote storage.
-- **DVC (e.g. Google Drive):** Stores large blobs—images, labels, checkpoints—not suitable for Git.
-
-### Drive layout
-In the web UI you may see hash folders (`4f/`, `a2/`) instead of `images/`, `labels/`. **Do not move or edit those files in the browser.** DVC owns the cache layout. Use only `dvc push` and `dvc pull` to transfer data.
-
-### Example: add POV images
-1. Add files under `data/raw/`.
-2. `dvc add data/raw` — updates the pointer and stages remote upload.
-3. `dvc push` — uploads bulk data to the remote.
-4. `git add` the `.dvc` files, commit, `git push`.
-5. Teammates: `git pull` then `dvc pull` to materialize the same data locally.
-
-</details>
-
-### Pulling Data (Most Common)
-```bash
-# Download datasets & models from Google Drive
-dvc pull
-```
-> **Note:** On the first run, a browser window will open for Google authentication. Log in with the Google account that has access to the shared Drive folder.
-
-### Pushing Data (After Adding/Updating Datasets)
-```bash
-# 1. Track new or updated data with DVC (large assets under repo-root data/ — see docs/DATA.md)
-dvc add data/raw
-dvc add data/processed
-dvc add models/
-
-# 2. Commit the metadata files to Git
-git add data/raw.dvc data/processed.dvc models.dvc .gitignore
-git commit -m "Update dataset v2"
-
-# 3. Upload the actual data to Google Drive
-dvc push
-
-# 4. Push Git changes
-git push origin main
-```
-
-### For New Team Members
-1. Ask the project owner to share the Google Drive folder with your Google account (Editor access).
-2. Clone the repo, install dependencies, then run `dvc pull`.
-3. Authenticate via the browser popup — data will be downloaded automatically.
-
-<details>
-<summary><strong>Table of Contents</strong></summary>
-
-- [Run the Application (Live Demo)](#run-the-application-live-demo)
-- [Team Members](#team-members)
-- [Project Abstract](#project-abstract)
-- [Additional Support Required](#additional-support-required)
-- [Repository Layout](#repository-layout)
-- [Submission Summary](#submission-summary)
-- [File Naming Convention](#file-naming-convention)
-- [Key Rules](#key-rules)
-- [FAQ](#faq)
-- [Contact](#contact)
-</details>
-
----
-
-## Team Members
-
-| Name | Student ID | Role (Equally Distributed DL Workload) |
-|------|------------|-----------------------------------------|
-| Phoi Gia Vuong | 25736012 | **Data Engineering & Preprocessing:** Dataset curation (JRDB), POV filtering, augmentation strategies for wheelchair perspective, and **project documentation**. |
-| Jungwook Van | 25167747 | **YOLO Transfer Learning (Team Lead) & Inference Logic:** Fine-tuning YOLO v8/v10, model optimization and latency benchmarking, plus bounding-box scaling heuristics for proximity estimation and the alerting pipeline. |
-| Chihyun | 14707133 | _TBD — to be finalized._ |
-
-> **Note:** The specific role assignments above are tentative and will be finalized after further team discussion.
-
----
-
-## Project Abstract
-
-Navigating densely populated transport hubs presents significant barriers to safe and independent travel for individuals with mobility disabilities. In dynamic environments, unpredictable pedestrian movements and transient physical obstacles often compromise user safety. To address these challenges, this project introduces a computer vision-based navigational assistance system driven by a single-stage Crowd Detection Convolutional Neural Network (YOLO). Designed specifically for a lower-vantage, first-person perspective, such as that of a wheelchair user, the system processes real-time video inputs to proactively identify pedestrians and crowded areas. Using transfer learning on the JRDB dataset, the model is fine-tuned to recognize pedestrian dynamics within crowded transport environments. Rather than relying on heavy multi-model architectures for density mapping, our system employs an efficient bounding-box scaling and heuristic depth-thresholding approach to estimate the proximity of approaching hazards. By analyzing pedestrian scale and position within the frame, the system triggers real-time visual or auditory warnings, effectively acting as a localized collision-avoidance assistant. This streamlined, single-model CNN approach aims to significantly mitigate navigation difficulties in high-traffic areas, increasing independence and safety without requiring constant cloud connectivity or heavy edge-computing resources.
-
-### Approach
-*   **Single-Stage Detection:** **YOLOv8** (default fine-tune: `yolov8m`) via transfer learning for high-speed person detection in crowds.
-*   **Wheelchair POV Optimization:** Tailored model calibration for low-angle perspectives to ensure reliable detection of proximity obstacles.
-*   **Bounding-Box Scaling Heuristic:** Estimating proximity based on the relative size of detected bounding boxes within the frame.
-*   **Depth Thresholding:** Implementing a simple linear heuristic where proximity alerts are triggered once a pedestrian's bounding box area exceeds a predefined threshold.
-*   **Output:** Actionable alerts (Visual/Audio) via a simplified inference pipeline.
-
-### Dataset Details
-*   **Crowd Detection & Tracking:** **[JRDB Dataset](https://jrdb.erc.monash.edu/)**, a large-scale dataset of indoor and outdoor social navigation collected from a social mobile robot, providing wheelchair-height 360-degree cylindrical panoramic video and 3D point clouds for pedestrian detection.
-*   **Validation & Context:** **JRDB POV Context**, applying the dataset's lower-vantage perspective to validate proximity heuristics in realistic, crowded hub environments.
-
-## Additional Support Required
-
-To successfully achieve the project outcomes, the team anticipates requiring the following support:
-
-*   **Computational Resources:** Access to UTS high-performance computing (HPC) clusters or cloud GPU resources to facilitate the training of computationally intensive deep learning models (such as YOLO) within the project timeframe.
-*   **Ethics Clearance Guidance:** Advice on UTS ethics approval procedures if the team determines that capturing supplemental custom video footage within university spaces is necessary for localized validation testing.
-
----
-
-## Repository Layout
+## Repository
 
 ```text
-.
-├── README.md
-├── requirements.txt          # -r train/requirements.txt
-├── project_logo.svg
-├── data/                     # Dataset root (gitignored large files; DVC) — see docs/DATA.md
-├── train/                    # Python: src/, scripts/, notebooks/, ML stack
-├── application/
-│   ├── docker-compose.yml    # one-command 3-service demo (see "Run the Application")
-│   ├── backend/crowdnav-api/ # Spring Boot REST API
-│   ├── frontend/             # React + Vite (TypeScript) browser client
-│   ├── inference-service/    # Python FastAPI + Ultralytics YOLO (best.pt)
-│   └── models/               # place best.pt here for Docker (gitignored)
-├── infra/
-│   ├── docker/               # Dockerfile, docker-compose.yml
-│   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
-│   └── setup.sh
-├── docs/                     # TechSpec, PRD, architecture, runbooks, diagrams (UML/SysML)
-├── .github/workflows/
-└── .dvc/                     # DVC config (repo root)
+train/          YOLO training, preprocessing, notebooks
+application/    React UI, Spring API, FastAPI inference (docker-compose.yml)
+infra/          SageMaker launcher, Docker wrapper
+docs/           Specs, architecture, runbooks, diagrams
+data/           Dataset root (DVC) — see docs/DATA.md
 ```
 
-### Path migration (old → new)
+**Python setup** (repo root): `python -m venv .venv` → activate → `pip install -r requirements.txt`  
+**Train:** `cd train && python scripts/train_yolo.py` (default `yolov8m.pt`, 8:1:1 split)  
+**Data:** `dvc pull` — details in [`docs/DATA.md`](docs/DATA.md)  
+**Cloud train:** [`infra/sagemaker/sagemaker_launch.py`](infra/sagemaker/sagemaker_launch.py) (default `ml.g5.xlarge`)
 
-| Before | After |
-|--------|--------|
-| `PROJECTS/CrowdNav/` (monolith) | `train/` + `application/` + `infra/` + `docs/` |
-| `PROJECTS/CrowdNav/scripts/` | `train/scripts/` |
-| `PROJECTS/CrowdNav/src/` | `train/src/` |
-| `PROJECTS/CrowdNav/deploy/` | `infra/docker/`, `infra/sagemaker/` |
-| `PROJECTS/CrowdNav/notebooks/` | `train/notebooks/` |
-| `PROJECTS/CrowdNav/backend/` | `application/backend/` |
-| `PROJECTS/CrowdNav/inference-service/` | `application/inference-service/` |
-| `PROJECTS/CrowdNav/rn-client-sample/` | `application/frontend/` (React + Vite) |
-| `PROJECTS/CrowdNav/PROJECTS/docs/` … | `docs/architecture/`, `docs/runbooks/`, … |
-| `PROJECTS/TechSpec.md` | `docs/TechSpec.md` |
+## Documentation
 
-**Architecture / layout note (for future development):** the tree above replaced the old `PROJECTS/CrowdNav` monolith. CI, Docker build context, import paths, and doc links all follow the new layout. For boundaries, data root, and what to do with stale paths, read [`docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md`](docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md).
+| Doc | Topic |
+|-----|-------|
+| [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | FR / NFR |
+| [`docs/API_SPEC.md`](docs/API_SPEC.md) | REST + inference API |
+| [`docs/TechSpec.md`](docs/TechSpec.md) | Stack & deployment |
+| [`docs/PRD.md`](docs/PRD.md) | Product vision |
+| [`docs/DATA.md`](docs/DATA.md) | DVC & dataset layout |
+| [`docs/reports/Final_Training_Report.md`](docs/reports/Final_Training_Report.md) | Training results |
+| [`docs/architecture/`](docs/architecture/) · [`docs/diagrams/`](docs/diagrams/) · [`docs/decisions/`](docs/decisions/) | Architecture & ADRs |
 
----
+## Team
 
-## Submission Summary
+| Name | ID | Focus | Commits* | Share* |
+|------|-----|-------|----------|--------|
+| Jungwook Van | 25167747 | YOLO training (lead), inference & alerting | 193 | 97.0% |
+| Phoi Gia Vuong | 25736012 | Data pipeline, preprocessing, documentation | 3 | 1.5% |
+| Chihyun An | 14707133 | Frontend UI | 3 | 1.5% |
 
-| Part   | Description                | Submitted By                 | Status |
-|--------|----------------------------|------------------------------|--------|
-| **Part-A** | Project Proposal           | **Every student individually** | Pending |
-| **Part-B** | Intermediate Deliverable 1 | One per team                 | TBD |
-| **Part-C** | Intermediate Deliverable 2 | One per team                 | TBD |
-| **Part-D** | Intermediate Deliverable 3 | One per team                 | TBD |
-| **Part-E** | Final Project Report       | **Every student individually** | TBD |
-| **Part-G** | Oral Defense               | **Every student individually** | TBD |
+\*From `git log --all --no-merges` on `main` (excludes merge commits and bots). `Salieri009` + `Jungwook Van` are the same contributor (`kordalek@*` emails). Last updated: 2026-06-18.
 
-### File Naming Convention
+## Assignment (42028 S1 2026)
 
-```bash
-Assignment-3-<Part>-<StudentName>-<StudentID>.<doc/pdf>
-```
+- **3 students** per group; **model training required** (transfer learning OK).
+- Parts A & E & G submitted **individually**; B–D one per team. Oral defense (G) is mandatory.
+- Filename: `Assignment-3-<Part>-<Name>-<ID>.pdf`
 
-**Example:** `Assignment-3-PartA-NabinSharma-12345678.pdf`
+Questions → subject coordinator by email.
 
----
-
-## Key Rules
-
-- **Group size:** Exactly **3 students** (min and max).
-- **Session Flexibility:** Groups can include students from different tutorial/lab sessions.
-- **Model Training:** Network **training is required** — pre-trained model alone is not accepted (transfer learning is permitted).
-- **Oral Defense (Part-G):** **Mandatory** for every student — project is **INCOMPLETE** without it.
-- **Deadlines:** Intermediate deadlines (Part-B, C, D) have no late penalties, but all work must be submitted before the **final deadline**.
-- **Individual Contribution:** The Part-E individual contribution section must be unique per student.
-
----
-
-## FAQ
-
-<details>
-<summary><strong>Are intermediate deadlines (Part-B, C, D) strict?</strong></summary>
-<br>
-No late penalties for intermediate parts, but <b>everything must be submitted before the final project deadline</b>. Reference deadlines are on the Week-1 Introduction slides (slide-7).
-</details>
-
-<details>
-<summary><strong>Can I use YOLO or other frameworks?</strong></summary>
-<br>
-Yes. Any crowd detection or computer vision framework is allowed. <b>Training of the network is required</b> — transfer learning is permitted, but you must train the network yourself.
-</details>
-
-<details>
-<summary><strong>What if I can't find a team?</strong></summary>
-<br>
-Still submit Part-A individually. The teaching team will assist in forming groups after Part-A submissions.
-</details>
-
-<details>
-<summary><strong>Does Part-E require separate reports per student?</strong></summary>
-<br>
-Yes. All members submit individually. Content and results can match, but the <b>Individual Contribution (Appendix A)</b> section must reflect each student's personal contribution.
-</details>
-
-<details>
-<summary><strong>What is assessed in the Oral Defense (Part-G)?</strong></summary>
-<br>
-Content from <b>Week-1 to Week-11</b> plus your project. The oral defense is mandatory — the project is incomplete without it.
-</details>
-
----
-
-## Contact
-
-For specific questions regarding the assignment specifications, contact the **subject coordinator via email** as soon as possible.
-
-<br />
-
-<p align="center">
-  <a href="https://github.com/Abblix/Oidc.Server"><img src="https://img.shields.io/badge/Designed%20inspired%20by-Oidc.Server-lightgrey?style=flat-square" alt="Design Credit" /></a>
-  <br />
-  <strong>UTS Deep Learning (42028) • Semester 1, 2026</strong>
-</p>
-
----
-
-## Architecture
-
-The CrowdNav codebase follows a 4-layer architecture aligned to the class, flow, and sequence diagrams used for implementation planning.
-
-### Diagram 1: Class Structure (4 Layers)
-
-```mermaid
-classDiagram
-    direction TB
-
-    class BoundingBox {
-        +x_min: float
-        +y_min: float
-        +x_max: float
-        +y_max: float
-    }
-    class AnnotationRecord {
-        +image_key: str
-        +class_name: str
-    }
-    class YoloBox {
-        +class_id: int
-        +x_center: float
-        +y_center: float
-        +width: float
-        +height: float
-    }
-
-    class ConversionSummary {
-        +parsed: int
-        +invalid: int
-        +written: int
-        +exit_code: int
-    }
-    class io_utils {
-        <<module>>
-        +load_json()
-        +iter_raw_items()
-        +parse_bbox()
-        +parse_record()
-    }
-    class converter {
-        <<module>>
-        +to_yolo()
-        +write_yolo_files()
-    }
-
-    class DepthEstimator {
-        +focal_length: float
-        +known_height: float
-        +estimate()
-        +normalize()
-    }
-    class CollisionThresholds {
-        +safe_max: float
-        +warning_max: float
-    }
-    class CollisionAvoidance {
-        +evaluate()
-        +evaluate_many()
-    }
-    class AlertState {
-        <<enumeration>>
-        SAFE
-        WARNING
-        DANGER
-    }
-    class AlertDispatcher {
-        +visual_alert()
-        +audio_alert()
-        +dispatch()
-    }
-
-    class ClearMLSetup {
-        +init_clearml_task()
-        +log_hyperparams()
-        +log_metric()
-    }
-    class TrainPipeline {
-        +model_cfg: str
-        +data_yaml: str
-        +epochs: int
-        +imgsz: int
-        +train()
-        +validate()
-        +export()
-    }
-
-    note for BoundingBox "Layer 1 · DOMAIN\n(data.preprocessing.types)"
-    note for io_utils "Layer 2 · PREPROCESSING\n(data.preprocessing)"
-    note for DepthEstimator "Layer 3 · INFERENCE"
-    note for ClearMLSetup "Layer 4 · MLOPS"
-
-    AnnotationRecord --> BoundingBox : contains
-    AnnotationRecord --> YoloBox : converts to
-    io_utils --> AnnotationRecord : produces
-    io_utils --> converter : feeds
-    converter --> ConversionSummary : returns
-    DepthEstimator --> CollisionAvoidance : depth proxy
-    CollisionThresholds --> CollisionAvoidance : config
-    CollisionAvoidance --> AlertState : evaluates to
-    AlertState --> AlertDispatcher : consumed by
-    ClearMLSetup --> TrainPipeline : initializes
-```
-
-### Diagram 2: Real-Time Inference Flow (Edge Runtime)
-
-```mermaid
-flowchart TD
-    A([Camera Frame]) --> B[YOLOv8 Inference]
-    B --> C{Confidence\nThreshold}
-    C -->|fail| B
-    C -->|pass| D[BoundingBox Extraction]
-    D --> E[DepthEstimator\nestimate & normalize]
-    E --> F[CollisionAvoidance\nevaluate_many]
-    F --> G{AlertState}
-    G -->|SAFE| H[🟢 Visual: Green]
-    G -->|WARNING| I[🟡 Visual: Yellow\n🔔 Audio: Beep]
-    G -->|DANGER| J[🔴 Visual: Red\n🚨 Audio: Alarm]
-    H & I & J --> K[AlertDispatcher\ndispatch]
-    K --> L[(Local Frame Log)]
-    L --> A
-```
-
-### Diagram 3: Training Pipeline Sequence (YOLO + Keras)
-
-```mermaid
-sequenceDiagram
-    participant JRDB as JRDB Dataset
-    participant IO as io_utils (preprocessing)
-    participant Conv as converter (preprocessing)
-    participant Split as split_by_sequence
-    participant CML as ClearMLSetup
-
-    rect rgb(240,248,255)
-    note right of JRDB: Path A — YOLO Training
-    participant TP as TrainPipeline (YOLO)
-    participant YOut as YOLO ModelOut (.pt/.onnx)
-    JRDB->>IO: raw JSON / pseudo-labels
-    IO->>Conv: AnnotationRecord stream
-    Conv-->>Split: YOLO label files + classes.txt
-    Split-->>TP: train/val/test splits + data.yaml
-    TP->>CML: init_clearml_task()
-    loop Training Epochs
-        TP->>CML: log_metric(loss, mAP)
-    end
-    TP->>YOut: export()
-    end
-
-    rect rgb(255,248,240)
-    note right of Split: Path B — Keras (optional, local or SageMaker if configured)
-    participant COCO as yolo_to_coco converter
-    participant KT as train_keras (SageMaker)
-    participant KOut as Keras ModelOut (SavedModel)
-    Split-->>COCO: YOLO splits
-    COCO-->>KT: COCO JSON + images
-    KT->>CML: log_hyperparams()
-    loop Training Epochs
-        KT->>CML: log_metric(loss, mAP)
-    end
-    KT->>KOut: save model
-    end
-```
+<p align="center"><strong>UTS Deep Learning (42028) · Semester 1, 2026</strong></p>

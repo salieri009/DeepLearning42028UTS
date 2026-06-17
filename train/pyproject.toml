@@ -14,6 +14,8 @@ dynamic = ["dependencies"]
 dev = [
     "ruff",
     "mypy",
+    "types-PyYAML",
+    "pandas-stubs",
 ]
 
 [tool.setuptools.dynamic]
@@ -28,3 +30,21 @@ dependencies = { file = ["requirements-pkg.txt"] }
 where = ["."]
 include = ["src*"]
 namespaces = false
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["ultralytics", "ultralytics.*", "clearml.*"]
+ignore_missing_imports = true
+disable_error_code = ["import-untyped", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "src.training.train_pipeline",
+    "src.data.preprocessing.auto_labeler",
+    "src.data.pseudo_label_yolov8",
+]
+disable_error_code = ["attr-defined"]

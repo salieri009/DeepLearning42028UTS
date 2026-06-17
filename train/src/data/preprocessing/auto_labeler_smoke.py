@@ -30,7 +30,9 @@ class _FakeResult:
 
 
 class _FakeYOLOModel:
-    def predict(self, source: str, **kwargs: Any) -> list[_FakeResult]:  # noqa: D401 - ultralytics-style API
+    def predict(
+        self, source: str, **kwargs: Any
+    ) -> list[_FakeResult]:  # noqa: D401 - ultralytics-style API
         _ = kwargs
         _ = source
         result = _FakeResult(
@@ -54,7 +56,9 @@ class _FakeYOLOModel:
 def build_parser() -> argparse.ArgumentParser:
     from ...repo_paths import repo_root
 
-    parser = argparse.ArgumentParser(description="Run a local auto-labeling smoke test.")
+    parser = argparse.ArgumentParser(
+        description="Run a local auto-labeling smoke test."
+    )
     parser.add_argument("--input-dir", type=Path, default=repo_root() / "data/raw")
     parser.add_argument(
         "--output-dir",
@@ -99,7 +103,10 @@ def main() -> int:
             if not image_paths:
                 continue
 
-            image_keys = [path.with_suffix("").as_posix().replace(":", "_") for path in image_paths]
+            image_keys = [
+                path.with_suffix("").as_posix().replace(":", "_")
+                for path in image_paths
+            ]
             processed_images, written_boxes, _ = labeler.write_folder_labels(
                 image_paths=image_paths,
                 output_dir=output_root,
@@ -107,7 +114,9 @@ def main() -> int:
             )
             total_images += processed_images
             total_boxes += written_boxes
-            print(f"[smoke] {folder} -> images={processed_images}, boxes={written_boxes}")
+            print(
+                f"[smoke] {folder} -> images={processed_images}, boxes={written_boxes}"
+            )
 
         print("--- Smoke summary ---")
         print(f"input_dir={args.input_dir}")

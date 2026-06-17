@@ -41,7 +41,7 @@ class TrainPipeline:
         save_period: int = 10,
         lr0: float = 0.01,
         lrf: float = 0.01,
-        extra_kwargs: dict | None = None,
+        extra_kwargs: dict[str, Any] | None = None,
     ) -> None:
         from src.repo_paths import repo_root
 
@@ -51,7 +51,9 @@ class TrainPipeline:
         self.imgsz = imgsz
         self.batch = batch
         self.device = device
-        self.project = project if project is not None else str(repo_root() / "runs" / "train")
+        self.project = (
+            project if project is not None else str(repo_root() / "runs" / "train")
+        )
         self.name = name
         self.patience = patience
         self.exist_ok = exist_ok
@@ -59,7 +61,7 @@ class TrainPipeline:
         self.save_period = save_period
         self.lr0 = lr0
         self.lrf = lrf
-        self.extra_kwargs: dict = extra_kwargs or {}
+        self.extra_kwargs: dict[str, Any] = extra_kwargs or {}
         self._model: YOLO | None = None
         self._trained_model: YOLO | None = None
         self._last_artifacts: TrainArtifacts | None = None

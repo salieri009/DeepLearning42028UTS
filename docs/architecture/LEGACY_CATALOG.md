@@ -58,14 +58,14 @@ related_skill:
 
 ## 2. infra/ — Keras 스켈레톤 잔존
 
-W4 분석에서 발견된 **현재 YOLO 파이프라인과 무관한** Keras 기반 코드:
+**Status: Resolved (ADR-0009, 2026-05-05)** — `infra/train_skeleton.py`, `infra/train_keras_skeleton.py`, and `train/src/data/keras/` were deleted. `infra/` now contains only Docker compose wrapper + SageMaker training glue.
 
-| 파일 | 내용 | 권장 처리 |
+| File | Former content | Resolution |
 |---|---|---|
-| `infra/train_skeleton.py` | "Legacy SageMaker/Keras placeholder" 주석. 3-class SAFE/WARNING/DANGER 분류기, dummy data 로 `.h5` 저장 | 폐기 후보 (YOLO 라인과 충돌) |
-| `infra/train_keras_skeleton.py` | COCO JSON → Keras CNN object detector. `src.data.keras.coco_tfds` import (현 트리에 미존재 가능성) | import 가능 여부 검증 → 안 되면 폐기 |
+| ~~`infra/train_skeleton.py`~~ | Keras placeholder | Deleted |
+| ~~`infra/train_keras_skeleton.py`~~ | COCO → Keras detector | Deleted |
 
-→ 후보 ADR: **ADR-0009-keras-skeleton-removal.md**
+→ [ADR-0009](../decisions/ADR-0009-keras-skeleton-removal.md)
 
 ---
 
@@ -108,8 +108,8 @@ W2·W3 종합 결과:
 | 1 | `.env` ClearML 키 노출 검토 | 보안 | **높음** | 🔴 즉시 |
 | 2 | `auto_labels_08` 446K 라벨 운명 | 학습 정확도 | 중 | 🟠 빠르게 |
 | 3 | yolo26n.pt provenance | 평가 신뢰도 | 중 | 🟠 빠르게 |
-| 4 | infra/ Keras 스켈레톤 폐기 | CI 단순화 | 낮 | 🟡 |
-| 5 | sys.path 핵 정리 | DX | 낮 | 🟡 |
+| 4 | infra/ Keras 스켈레톤 폐기 | CI 단순화 | 낮 | ✅ Done (ADR-0009) |
+| 5 | sys.path 핵 정리 | DX | 낮 | ✅ Done (ADR-0010) |
 | 6 | 빈 `backend/` 폴더 삭제 | 무영향 | 낮 | 🟢 즉시 가능 |
 
 ---

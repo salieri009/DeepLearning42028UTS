@@ -34,7 +34,7 @@ class ClearMLSetup:
             params=params,
         )
         try:
-            from clearml import Task  # type: ignore
+            from clearml import Task
 
             self._task = Task.current_task()
         except ImportError:
@@ -77,13 +77,13 @@ def init_clearml_task(
         pass  # python-dotenv not installed, ignore
 
     try:
-        from clearml import Task  # type: ignore
+        from clearml import Task
     except Exception as e:  # pragma: no cover
         raise RuntimeError(
             "clearml is not installed. Run: pip install -r requirements.txt"
         ) from e
 
-    task = Task.init(
+    task: Any = Task.init(
         project_name=project_name,
         task_name=task_name,
         tags=tags or None,

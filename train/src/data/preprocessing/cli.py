@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from ..formats.dataset_config import write_classes_txt_from_label_map
 from .converter import write_yolo_files
 from .io_utils import iter_raw_items, load_json, parse_record
+from .types import AnnotationRecord
 
 
 @dataclass
@@ -88,7 +90,7 @@ def convert(
     invalid_items = 0
     parsed_count = 0
 
-    def record_stream():
+    def record_stream() -> Iterator[tuple[AnnotationRecord, int]]:
         nonlocal invalid_items, parsed_count
         for index, raw_item in enumerate(iter_raw_items(data), start=1):
             record = parse_record(raw_item, fallback_index=index)

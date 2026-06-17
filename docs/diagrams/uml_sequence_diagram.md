@@ -15,8 +15,8 @@ sequenceDiagram
     actor User as Wheelchair User
     participant Browser as Browser<br/>(React App)
     participant Camera as Device Camera<br/>(MediaStream API)
-    participant VideoFeed as VideoFeed<br/>Component
-    participant StatPanel as StatPanel<br/>Component
+    participant VideoStage as VideoStage<br/>Widget
+    participant StatsSidebar as StatsSidebar<br/>Widget
     participant API as ApiClient<br/>(axios)
     participant Controller as AnalyzeFrameController<br/>(Spring Boot :8080)
     participant Service as RemoteAnalyzeFrameService<br/>(Spring Boot)
@@ -24,10 +24,10 @@ sequenceDiagram
     participant YOLO as YOLOv8 Model<br/>(best.pt)
     participant CA as CollisionAvoidance<br/>(Python)
 
-    User->>Browser: Click "Start"
+    User->>Browser: Click "Start Monitoring"
     Browser->>Camera: getUserMedia({ video: true })
     Camera-->>Browser: MediaStream (live feed)
-    Browser->>VideoFeed: Stream video to <video> element
+    Browser->>VideoStage: Stream video to <video> element
 
     loop Every 500 ms (capture interval)
         Browser->>Browser: captureFrame()<br/>canvas.drawImage(video) → toDataURL() → base64
@@ -62,8 +62,8 @@ sequenceDiagram
 
         API-->>Browser: AnalyzeFrameResponse (TypeScript)
 
-        Browser->>VideoFeed: Update bounding box overlay<br/>(colour-coded by proximity_risk)
-        Browser->>StatPanel: Update crowd_density,<br/>max_proximity_risk, recommendation
+        Browser->>VideoStage: Update bounding box overlay<br/>(colour-coded by proximity_risk)
+        Browser->>StatsSidebar: Update people count, crowd_density,<br/>max_proximity_risk, recommendation
 
         alt max_proximity_risk == "WARNING"
             Browser->>Browser: triggerAlert()<br/>SpeechSynthesis: "Caution. Pedestrians nearby."<br/>navigator.vibrate([200,100,200])
@@ -72,7 +72,7 @@ sequenceDiagram
         end
     end
 
-    User->>Browser: Click "Stop"
+    User->>Browser: Click "Stop Monitoring"
     Browser->>Camera: stream.getTracks().forEach(t => t.stop())
     Browser->>Browser: clearInterval(intervalRef)<br/>data = null
 ```

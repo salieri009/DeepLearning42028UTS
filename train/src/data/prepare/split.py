@@ -32,18 +32,24 @@ def run(
     in ``split_by_sequence`` so that all copy/validation logic is reused.
     """
     argv: list[str] = [
-        "--src-labels", str(src_labels),
-        "--src-images", str(src_images),
-        "--output-dir", str(output_dir),
-        "--seed", str(seed),
-        "--train-ratio", str(train_ratio),
-        "--val-ratio", str(val_ratio),
+        "--src-labels",
+        str(src_labels),
+        "--src-images",
+        str(src_images),
+        "--output-dir",
+        str(output_dir),
+        "--seed",
+        str(seed),
+        "--train-ratio",
+        str(train_ratio),
+        "--val-ratio",
+        str(val_ratio),
     ]
     if stem_prefix:
         argv += ["--stem-prefix", stem_prefix]
     argv.extend(extra_argv)
 
-    from ..split_by_sequence import build_parser, main as _legacy_main
+    from ..split_by_sequence import main as _legacy_main
 
     old_argv = sys.argv
     try:

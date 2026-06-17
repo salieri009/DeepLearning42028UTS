@@ -87,7 +87,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
 
-    import sagemaker
     from sagemaker.pytorch import PyTorch
 
     print("=" * 60)
@@ -136,11 +135,11 @@ def main() -> int:
     inputs = {"training": f"s3://{args.bucket}/{args.data_prefix}/"}
 
     print(f"\nJob name: {job_name}")
-    print(f"Submitting training job...\n")
+    print("Submitting training job...\n")
     estimator.fit(inputs=inputs, job_name=job_name, wait=True)
 
     print("=" * 60)
-    print(f"[CrowdNav] Training Complete")
+    print("[CrowdNav] Training Complete")
     print(f"Model artifacts: {estimator.model_data}")
     print(f"Logs: aws logs tail /aws/sagemaker/TrainingJobs --log-stream-name-prefix {job_name}")
     print("=" * 60)

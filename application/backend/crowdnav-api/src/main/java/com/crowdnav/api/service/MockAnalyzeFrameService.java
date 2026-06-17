@@ -10,8 +10,13 @@ import com.crowdnav.api.dto.BBox;
 import com.crowdnav.api.dto.PersonDetection;
 
 @Service
-@ConditionalOnProperty(name = "app.inference.mode", havingValue = "mock", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.inference.mode", havingValue = "mock")
 public class MockAnalyzeFrameService implements AnalyzeFrameService {
+
+@Override
+public AnalyzeFrameResponse analyzeFrame(String frameBase64, Long sessionId) {
+return analyzeFrame(frameBase64);
+}
 
 @Override
 public AnalyzeFrameResponse analyzeFrame(String frameBase64) {

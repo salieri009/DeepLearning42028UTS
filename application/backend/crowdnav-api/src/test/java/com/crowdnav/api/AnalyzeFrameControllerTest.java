@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -61,5 +62,33 @@ class AnalyzeFrameControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.crowd_density").value("LOW"))
                 .andExpect(jsonPath("$.recommendation").value("CAUTION"));
+    }
+
+    @Test
+    void analyzeFrame_multipart_withSessionId_persists() throws Exception {
+        MvcResult session = mockMvc.perform(post("/api/v1/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"client_label\":\"mp-test\",\"source_type\":\"WEBCAM\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long sessionId = Long.parseLong(
+                session.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
+
+        var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[] { 0, 0 });
+        mockMvc.perform(multipart("/api/v1/analyze-frame")
+                        .file(file)
+                        .param("session_id", String.valueOf(sessionId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.persons.length()").value(2));
+    }
+
+    @Test
+    void analyzeFrame_multipart_unknownSessionId_returns404() throws Exception {
+        var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[] { 0, 0 });
+        mockMvc.perform(multipart("/api/v1/analyze-frame")
+                        .file(file)
+                        .param("session_id", "999999"))
+                .andExpect(status().isNotFound());
     }
 }

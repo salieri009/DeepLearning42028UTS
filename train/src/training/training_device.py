@@ -44,8 +44,13 @@ def _coerce(text: str) -> Any:
 
 def describe_runtime() -> str:
     """Short label for logging (SageMaker vs local)."""
-    if os.environ.get("SM_NUM_GPUS") is not None or os.environ.get("SAGEMAKER_TRAINING") == "1":
+    if (
+        os.environ.get("SM_NUM_GPUS") is not None
+        or os.environ.get("SAGEMAKER_TRAINING") == "1"
+    ):
         return "sagemaker_training"
-    if os.environ.get("AWS_PATH") is not None or os.environ.get("SAGEMAKER_TRAINING_ARN"):
+    if os.environ.get("AWS_PATH") is not None or os.environ.get(
+        "SAGEMAKER_TRAINING_ARN"
+    ):
         return "sagemaker_notebook_or_studio"
     return "local_or_other"

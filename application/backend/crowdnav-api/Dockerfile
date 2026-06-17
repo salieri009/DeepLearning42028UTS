@@ -38,7 +38,7 @@ USER spring
 ENV SERVER_PORT=8080 \
     SPRING_PROFILES_ACTIVE=docker \
     APP_INFERENCE_MODE=remote \
-    APP_INFERENCE_URL=http://inference:9000
+    APP_INFERENCE_BASE_URL=http://inference:9000
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
