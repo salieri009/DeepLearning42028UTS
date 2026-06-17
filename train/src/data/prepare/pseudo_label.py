@@ -47,15 +47,24 @@ def run(
     import sys
 
     argv: list[str] = [
-        "--model", model,
-        "--src-dir", str(src_dir),
-        "--out-dir", str(out_dir),
-        "--conf-thresh", str(conf_thresh),
-        "--manual-thresh", str(manual_thresh),
-        "--device", device,
-        "--checkpoint-interval", str(checkpoint_interval),
-        "--imgsz", str(imgsz),
-        "--iou", str(iou),
+        "--model",
+        model,
+        "--src-dir",
+        str(src_dir),
+        "--out-dir",
+        str(out_dir),
+        "--conf-thresh",
+        str(conf_thresh),
+        "--manual-thresh",
+        str(manual_thresh),
+        "--device",
+        device,
+        "--checkpoint-interval",
+        str(checkpoint_interval),
+        "--imgsz",
+        str(imgsz),
+        "--iou",
+        str(iou),
     ]
     if augment:
         argv.append("--augment")
@@ -71,7 +80,7 @@ def run(
         argv.append("--overwrite-existing")
     argv.extend(extra_argv)
 
-    from ..pseudo_label_yolov8 import build_parser, main as _legacy_main
+    from ..pseudo_label_yolov8 import main as _legacy_main
 
     old_argv = sys.argv
     try:

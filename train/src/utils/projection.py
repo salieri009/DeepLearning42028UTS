@@ -1,13 +1,15 @@
 import numpy as np
+from numpy.typing import NDArray
 from typing import Tuple, Optional
+
 
 class Projector:
     """
     Handles transformation between 2D image coordinates and Bird's Eye View (BEV).
     Used for density mapping and accurate velocity calculation.
     """
-    
-    def __init__(self, homography_matrix: Optional[np.ndarray] = None):
+
+    def __init__(self, homography_matrix: Optional[NDArray[np.float64]] = None):
         """
         Initialize with a 3x3 Homography matrix.
         If None, defaults to Identity matrix (no transformation).
@@ -27,12 +29,12 @@ class Projector:
         """
         point = np.array([x, y, 1.0], dtype=np.float64).reshape(3, 1)
         bev_point = np.dot(self.H, point)
-        
+
         # Avoid division by zero
         w = bev_point[2, 0]
         if abs(w) < 1e-9:
             return 0.0, 0.0
-            
+
         return float(bev_point[0, 0] / w), float(bev_point[1, 0] / w)
 
     def bev_to_image(self, x_real: float, y_real: float) -> Tuple[float, float]:
@@ -44,23 +46,20 @@ class Projector:
             H_inv = np.linalg.inv(self.H)
         except np.linalg.LinAlgError:
             return 0.0, 0.0
-            
+
         point = np.array([x_real, y_real, 1.0], dtype=np.float64).reshape(3, 1)
         img_point = np.dot(H_inv, point)
-        
+
         w = img_point[2, 0]
         if abs(w) < 1e-9:
             return 0.0, 0.0
-            
+
         return float(img_point[0, 0] / w), float(img_point[1, 0] / w)
+
 
 if __name__ == "__main__":
     # Example: Simple translation matrix
-    H = np.array([
-        [1, 0, 10],
-        [0, 1, 20],
-        [0, 0, 1]
-    ])
+    H = np.array([[1, 0, 10], [0, 1, 20], [0, 0, 1]])
     projector = Projector(H)
     bev = projector.image_to_bev(50, 50)
-    print(f"Image (50, 50) -> BEV {bev}") # Expected (60, 70)
+    print(f"Image (50, 50) -> BEV {bev}")  # Expected (60, 70)

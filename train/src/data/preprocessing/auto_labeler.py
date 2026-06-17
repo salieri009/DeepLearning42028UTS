@@ -105,7 +105,9 @@ class AutoLabeler:
             if class_id != 0 or confidence < self.confidence_threshold:
                 continue
 
-            x_min, y_min, x_max, y_max = (float(value) for value in detection.xyxy[0].tolist())
+            x_min, y_min, x_max, y_max = (
+                float(value) for value in detection.xyxy[0].tolist()
+            )
             record = AnnotationRecord(
                 image_key=image_key,
                 class_name="person",
@@ -119,7 +121,9 @@ class AutoLabeler:
 
         return records, boxes, int(image_width), int(image_height)
 
-    def label_image(self, image_path: Path, image_key: str | None = None) -> list[YoloBox]:
+    def label_image(
+        self, image_path: Path, image_key: str | None = None
+    ) -> list[YoloBox]:
         """Return YOLO-format boxes for one image."""
         normalized_key = image_key or image_path.stem
         _, boxes, _, _ = self._extract_records_and_boxes(image_path, normalized_key)
@@ -132,13 +136,19 @@ class AutoLabeler:
     ) -> list[tuple[Path, list[YoloBox]]]:
         """Return YOLO-format boxes for each image path."""
         paths = [Path(path) for path in image_paths]
-        keys = list(image_keys) if image_keys is not None else [path.stem for path in paths]
+        keys = (
+            list(image_keys)
+            if image_keys is not None
+            else [path.stem for path in paths]
+        )
         if len(keys) != len(paths):
             raise ValueError("image_keys must match image_paths length")
 
         results: list[tuple[Path, list[YoloBox]]] = []
         for image_path, image_key in zip(paths, keys, strict=True):
-            results.append((image_path, self.label_image(image_path, image_key=image_key)))
+            results.append(
+                (image_path, self.label_image(image_path, image_key=image_key))
+            )
         return results
 
     def write_image_labels(
@@ -178,7 +188,11 @@ class AutoLabeler:
     ) -> tuple[int, int, int]:
         """Write labels for many images and return image, box, and skip counts."""
         paths = [Path(path) for path in image_paths]
-        keys = list(image_keys) if image_keys is not None else [path.stem for path in paths]
+        keys = (
+            list(image_keys)
+            if image_keys is not None
+            else [path.stem for path in paths]
+        )
         if len(keys) != len(paths):
             raise ValueError("image_keys must match image_paths length")
 

@@ -30,7 +30,7 @@ class TrainingHyperParams:
 
 
 def default_training_presets() -> dict[str, TrainingHyperParams]:
-    """Presets: local notebook, SageMaker Notebook (ml.g4dn.xlarge), managed training job.
+    """Presets for local notebook and SageMaker (ml.g4dn.xlarge) training jobs.
 
     Naming convention:
       local_*          — local GPU (single GPU, low VRAM)

@@ -57,11 +57,13 @@ data/           Dataset root (DVC) — see docs/DATA.md
 
 ## Team
 
-| Name | ID | Focus |
-|------|-----|-------|
-| Phoi Gia Vuong | 25736012 | Data pipeline, preprocessing, documentation |
-| Jungwook Van | 25167747 | YOLO training (lead), inference & alerting |
-| Chihyun | 14707133 | Frontend UI |
+| Name | ID | Focus | Commits* | Share* |
+|------|-----|-------|----------|--------|
+| Jungwook Van | 25167747 | YOLO training (lead), inference & alerting | 193 | 97.0% |
+| Phoi Gia Vuong | 25736012 | Data pipeline, preprocessing, documentation | 3 | 1.5% |
+| Chihyun An | 14707133 | Frontend UI | 3 | 1.5% |
+
+\*From `git log --all --no-merges` on `main` (excludes merge commits and bots). `Salieri009` + `Jungwook Van` are the same contributor (`kordalek@*` emails). Last updated: 2026-06-18.
 
 ## Assignment (42028 S1 2026)
 

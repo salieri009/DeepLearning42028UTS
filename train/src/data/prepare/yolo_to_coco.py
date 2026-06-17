@@ -30,9 +30,14 @@ import cv2
 import yaml
 
 from ...repo_paths import repo_root
-from ..formats.coco import CocoAnnotation, CocoCategory, CocoDataset, CocoImage, write_coco_json
+from ..formats.coco import (
+    CocoAnnotation,
+    CocoCategory,
+    CocoDataset,
+    CocoImage,
+    write_coco_json,
+)
 from ..formats.yolo_label import parse_line
-
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 
@@ -95,7 +100,10 @@ def convert_split(
         if max_images is not None and len(images) >= max_images:
             break
         if log_every > 0 and idx % log_every == 0:
-            print(f"  scanned_labels={idx} converted_images={len(images)} annotations={len(annotations)}")
+            print(
+                f"  scanned_labels={idx} converted_images={len(images)} "
+                f"annotations={len(annotations)}"
+            )
         stem = label_path.stem
         img_path = _find_image(images_dir, stem)
         if img_path is None:
@@ -167,7 +175,9 @@ def convert_split(
 
 def main() -> None:
     repo = repo_root()
-    parser = argparse.ArgumentParser(description="Convert YOLO split folders to COCO JSON.")
+    parser = argparse.ArgumentParser(
+        description="Convert YOLO split folders to COCO JSON."
+    )
     parser.add_argument(
         "--splits-dir",
         type=Path,
@@ -189,7 +199,10 @@ def main() -> None:
         "--max-images-per-split",
         type=int,
         default=0,
-        help="Limit conversion to N images per split (0 means no limit). Useful for smoke tests.",
+        help=(
+            "Limit conversion to N images per split (0 means no limit). "
+            "Useful for smoke tests."
+        ),
     )
     parser.add_argument(
         "--log-every",
@@ -218,7 +231,9 @@ def main() -> None:
             labels_dir=labels_dir,
             categories=categories,
             file_name_prefix=f"{split}/images/",
-            max_images=args.max_images_per_split if args.max_images_per_split > 0 else None,
+            max_images=(
+                args.max_images_per_split if args.max_images_per_split > 0 else None
+            ),
             log_every=int(args.log_every),
         )
         write_coco_json(out_dir / f"{split}.json", dataset)
@@ -237,10 +252,10 @@ def main() -> None:
     for split, s in summaries.items():
         print(
             f"[{split}] images={s.images} annotations={s.annotations} "
-            f"invalid_label_lines={s.invalid_label_lines} missing_images={s.missing_images}"
+            f"invalid_label_lines={s.invalid_label_lines} "
+            f"missing_images={s.missing_images}"
         )
 
 
 if __name__ == "__main__":
     main()
-

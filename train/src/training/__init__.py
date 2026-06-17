@@ -11,7 +11,11 @@ from src.training.hyperparams import TrainingHyperParams, default_training_prese
 from src.training.protocols import SupportsYoloTraining
 from src.training.sagemaker_cli import build_sagemaker_launch_command
 from src.training.subprocess_runner import run_train_yolo_subprocess
-from src.training.train_pipeline import TrainArtifacts, TrainPipeline, default_model_path
+from src.training.train_pipeline import (
+    TrainArtifacts,
+    TrainPipeline,
+    default_model_path,
+)
 from src.training.training_device import describe_runtime, resolve_training_device
 
 __all__ = [

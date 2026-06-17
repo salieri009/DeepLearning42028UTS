@@ -7,7 +7,7 @@ on subprocess or stdout parsing.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
@@ -47,7 +47,9 @@ class ValidationResult:
     duplicate_label_stems: int
 
 
-def collect_image_inventory(images_dir: Path, *, recursive: bool = True) -> ImageInventory:
+def collect_image_inventory(
+    images_dir: Path, *, recursive: bool = True
+) -> ImageInventory:
     """Scan *images_dir* for image files and detect stem duplicates."""
     if not images_dir.exists() or not images_dir.is_dir():
         raise FileNotFoundError(f"Images directory not found: {images_dir}")
@@ -63,9 +65,7 @@ def collect_image_inventory(images_dir: Path, *, recursive: bool = True) -> Imag
             )
 
     duplicate_stems = {
-        stem: sorted(paths)
-        for stem, paths in stem_to_paths.items()
-        if len(paths) > 1
+        stem: sorted(paths) for stem, paths in stem_to_paths.items() if len(paths) > 1
     }
     return ImageInventory(
         files_count=files_count,

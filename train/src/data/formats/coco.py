@@ -95,7 +95,9 @@ def write_coco_json(path: str | Path, dataset: CocoDataset) -> Path:
     out_path = Path(path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     payload = to_coco_dict(dataset)
-    out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     return out_path.resolve()
 
 
@@ -117,12 +119,19 @@ def load_coco_json(path: str | Path) -> CocoDataset:
         if not isinstance(ann, dict):
             continue
         track_id = ann.get("track_id", None)
+        bbox_raw = ann["bbox"]
+        bbox = (
+            float(bbox_raw[0]),
+            float(bbox_raw[1]),
+            float(bbox_raw[2]),
+            float(bbox_raw[3]),
+        )
         annotations.append(
             CocoAnnotation(
                 id=int(ann["id"]),
                 image_id=int(ann["image_id"]),
                 category_id=int(ann["category_id"]),
-                bbox=tuple(float(x) for x in ann["bbox"]),
+                bbox=bbox,
                 area=float(ann.get("area", 0.0)),
                 iscrowd=int(ann.get("iscrowd", 0)),
                 segmentation=ann.get("segmentation"),
@@ -160,7 +169,9 @@ def validate_coco_dataset(dataset: CocoDataset) -> list[str]:
 
     for ann in dataset.annotations:
         if ann.image_id not in image_id_set:
-            errors.append(f"Annotation {ann.id} references missing image_id={ann.image_id}.")
+            errors.append(
+                f"Annotation {ann.id} references missing image_id={ann.image_id}."
+            )
         if ann.category_id not in cat_id_set:
             errors.append(
                 f"Annotation {ann.id} references missing category_id={ann.category_id}."
@@ -177,4 +188,3 @@ def validate_coco_dataset(dataset: CocoDataset) -> list[str]:
             errors.append(f"Annotation {ann.id} area must be >= 0, got {ann.area}.")
 
     return errors
-
