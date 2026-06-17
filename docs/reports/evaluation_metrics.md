@@ -150,7 +150,10 @@ curl -s -X POST http://localhost:8080/api/v1/analyze-frame \
 ### Docker full-stack
 
 ```bash
-cd infra/docker
-MODEL_DIR=/absolute/path/to/weights docker compose up --build
-# Frontend: http://localhost:8080
+cd application
+mkdir -p models && cp inference-service/best.pt models/best.pt
+docker compose up --build
+# Frontend: http://localhost
 ```
+
+Alternative entry (same stack, SageMaker `MODEL_DIR`): `cd infra/docker && docker compose up --build`

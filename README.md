@@ -5,9 +5,11 @@
     <strong>Computer vision system for navigating crowded transport hubs.</strong>
     <br />
     <br />
-    <a href="#project-abstract">Explore the docs</a>
+    <a href="#documentation">Documentation</a>
     ·
-    <a href="#faq">View FAQ</a>
+    <a href="#project-abstract">Project abstract</a>
+    ·
+    <a href="#faq">FAQ</a>
     ·
     <a href="#contact">Contact</a>
   </p>
@@ -85,7 +87,7 @@ See [`application/frontend/README.md`](application/frontend/README.md) and
 
 ## Environment Setup
 
-The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (Docker, SageMaker), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
+The repo is split into **`train/`** (Python / YOLO / data pipeline), **`application/`** (React UI + Spring API + FastAPI/YOLO inference — see [Run the Application](#run-the-application-live-demo)), **`infra/`** (SageMaker training + [`infra/docker/`](infra/docker/) compose wrapper; canonical stack is [`application/docker-compose.yml`](application/docker-compose.yml)), and **`docs/`**. Install from the **repository root**; [`requirements.txt`](requirements.txt) pulls in [`train/requirements.txt`](train/requirements.txt) (PyTorch + CUDA wheels + Ultralytics).
 
 ```bash
 # 1. Clone the repository
@@ -104,6 +106,31 @@ pip install -r requirements.txt
 Day-to-day training: `cd train` and run `python scripts/train_yolo.py` (dataset lives in **`data/`** at repo root — see [`docs/DATA.md`](docs/DATA.md)).
 
 > **Default branch** is **`main`**; integration branch **`dev`** tracks ongoing work.
+
+## Documentation
+
+Formal specs and architecture docs live under [`docs/`](docs/). Start here:
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | Functional & non-functional requirements (FR/NFR) with traceability to code |
+| [`docs/API_SPEC.md`](docs/API_SPEC.md) | Public Spring API + internal FastAPI inference contract |
+| [`docs/PRD.md`](docs/PRD.md) | Product requirements (problem, vision, features) |
+| [`docs/TechSpec.md`](docs/TechSpec.md) | Technical specification — stack, data flow, deployment |
+| [`docs/DESIGN_RULES.md`](docs/DESIGN_RULES.md) | Frontend UI tokens, layout safe zones, control semantics |
+| [`docs/BACKEND_ERD.md`](docs/BACKEND_ERD.md) | Session / frame / detection persistence schema |
+| [`docs/DETECTION_3CLASS_PLAN.md`](docs/DETECTION_3CLASS_PLAN.md) | Planned 3-class rollout (`person` / `wheelchair` / `luggage`) |
+| [`docs/DATA.md`](docs/DATA.md) | Dataset layout, DVC remotes, `data.yaml` conventions |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Living design-decisions hub (links to ADRs) |
+| [`docs/reports/Final_Training_Report.md`](docs/reports/Final_Training_Report.md) | YOLOv8m training phases, mAP, hyperparameters |
+| [`docs/architecture/`](docs/architecture/) | System architecture, data pipeline, repo layout |
+| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
+| [`docs/runbooks/`](docs/runbooks/) | SageMaker migration, self-training policy |
+| [`docs/diagrams/`](docs/diagrams/) | UML / SysML diagram suite |
+
+Per-service run guides: [`application/frontend/README.md`](application/frontend/README.md),
+[`application/backend/README.md`](application/backend/README.md),
+[`application/inference-service/README.md`](application/inference-service/README.md).
 
 ## ClearML (Experiment Tracking)
 
@@ -141,7 +168,7 @@ Training is implemented with **Ultralytics YOLO** and [`train/scripts/train_yolo
 | **Split ratio** | Train / val / test **8 : 1 : 1** (see `train/src/data/split_by_sequence.py`) |
 | **Defaults** | 100 epochs, early-stop patience 20, batch 16, dataloader `workers` 4 (suits **ml.g4dn.xlarge**: T4, 16 GB system RAM) |
 | **Device** | Omit `--device` to auto-select **CUDA** if available, else CPU; or `--device 0` / `CROWDNAV_DEVICE=cpu` |
-| **Cloud** | **AWS SageMaker** Notebook/Studio on **ml.g4dn.xlarge** — run the same command on the instance; **no S3** required (data on EBS next to the repo) |
+| **Cloud** | **AWS SageMaker** via [`infra/sagemaker/sagemaker_launch.py`](infra/sagemaker/sagemaker_launch.py) — default **ml.g5.xlarge** (A10G); see [`docs/runbooks/SageMaker_Migration_Plan.md`](docs/runbooks/SageMaker_Migration_Plan.md) |
 | **Local** | Same commands on a machine with **NVIDIA CUDA** installed |
 
 **One-shot train** (from `train/`):
@@ -170,7 +197,7 @@ graph LR
     E -->     F[data.yaml]
     F --> G[YOLO training\ntrain/scripts/train_yolo.py]
     G --> H[Weights\nbest.pt / last.pt]
-    H --> I[Inference\ncollision_avoidance.py]
+    H --> I[Inference\napplication/inference-service]
 ```
 
 ### DVC Workflow Overview
@@ -250,6 +277,7 @@ git push origin main
 <summary><strong>Table of Contents</strong></summary>
 
 - [Run the Application (Live Demo)](#run-the-application-live-demo)
+- [Documentation](#documentation)
 - [Team Members](#team-members)
 - [Project Abstract](#project-abstract)
 - [Additional Support Required](#additional-support-required)
@@ -287,7 +315,7 @@ Navigating densely populated transport hubs presents significant barriers to saf
 *   **Output:** Actionable alerts (Visual/Audio) via a simplified inference pipeline.
 
 ### Dataset Details
-*   **Crowd Detection & Tracking:** **[JRDB Dataset](https://jrdb.erc.monash.edu/)**, a large-scale dataset of indoor and outdoor social navigation collected from a social mobile robot, providing wheelchair-height 360-degree cylindrical panoramic video and 3D point clouds for pedestrian detection.
+*   **Crowd Detection & Tracking:** **[JRDB Dataset](https://jrdb.erc.monash.edu/)** — collected at Stanford University with the JackRabbot mobile robot; benchmark hosted by Monash ERC. Provides wheelchair-height 360° panoramic video and 3D point clouds for pedestrian detection.
 *   **Validation & Context:** **JRDB POV Context**, applying the dataset's lower-vantage perspective to validate proximity heuristics in realistic, crowded hub environments.
 
 ## Additional Support Required
@@ -315,10 +343,10 @@ To successfully achieve the project outcomes, the team anticipates requiring the
 │   ├── inference-service/    # Python FastAPI + Ultralytics YOLO (best.pt)
 │   └── models/               # place best.pt here for Docker (gitignored)
 ├── infra/
-│   ├── docker/               # Dockerfile, docker-compose.yml
+│   ├── docker/               # thin compose wrapper → application/docker-compose.yml
 │   ├── sagemaker/            # sagemaker_launch.py, sagemaker_train.py
-│   └── setup.sh
-├── docs/                     # TechSpec, PRD, architecture, runbooks, diagrams (UML/SysML)
+│   └── setup.sh              # optional SageMaker Studio lifecycle hook
+├── docs/                     # REQUIREMENTS, API_SPEC, PRD, TechSpec, architecture, ADRs, runbooks
 ├── .github/workflows/
 └── .dvc/                     # DVC config (repo root)
 ```
@@ -546,7 +574,7 @@ flowchart TD
     L --> A
 ```
 
-### Diagram 3: Training Pipeline Sequence (YOLO + Keras)
+### Diagram 3: Training Pipeline Sequence (YOLO)
 
 ```mermaid
 sequenceDiagram
@@ -555,11 +583,10 @@ sequenceDiagram
     participant Conv as converter (preprocessing)
     participant Split as split_by_sequence
     participant CML as ClearMLSetup
-
-    rect rgb(240,248,255)
-    note right of JRDB: Path A — YOLO Training
     participant TP as TrainPipeline (YOLO)
     participant YOut as YOLO ModelOut (.pt/.onnx)
+    participant INF as inference-service
+
     JRDB->>IO: raw JSON / pseudo-labels
     IO->>Conv: AnnotationRecord stream
     Conv-->>Split: YOLO label files + classes.txt
@@ -568,20 +595,6 @@ sequenceDiagram
     loop Training Epochs
         TP->>CML: log_metric(loss, mAP)
     end
-    TP->>YOut: export()
-    end
-
-    rect rgb(255,248,240)
-    note right of Split: Path B — Keras (optional, local or SageMaker if configured)
-    participant COCO as yolo_to_coco converter
-    participant KT as train_keras (SageMaker)
-    participant KOut as Keras ModelOut (SavedModel)
-    Split-->>COCO: YOLO splits
-    COCO-->>KT: COCO JSON + images
-    KT->>CML: log_hyperparams()
-    loop Training Epochs
-        KT->>CML: log_metric(loss, mAP)
-    end
-    KT->>KOut: save model
-    end
+    TP->>YOut: export best.pt
+    YOut->>INF: deploy to application/models/
 ```

@@ -1,6 +1,6 @@
 ---
-last_updated: 2026-05-05
-status: PLACEHOLDER — 디자인 결정 채워넣을 골격
+last_updated: 2026-06-17
+status: active — §9 dashboard UI design added
 related_code:
   - train/src/
   - application/
@@ -71,9 +71,8 @@ Domain → Preprocessing → Inference → MLOps
 | Backend | `RemoteAnalyzeFrameService` | (Spring 빈) | RestClient (HTTP/1.1) | **구현 완료** — FastAPI inference 호출, `remote` 기본 모드 |
 | Frontend | `application/frontend/src/App.tsx` | Vite 6 | React 19.2.5, axios 1.16, styled-components 6.4 | 컴포넌트 3개 (VideoFeed, Controls, StatPanel), 모두 stateless |
 | Inference svc | `application/inference-service/main.py` | FastAPI 0.115 | uvicorn + ultralytics | **구현 완료** — `/internal/infer` 가 YOLOv8 person detection + proximity heuristics 수행 |
-| Infra | `infra/docker/` | `docker-compose.yml` (Jupyter Lab) | pytorch:2.5.1-cuda12.1 | **학습 미수행** — dev 환경 전용 |
-| Infra | `infra/sagemaker/sagemaker_launch.py` → `sagemaker_train.py` | boto3 + SageMaker SDK | ultralytics | 실제 학습 경로. ml.g5.xlarge 디폴트 |
-| Infra | `infra/train_skeleton.py`, `train_keras_skeleton.py` | (orphan?) | tensorflow/keras | **레거시 후보** — YOLO 라인과 무관 |
+| Infra | `infra/docker/` | `include` → [`application/docker-compose.yml`](../../application/docker-compose.yml) | docker compose | Thin wrapper; `MODEL_DIR` override for SageMaker weights |
+| Infra | `infra/sagemaker/sagemaker_launch.py` → `sagemaker_train.py` | boto3 + SageMaker SDK + `TrainPipeline` | ultralytics, `crowdnav-train` | 학습 전용. repo root bundle + `.sagemakerignore`. ml.g5.xlarge 디폴트 |
 | Legacy | `PROJECTS/CrowdNav/` | (잔존) | — | [LEGACY_CATALOG.md](architecture/LEGACY_CATALOG.md) 참조 |
 
 ### 2.3 호출 흐름 (sequence) — 현재 mock 모드 기준
@@ -122,8 +121,8 @@ sequenceDiagram
 - 모델 가중치 4종 (~193MB) — provenance 불명
 - `auto_labels_08/` 446K 라벨 파일 — 중복 검증 필요
 - `.env` 파일에 ClearML 5개 키 평문 노출 ⚠️
-- `infra/train_skeleton.py`, `train_keras_skeleton.py` — Keras orphan
-- `train/scripts/*.py` 의 `sys.path.insert` 핵 4곳
+- ~~`infra/train_skeleton.py`, `train_keras_skeleton.py`~~ — **삭제됨** (ADR-0009)
+- ~~`train/scripts/*.py` 의 `sys.path.insert` 핵~~ — **제거됨** (ADR-0010)
 
 ### 3.2 처리 정책 (3택, 결정 필요)
 
@@ -137,7 +136,7 @@ sequenceDiagram
 ### 3.3 잔존 import / hardcoded path 검사
 
 - `train/src/repo_paths.py` 가 path resolver — OK
-- `train/scripts/{train_yolo,self_train_loop,automate_preprocessing,run_auto_labeling}.py` 모두 `sys.path.insert(0, str(PROJECT_ROOT))` 사용 — 패키지 install 경로 정리 후 제거 가능
+- `pip install -e ./train` 로 `from src.*` import (ADR-0010) — OK
 - `train/src/data/prepare/pseudo_label.py` 가 `pseudo_label_yolov8.main()` 그대로 위임 — backward-compat 목적, 정리 후보
 
 ---
@@ -170,9 +169,7 @@ sequenceDiagram
 - <TBD: 정책과 코드의 정합성 검사 결과>
 
 ### 4.6 Docker stack 의 역할 (W4 발견)
-현재 `infra/docker/Dockerfile` 의 entry 가 **Jupyter Lab** — 학습 안 함, dev 환경 전용.
-- 의도된 동작인가? 아니면 `sagemaker_train.py` 를 docker 안에서도 돌릴 의도였나?
-- 후보 ADR: `ADR-0011-docker-role-clarification.md`
+~~현재 `infra/docker/Dockerfile` 의 entry 가 **Jupyter Lab**~~ → **해소됨 (ADR-0003, ADR-0011 흡수)**. Canonical stack: `application/docker-compose.yml`; `infra/docker/` 는 thin wrapper.
 
 ### 4.7 yolov8n.pt 중복
 repo root 에 `yolov8n.pt` (6.5MB) 가 있고, `PROJECTS/CrowdNav/yolov8n.pt` (6.3MB) 도 존재. 중복일 가능성 큼.
@@ -230,3 +227,115 @@ Orchestrator-Workers 패턴 강제.
 | 2026-05-05 | placeholder 골격 생성 | Claude (Cowork mode) |
 | 2026-05-05 | Step A 병렬 분석(W1~W5) 결과 §2.2/§2.3/§3 반영, §4.6/§4.7 추가, LEGACY_CATALOG.md 분리 | Claude (Cowork mode) |
 | 2026-05-05 | ADR-0002/0003/0008/0009/0010 Accepted, §5 Decided 표 갱신 (브랜치 `docs/design-decisions`) | Claude + 사용자 결정 |
+| 2026-06-17 | §9 Dashboard UI / button interaction design + evaluate matrix (spec-design) | Agent |
+
+---
+
+## 9. Dashboard UI — Button Interaction & Layout
+
+> **Status:** Active (2026-06-17). Implements FR-UI-1 … FR-UI-6 from [`REQUIREMENTS.md`](REQUIREMENTS.md) §2.1.
+> Judge report: [`reports/ui_spec_judge_evaluation.md`](reports/ui_spec_judge_evaluation.md).
+
+### 9.1 Overview
+
+**Scope:** Single-page dashboard monitoring UX — start/stop camera, 500 ms analyze loop, live overlays, stats sidebar.
+
+**Out of scope (this release):** Record/Export, Generate Report, session `session_id` UI on dashboard (FR-11 frontend), true pause/resume.
+
+**In scope (2026-06-17+):** Multi-page routing — Analytics, Live Map (OpenFreeMap), Archive (session API), Settings.
+
+### 9.2 Layout architecture
+
+```mermaid
+graph TB
+  subgraph fixedLayers [FixedLayers]
+    TopNav["TopNav z-50 header 64px"]
+    Sidebar["StatsSidebar z-40 width 320px"]
+    ControlBar["ControlBar z-50 bottom floating"]
+  end
+  VideoStage["VideoStage z-0 full viewport"]
+  TopNav --> VideoStage
+  Sidebar --> VideoStage
+  ControlBar --> VideoStage
+```
+
+**Safe zone tokens** (`application/frontend/src/shared/config/theme/tokens.ts`):
+
+| Zone | Token | Value |
+|------|-------|-------|
+| Header | `layout.headerHeight` | 64px |
+| Sidebar | `layout.sidebarWidth` | 320px |
+| Control bar | `layout.controlBarHeight` | 72px |
+| Overlay bottom inset | `layout.videoSafeInsetBottom` | 96px (control bar + spacing) |
+
+Below 1024px the sidebar hides; alert chip repositions under the header.
+
+### 9.3 Button interaction design
+
+| Control | Visible when | Handler | Side effects |
+|---------|--------------|---------|--------------|
+| Start Monitoring | `!running` | `handleStart` | Reset alerts/history → `useCrowdDetection.start()` |
+| Stop Monitoring | `running` | `handleStop` | `$variant="danger"` — full stop |
+| Stop icon | `running` | `handleStop` | Same as Stop Monitoring |
+| Record / Export | always | — | Disabled, `title="Coming soon"` |
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Starting: clickStart
+  Starting --> Running: cameraGranted
+  Starting --> Idle: cameraDenied
+  Running --> Idle: clickStop
+```
+
+### 9.4 Component responsibilities (FSD)
+
+| Layer | Module | Responsibility |
+|-------|--------|----------------|
+| `pages` | `DashboardPage.tsx` | Wire features + widgets; alert orchestration |
+| `widgets` | `ControlBar.tsx` | Presentation-only controls |
+| `widgets` | `VideoStage.tsx` | Video + overlays within safe zones |
+| `widgets` | `StatsSidebar.tsx` | Live stats + alert list |
+| `features` | `useCrowdDetection.ts` | Camera, interval, API calls |
+| `features` | `useRiskAlerts.ts` | Speech/vibration on risk |
+| `shared` | `tokens.ts` | Layout safe-zone constants |
+
+### 9.5 Error handling
+
+- **Camera denied:** `reportError("Start error", …)`; remain Idle; no interval started.
+- **Analyze API failure:** Log via `reportError`; keep loop running (no crash).
+- **Unmount:** `useCrowdDetection` cleanup stops tracks and clears interval.
+
+### 9.6 Testing strategy
+
+- **Manual:** Docker stack + webcam — Start → bbox/stats update → Stop → cleared state.
+- **Automated (Could):** Vitest + RTL smoke for `ControlBar` enabled/disabled states.
+- **CI:** `npm run build && npm run lint` in `application/frontend/`.
+
+### 9.7 Implementation evaluate matrix
+
+| Req ID | Spec | Implementation | Status |
+|--------|------|----------------|--------|
+| FR-UI-1 | Start → camera + 500 ms loop | `useCrowdDetection.start()` | PASS |
+| FR-UI-2 | Stop releases resources | `stop()` + `handleStop` resets | PASS |
+| FR-UI-3 | Stop = danger variant | `ControlBar` danger styling | PASS |
+| FR-UI-4 | Overlay safe zones | `layout.videoSafeInsetBottom` on `OverlayLayer` | PASS |
+| FR-UI-5 | Placeholders disabled | Record/Export/Generate Report disabled; routes active | PASS |
+| FR-UI-6 | Label "Stop Monitoring" | `ControlBar` label | PASS |
+| FR-5 | People count in panel | `StatsSidebar` StatCard | PASS |
+| FR-11 | `session_id` on analyze | Not sent from frontend | GAP (Should, deferred) |
+| NFR-7 | Token-based styling | `theme.layout.*` for safe zones | PASS |
+
+### 9.8 Multi-page routing (FSD)
+
+| Route | Page | Key widgets / features |
+|-------|------|------------------------|
+| `/` | `DashboardPage` | `DashboardShell`, `useCrowdDetection` |
+| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map`, `weekly-safety-score`, `features/analytics-mock` |
+| `/live-map` | `LiveMapPage` | `live-map-stage` (MapLibre + OpenFreeMap) |
+| `/archive` | `ArchivePage` | `archive-filters`, `session-history-table`, `features/session-archive` → `GET /v1/sessions` |
+| `/settings` | `SettingsPage` | `sensor-sources-grid`, `detection-model-panel`, `features/sensor-settings` |
+
+Shared chrome for non-dashboard pages: `widgets/app-shell`, `widgets/top-nav` (NavLink), `widgets/side-nav`, `widgets/bottom-nav`.
+
+*See [`reports/ui_implementation_evaluate_matrix.md`](reports/ui_implementation_evaluate_matrix.md) for post-fix re-evaluation.*
