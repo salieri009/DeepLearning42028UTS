@@ -40,3 +40,11 @@ warn_unused_ignores = true
 module = ["ultralytics", "ultralytics.*", "clearml.*"]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "src.training.train_pipeline",
+    "src.data.preprocessing.auto_labeler",
+    "src.data.pseudo_label_yolov8",
+]
+disable_error_code = ["attr-defined"]
