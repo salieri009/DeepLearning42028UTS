@@ -48,4 +48,4 @@ a131f86 fix(backend): RemoteAnalyzeFrameService JDK HttpClient HTTP/1.1
 
 ## ADR tracker
 
-See GitHub issue **ADR Decision Log** (single tracking issue for all architecture decisions).
+See GitHub issue [#41 — ADR Decision Log](https://github.com/salieri009/DeepLearning42028UTS/issues/41).
