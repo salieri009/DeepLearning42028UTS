@@ -67,7 +67,7 @@ class TrainPipeline:
         self._last_artifacts: TrainArtifacts | None = None
 
     def _resolve_model(self) -> YOLO:
-        from ultralytics import YOLO  # type: ignore[attr-defined]
+        from ultralytics import YOLO
 
         model_path = Path(self.model_cfg)
         if model_path.exists():
@@ -81,7 +81,7 @@ class TrainPipeline:
 
     def train(self) -> TrainArtifacts:
         """Train the YOLO model and keep track of the produced weights."""
-        from ultralytics import YOLO  # type: ignore[attr-defined]
+        from ultralytics import YOLO
 
         data_yaml_path = Path(self.data_yaml)
         if not data_yaml_path.exists() or not data_yaml_path.is_file():

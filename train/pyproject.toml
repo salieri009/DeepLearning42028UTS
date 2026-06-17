@@ -37,5 +37,5 @@ strict = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["ultralytics.*", "clearml.*"]
+module = ["ultralytics", "ultralytics.*", "clearml.*"]
 ignore_missing_imports = true

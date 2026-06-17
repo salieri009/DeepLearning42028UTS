@@ -13,7 +13,7 @@ from typing import Any
 
 import torch
 from clearml import Task
-from ultralytics import YOLO  # type: ignore[attr-defined]
+from ultralytics import YOLO
 
 from ..repo_paths import repo_root
 from .formats.dataset_config import write_data_yaml_from_class_map
@@ -292,7 +292,7 @@ def main() -> None:
             lines = []
             lowest_conf = None
             if boxes is not None:
-                for box in boxes:  # type: ignore[union-attr]
+                for box in boxes:
                     conf = box.conf[0].item()
                     x, y, w, h = box.xywhn[0].tolist()
 
