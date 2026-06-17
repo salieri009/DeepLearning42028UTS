@@ -15,7 +15,7 @@ const Nav = styled.nav`
   bottom: ${({ theme }) => theme.spacing[6]};
   left: 50%;
   transform: translateX(-50%);
-  z-index: 50;
+  z-index: ${({ theme }) => theme.layout.zIndex.chrome};
   min-width: 320px;
   padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[6]}`};
   border-radius: ${({ theme }) => theme.radius.full};

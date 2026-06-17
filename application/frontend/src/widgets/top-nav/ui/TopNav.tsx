@@ -11,7 +11,7 @@ const Header = styled.header`
   top: 0;
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: ${({ theme }) => theme.layout.zIndex.chrome};
   display: flex;
   align-items: center;
   justify-content: space-between;

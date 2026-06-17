@@ -17,8 +17,8 @@ type DashboardShellProps = {
 export function DashboardShell({ topNav, videoStage, statsSidebar, controlBar }: DashboardShellProps) {
   return (
     <Shell>
-      {topNav}
       {videoStage}
+      {topNav}
       {statsSidebar}
       {controlBar}
     </Shell>
