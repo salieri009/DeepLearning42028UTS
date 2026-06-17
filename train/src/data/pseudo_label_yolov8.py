@@ -9,7 +9,7 @@ import csv
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, cast
 
 import torch
 from clearml import Task
@@ -292,7 +292,7 @@ def main() -> None:
             lines = []
             lowest_conf = None
             if boxes is not None:
-                for box in boxes:
+                for box in cast(Iterable[Any], boxes):
                     conf = box.conf[0].item()
                     x, y, w, h = box.xywhn[0].tolist()
 

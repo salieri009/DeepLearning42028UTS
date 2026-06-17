@@ -77,7 +77,7 @@ jobs:
       - name: Type check with Mypy (strict)
         run: |
           if [ -d src ]; then
-            python -m mypy --strict src
+            python -m mypy --config-file pyproject.toml --strict src
           else
             echo "No src directory found to run Mypy."
           fi
