@@ -1,35 +1,89 @@
-services:
+# =============================================================================
+# CrowdNav webapp — canonical Docker Compose stack (FR-10, ADR-0003).
+#
+#   frontend  : Nginx + Vite build, /api → backend
+#   backend   : Spring Boot 3.5.6, forwards frames to inference
+#   inference : FastAPI + Ultralytics YOLO (best.pt bind-mount)
+#   db        : PostgreSQL 16 (session / frame / detection history)
+#
+# Training is NOT performed here. SageMaker produces best.pt (infra/sagemaker/);
+# place weights at application/models/best.pt or set MODEL_DIR when using
+# infra/docker/ wrapper.
+#
+# Quick start (from this directory):
+#   mkdir -p models && cp inference-service/best.pt models/best.pt
+#   docker compose up --build
+#   → http://localhost
+# =============================================================================
 
-  # ── Python YOLO inference (best.pt) ──────────────────────────────────────
+services:
+  db:
+    image: postgres:16
+    container_name: crowdnav_db
+    environment:
+      POSTGRES_DB: crowdnav
+      POSTGRES_USER: crowdnav
+      POSTGRES_PASSWORD: crowdnav
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crowdnav -d crowdnav"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   inference:
     image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:latest
-    build: ./inference-service          # fallback: build locally
+    build: ./inference-service
+    container_name: crowdnav_inference
     environment:
       MODEL_PATH: /models/best.pt
       CONF_THRESH: "0.35"
+      HOST: 0.0.0.0
+      PORT: "9000"
     volumes:
-      - ./models:/models:ro             # place best.pt in application/models/
-    ports:
-      - "9000:9000"
+      - ${MODEL_DIR:-./models}:/models:ro
+    # Internal only — backend reaches inference via Docker DNS (security: no host publish).
+    expose:
+      - "9000"
+    restart: unless-stopped
 
-  # ── Spring Boot REST API ──────────────────────────────────────────────────
   backend:
     image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:latest
-    build: ./backend/crowdnav-api       # fallback: build locally
+    build: ./backend/crowdnav-api
+    container_name: crowdnav_backend
     environment:
       APP_INFERENCE_MODE: remote
       APP_INFERENCE_BASE_URL: http://inference:9000
       APP_CORS_ALLOWED_ORIGINS: "http://localhost"
+      SERVER_PORT: "8080"
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://db:5432/crowdnav
+      DB_USER: crowdnav
+      DB_PASSWORD: crowdnav
     ports:
       - "8080:8080"
     depends_on:
-      - inference
+      db:
+        condition: service_healthy
+      inference:
+        condition: service_healthy
+    restart: unless-stopped
 
-  # ── React (Nginx) ─────────────────────────────────────────────────────────
   frontend:
     image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:latest
-    build: ./frontend                   # fallback: build locally
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: crowdnav_frontend
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  dbdata: {}
