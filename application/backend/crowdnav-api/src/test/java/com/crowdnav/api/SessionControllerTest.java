@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
+import com.crowdnav.api.support.TestSettingsSupport;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,11 +42,12 @@ class SessionControllerTest {
 	private DetectionRepository detectionRepository;
 
 	@BeforeEach
-	void resetDb() throws InterruptedException {
+	void resetDb() throws Exception {
 		TimeUnit.MILLISECONDS.sleep(200);
 		detectionRepository.deleteAll();
 		frameRepository.deleteAll();
 		sessionRepository.deleteAll();
+		TestSettingsSupport.resetSettings(mockMvc);
 	}
 
 	@Test

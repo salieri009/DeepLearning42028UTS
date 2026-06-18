@@ -7,12 +7,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Base64;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.crowdnav.api.support.TestSettingsSupport;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -23,6 +26,11 @@ class AnalyzeFrameSettingsIntegrationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@BeforeEach
+	void resetSettings() throws Exception {
+		TestSettingsSupport.resetSettings(mockMvc);
+	}
+
 	@Test
 	void analyzeFrame_respectsConfidenceThresholdFromSettings() throws Exception {
 		mockMvc.perform(put("/api/v1/settings")
@@ -30,7 +38,7 @@ class AnalyzeFrameSettingsIntegrationTest {
 						.content("""
 								{
 								  "model": "yolov8-precise",
-								  "confidence": 95,
+								  "confidence": 90,
 								  "density_limit": 64,
 								  "visual_overlays": true,
 								  "audible_alerts": false,

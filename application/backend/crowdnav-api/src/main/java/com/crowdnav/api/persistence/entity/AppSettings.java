@@ -2,9 +2,6 @@ package com.crowdnav.api.persistence.entity;
 
 import java.time.Instant;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,8 +14,7 @@ public class AppSettings {
 	@Id
 	private int id = 1;
 
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(nullable = false, columnDefinition = "jsonb")
+	@Column(nullable = false, length = 4000)
 	private String payload;
 
 	@Column(name = "updated_at", nullable = false)
