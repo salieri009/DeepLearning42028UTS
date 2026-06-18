@@ -82,7 +82,7 @@ From [`docs/PRD.md`](PRD.md) §9 — explicitly **Won't (W)**:
 | Visually-impaired audio feedback | Removed — no audio output. |
 | Wheelchair/luggage detection in the *current shipped model* | The shipped `best.pt` is person-only; multi-class is the **planned** FR-13 (Should). |
 | Pause/resume monitoring (camera stays on, loop paused) | **Won't** — Stop fully releases camera; see FR-UI-6. |
-| Session create UI + `session_id` on analyze-frame | **Could** — backend FR-11/12 ready; frontend wiring deferred. |
+| Session create UI + `session_id` on analyze-frame | **Done** — `useCrowdDetection` auto-creates `WEBCAM` session on Start and passes `session_id` on each analyze call; closes on Stop. |
 
 ## 5. Traceability Matrix
 
