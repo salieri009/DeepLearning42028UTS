@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ThemeProvider } from "styled-components";
+import { AlertHistoryProvider } from "@/app/providers/AlertHistoryProvider";
 import { GlobalStyle, theme } from "@/shared/config/theme";
 
 type AppProvidersProps = {
@@ -10,7 +11,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
-      {children}
+      <AlertHistoryProvider>{children}</AlertHistoryProvider>
     </ThemeProvider>
   );
 }

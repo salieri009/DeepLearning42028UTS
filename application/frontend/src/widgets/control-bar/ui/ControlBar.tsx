@@ -1,10 +1,14 @@
 import styled from "styled-components";
-import { Button, GlassPanel, Icon, VisuallyHidden } from "@/shared/ui";
+import { Button, GlassPanel, Icon } from "@/shared/ui";
 
 type ControlBarProps = {
   running: boolean;
+  recording?: boolean;
+  exportDisabled?: boolean;
   onStart: () => void | Promise<void>;
   onStop: () => void;
+  onRecord?: () => void;
+  onExport?: () => void;
 };
 
 const Toolbar = styled.div`
@@ -30,7 +34,15 @@ const Bar = styled(GlassPanel)`
   overflow-x: auto;
 `;
 
-export function ControlBar({ running, onStart, onStop }: ControlBarProps) {
+export function ControlBar({
+  running,
+  recording = false,
+  exportDisabled = true,
+  onStart,
+  onStop,
+  onRecord,
+  onExport,
+}: ControlBarProps) {
   return (
     <Toolbar role="toolbar" aria-label="Monitoring controls">
       <Bar>
@@ -46,16 +58,29 @@ export function ControlBar({ running, onStart, onStop }: ControlBarProps) {
           </Button>
         )}
 
-        <Button $variant="ghost" disabled title="Coming soon">
-          <Icon name="videocam" size={20} />
-          Record
-          <VisuallyHidden> (coming soon)</VisuallyHidden>
+        <Button
+          type="button"
+          $variant={recording ? "danger" : "ghost"}
+          disabled={!running}
+          onClick={onRecord}
+          aria-pressed={recording}
+          aria-label={recording ? "Stop recording" : "Start recording"}
+          title={running ? (recording ? "Stop recording" : "Record session video") : "Start monitoring to record"}
+        >
+          <Icon name={recording ? "stop" : "videocam"} size={20} />
+          {recording ? "Stop Record" : "Record"}
         </Button>
 
-        <Button $variant="ghost" disabled title="Coming soon">
+        <Button
+          type="button"
+          $variant="ghost"
+          disabled={exportDisabled}
+          onClick={onExport}
+          aria-label="Export session data"
+          title={exportDisabled ? "No session data to export" : "Download session JSON"}
+        >
           <Icon name="download" size={20} />
           Export
-          <VisuallyHidden> (coming soon)</VisuallyHidden>
         </Button>
       </Bar>
     </Toolbar>

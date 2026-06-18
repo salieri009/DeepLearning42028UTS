@@ -40,10 +40,28 @@ describe("ControlBar", () => {
     expect(onStop).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps Record and Export disabled", () => {
-    renderWithProviders(<ControlBar running={false} onStart={vi.fn()} onStop={vi.fn()} />);
+  it("enables Record while running and Export when session data exists", () => {
+    renderWithProviders(
+      <ControlBar
+        running
+        exportDisabled={false}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onRecord={vi.fn()}
+        onExport={vi.fn()}
+      />,
+    );
 
-    expect(screen.getByRole("button", { name: /Record/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Export/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Start recording/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Export session data/i })).toBeEnabled();
+  });
+
+  it("disables Record and Export when idle without session", () => {
+    renderWithProviders(
+      <ControlBar running={false} exportDisabled onStart={vi.fn()} onStop={vi.fn()} />,
+    );
+
+    expect(screen.getByRole("button", { name: /Start recording/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Export session data/i })).toBeDisabled();
   });
 });

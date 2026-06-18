@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
+import { useOptionalAlertHistory } from "@/app/providers/AlertHistoryProvider";
 import { ChromeText, Icon, StatusPill } from "@/shared/ui";
 
 type TopNavProps = {
@@ -66,6 +68,7 @@ const Actions = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[3]};
+  position: relative;
 `;
 
 const IconLink = styled(NavLink)`
@@ -90,6 +93,7 @@ const IconLink = styled(NavLink)`
 `;
 
 const IconButton = styled.button`
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -99,8 +103,63 @@ const IconButton = styled.button`
   border-radius: ${({ theme }) => theme.radius.md};
   background: transparent;
   color: ${({ theme }) => theme.color.textSecondary};
-  cursor: not-allowed;
-  opacity: 0.5;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.primary};
+    background: ${({ theme }) => theme.color.glass.fill};
+  }
+`;
+
+const Badge = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: ${({ theme }) => theme.radius.full};
+  background: ${({ theme }) => theme.color.danger};
+  color: ${({ theme }) => theme.color.textInverse};
+  font-size: 10px;
+  font-weight: ${({ theme }) => theme.typography.weight.bold};
+  line-height: 16px;
+`;
+
+const Dropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  border-radius: ${({ theme }) => theme.radius.lg};
+  border: 1px solid ${({ theme }) => theme.color.glass.border};
+  background: ${({ theme }) => theme.color.surfaceHigh};
+  box-shadow: ${({ theme }) => theme.shadow.md};
+  padding: ${({ theme }) => theme.spacing[3]};
+`;
+
+const DropdownTitle = styled.p`
+  margin: 0 0 ${({ theme }) => theme.spacing[2]};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const AlertRow = styled.div`
+  padding: ${({ theme }) => theme.spacing[2]};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border-left: 3px solid ${({ theme, color }) => color ?? theme.color.warning};
+  margin-bottom: ${({ theme }) => theme.spacing[2]};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+`;
+
+const EmptyNote = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: ${({ theme }) => theme.typography.size[2]};
 `;
 
 const Avatar = styled.div`
@@ -120,6 +179,9 @@ const NAV_ITEMS = [
 ] as const;
 
 export function TopNav({ running = false }: TopNavProps) {
+  const { alerts, formatAlertMeta } = useOptionalAlertHistory();
+  const [open, setOpen] = useState(false);
+
   return (
     <Header>
       <BrandGroup>
@@ -136,9 +198,48 @@ export function TopNav({ running = false }: TopNavProps) {
       </TabGroup>
 
       <Actions>
-        <IconButton type="button" disabled title="Coming soon" aria-label="Notifications (coming soon)">
+        <IconButton
+          type="button"
+          aria-label="Notifications"
+          aria-expanded={open}
+          aria-haspopup="menu"
+          onClick={() => setOpen((prev) => !prev)}
+        >
           <Icon name="notifications" size={22} />
+          {alerts.length > 0 ? <Badge>{alerts.length}</Badge> : null}
         </IconButton>
+        {open ? (
+          <Dropdown role="menu" aria-label="Recent alerts">
+            <DropdownTitle>Recent Alerts</DropdownTitle>
+            {alerts.length === 0 ? (
+              <EmptyNote>No alerts yet. Start monitoring on the dashboard.</EmptyNote>
+            ) : (
+              alerts.map((alert) => (
+                <AlertRow
+                  key={alert.id}
+                  color={
+                    alert.risk === "DANGER"
+                      ? undefined
+                      : alert.risk === "WARNING"
+                        ? undefined
+                        : undefined
+                  }
+                  style={{
+                    borderLeftColor:
+                      alert.risk === "DANGER"
+                        ? "var(--danger, #ef4444)"
+                        : alert.risk === "WARNING"
+                          ? "var(--warning, #eab308)"
+                          : undefined,
+                  }}
+                >
+                  <strong>{alert.message}</strong>
+                  <div style={{ opacity: 0.7, fontSize: "0.85em" }}>{formatAlertMeta(alert)}</div>
+                </AlertRow>
+              ))
+            )}
+          </Dropdown>
+        ) : null}
         <IconLink to="/settings" aria-label="Settings">
           <Icon name="settings" size={22} />
         </IconLink>

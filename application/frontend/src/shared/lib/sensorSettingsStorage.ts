@@ -18,3 +18,7 @@ export function loadSensorSettings(): SensorSettingsState {
 export function saveSensorSettings(settings: SensorSettingsState): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
+
+export function clearSensorSettings(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

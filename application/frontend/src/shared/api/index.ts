@@ -12,3 +12,5 @@ export {
   listSessions,
 } from "./sessions";
 export type { ListDetectionsParams } from "./sessions";
+export { getBackendHealth, getBackendReadiness, getSettingsModelLabel } from "./health";
+export type { HealthResponse } from "./health";

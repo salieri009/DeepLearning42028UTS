@@ -9,13 +9,15 @@ import {
   getRiskBadgeVariant,
 } from "@/entities/crowd-stats";
 import type { AlertEntry } from "@/features/alert-history";
-import { Button, ChromeText, Icon, Label, Text, VisuallyHidden } from "@/shared/ui";
+import { Button, ChromeText, Icon, Label, Text } from "@/shared/ui";
 
 type StatsSidebarProps = {
   data: AnalyzeFrameResponse | null;
   latencyMs: number | null;
   alerts: AlertEntry[];
   formatAlertMeta: (entry: AlertEntry) => string;
+  onGenerateReport?: () => void;
+  reportDisabled?: boolean;
 };
 
 const Aside = styled.aside`
@@ -123,7 +125,14 @@ const EmptyText = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-export function StatsSidebar({ data, latencyMs, alerts, formatAlertMeta }: StatsSidebarProps) {
+export function StatsSidebar({
+  data,
+  latencyMs,
+  alerts,
+  formatAlertMeta,
+  onGenerateReport,
+  reportDisabled = true,
+}: StatsSidebarProps) {
   const density = formatDensityLabel(data?.crowd_density);
   const risk = formatRiskLabel(data?.max_proximity_risk);
   const recommendation = formatRecommendation(data?.recommendation);
@@ -203,10 +212,18 @@ export function StatsSidebar({ data, latencyMs, alerts, formatAlertMeta }: Stats
         </AlertsSection>
       </ScrollArea>
 
-      <Button $variant="primary" $fullWidth disabled title="Coming soon" style={{ marginTop: 24 }}>
+      <Button
+        type="button"
+        $variant="primary"
+        $fullWidth
+        disabled={reportDisabled}
+        onClick={onGenerateReport}
+        style={{ marginTop: 24 }}
+        aria-label="Generate live session report"
+        title={reportDisabled ? "Start monitoring to generate a report" : "Download HTML report"}
+      >
         <Icon name="summarize" size={18} />
         Generate Report
-        <VisuallyHidden> (coming soon)</VisuallyHidden>
       </Button>
     </Aside>
   );

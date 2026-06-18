@@ -1,6 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { useCallback, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
-import { Icon } from "@/shared/ui";
+import { getBackendHealth, getBackendReadiness, getSettingsModelLabel } from "@/shared/api";
+import { clearCustomSources } from "@/shared/lib/customSourcesStorage";
+import { clearSensorSettings } from "@/shared/lib/sensorSettingsStorage";
+import { Button, Icon, Modal } from "@/shared/ui";
 
 export type SideNavItem =
   | "security"
@@ -14,6 +18,8 @@ export type SideNavItem =
 type SideNavProps = {
   activeItem: SideNavItem;
 };
+
+type PanelKind = "health" | "assets" | "help" | null;
 
 const ROUTE_BY_ITEM: Partial<Record<SideNavItem, string>> = {
   security: "/",
@@ -106,6 +112,7 @@ const navItemStyles = css`
   text-decoration: none;
   width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
 
   &:hover {
     background: ${({ theme }) => theme.color.glass.border};
@@ -120,13 +127,10 @@ const navItemStyles = css`
 
 const NavItemLink = styled(NavLink)`
   ${navItemStyles}
-  cursor: pointer;
 `;
 
-const NavItemDisabled = styled.button`
+const NavItemButton = styled.button`
   ${navItemStyles}
-  cursor: not-allowed;
-  opacity: 0.55;
 `;
 
 const Footer = styled.div`
@@ -135,6 +139,19 @@ const Footer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing[1]};
+`;
+
+const ModalBody = styled.div`
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  color: ${({ theme }) => theme.color.textPrimary};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[3]};
+`;
+
+const StatusLine = styled.p`
+  margin: 0;
 `;
 
 const ITEMS: { id: SideNavItem; icon: string; label: string }[] = [
@@ -148,49 +165,135 @@ const ITEMS: { id: SideNavItem; icon: string; label: string }[] = [
 ];
 
 export function SideNav({ activeItem }: SideNavProps) {
+  const navigate = useNavigate();
+  const [panel, setPanel] = useState<PanelKind>(null);
+  const [healthText, setHealthText] = useState<string>("");
+  const [assetsText, setAssetsText] = useState<string>("");
+
+  const openHealth = useCallback(async () => {
+    setPanel("health");
+    setHealthText("Loading...");
+    try {
+      const [health, readiness] = await Promise.all([
+        getBackendHealth(),
+        getBackendReadiness(),
+      ]);
+      setHealthText(
+        `Liveness: ${health.status}\nReadiness: ${readiness.status}\n\nComponents:\n${JSON.stringify(readiness.components ?? health.components ?? {}, null, 2)}`,
+      );
+    } catch {
+      setHealthText("Unable to reach backend health endpoints.");
+    }
+  }, []);
+
+  const openAssets = useCallback(async () => {
+    setPanel("assets");
+    setAssetsText("Loading...");
+    try {
+      const model = await getSettingsModelLabel();
+      setAssetsText(
+        `Detection model: ${model}\nWeights: application/models/best.pt (YOLOv8m person-only)\nStack: React → Spring Boot → FastAPI`,
+      );
+    } catch {
+      setAssetsText("Unable to load asset metadata.");
+    }
+  }, []);
+
+  const handleLogout = () => {
+    clearCustomSources();
+    clearSensorSettings();
+    navigate("/");
+  };
+
   return (
-    <Aside aria-label="Primary navigation">
-      <NodeCard>
-        <NodeIcon>
-          <Icon name="hub" size={22} />
-        </NodeIcon>
-        <div>
-          <NodeTitle>Node Alpha</NodeTitle>
-          <NodeSubtitle>Active Monitoring</NodeSubtitle>
-        </div>
-      </NodeCard>
+    <>
+      <Aside aria-label="Primary navigation">
+        <NodeCard>
+          <NodeIcon>
+            <Icon name="hub" size={22} />
+          </NodeIcon>
+          <div>
+            <NodeTitle>Node Alpha</NodeTitle>
+            <NodeSubtitle>Active Monitoring</NodeSubtitle>
+          </div>
+        </NodeCard>
 
-      <NavList>
-        {ITEMS.map(({ id, icon, label }) => {
-          const to = ROUTE_BY_ITEM[id];
-          if (to) {
-            return (
-              <NavItemLink key={id} to={to} end={to === "/"} aria-current={activeItem === id ? "page" : undefined}>
-                <Icon name={icon} size={20} filled={activeItem === id} />
-                {label}
-              </NavItemLink>
-            );
-          }
+        <NavList>
+          {ITEMS.map(({ id, icon, label }) => {
+            const to = ROUTE_BY_ITEM[id];
+            if (to) {
+              return (
+                <NavItemLink
+                  key={id}
+                  to={to}
+                  end={to === "/"}
+                  className={activeItem === id ? "active" : undefined}
+                  aria-current={activeItem === id ? "page" : undefined}
+                >
+                  <Icon name={icon} size={20} filled={activeItem === id} />
+                  {label}
+                </NavItemLink>
+              );
+            }
 
-          return (
-            <NavItemDisabled key={id} type="button" disabled title="Coming soon" aria-label={`${label} (coming soon)`}>
-              <Icon name={icon} size={20} />
-              {label}
-            </NavItemDisabled>
-          );
-        })}
-      </NavList>
+            if (id === "health") {
+              return (
+                <NavItemButton key={id} type="button" onClick={() => void openHealth()}>
+                  <Icon name={icon} size={20} />
+                  {label}
+                </NavItemButton>
+              );
+            }
 
-      <Footer>
-        <NavItemDisabled type="button" disabled title="Coming soon" aria-label="Help (coming soon)">
-          <Icon name="help" size={20} />
-          Help
-        </NavItemDisabled>
-        <NavItemDisabled type="button" disabled title="Coming soon" aria-label="Logout (coming soon)">
-          <Icon name="logout" size={20} />
-          Logout
-        </NavItemDisabled>
-      </Footer>
-    </Aside>
+            if (id === "assets") {
+              return (
+                <NavItemButton key={id} type="button" onClick={() => void openAssets()}>
+                  <Icon name={icon} size={20} />
+                  {label}
+                </NavItemButton>
+              );
+            }
+
+            return null;
+          })}
+        </NavList>
+
+        <Footer>
+          <NavItemButton type="button" onClick={() => setPanel("help")} aria-label="Help">
+            <Icon name="help" size={20} />
+            Help
+          </NavItemButton>
+          <NavItemButton type="button" onClick={handleLogout} aria-label="Logout and clear local data">
+            <Icon name="logout" size={20} />
+            Logout
+          </NavItemButton>
+        </Footer>
+      </Aside>
+
+      <Modal open={panel === "health"} title="System Health" onClose={() => setPanel(null)}>
+        <ModalBody>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{healthText}</pre>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={panel === "assets"} title="Deployed Assets" onClose={() => setPanel(null)}>
+        <ModalBody>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{assetsText}</pre>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={panel === "help"} title="CrowdNav Help" onClose={() => setPanel(null)} width="640px">
+        <ModalBody>
+          <StatusLine>S1 — Dashboard: Start Monitoring for live crowd and proximity guidance.</StatusLine>
+          <StatusLine>S2 — Archive: Review persisted sessions and export JSON bundles.</StatusLine>
+          <StatusLine>S3 — Live Map: GPS position plus zone congestion markers.</StatusLine>
+          <StatusLine>S4 — Analytics: Weekly safety score and peak density charts.</StatusLine>
+          <StatusLine>S5 — Settings: Tune confidence threshold and detection model.</StatusLine>
+          <Button type="button" $variant="primary" onClick={() => setPanel(null)}>
+            Got it
+          </Button>
+        </ModalBody>
+      </Modal>
+    </>
   );
 }

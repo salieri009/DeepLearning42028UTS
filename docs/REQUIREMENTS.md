@@ -78,8 +78,14 @@ Cross-artifact coverage check (spec-kit `/speckit.analyze` equivalent). PRD is r
 | **FR-UI-2** | WHEN the user clicks **Stop Monitoring** (primary pill) or the **Stop** icon while running, the system SHALL clear the capture interval, stop all `MediaStream` tracks, cancel speech, reset alerts/history, and clear on-screen stats. | M | §5.2 | `DashboardPage.tsx`, `useCrowdDetection.stop()` | Manual: Stop → camera off, panel empty. |
 | **FR-UI-3** | Stop controls SHALL use the `danger` button variant per [`DESIGN_RULES.md`](DESIGN_RULES.md) §3.1. | M | §5.2 | `ControlBar.tsx` | Visual: Stop pill + icon use danger styling. |
 | **FR-UI-4** | Video overlays (bounding boxes, alert chips) SHALL stay within layout safe zones: header 64 px, sidebar 320 px (≥1024 px), control bar reserve 72 px from bottom. | M | §5.2 | `tokens.ts` `layout.*`, `VideoStage.tsx` | Visual: no overlap with fixed chrome at 1280×720+. |
-| **FR-UI-5** | Placeholder controls (Record, Export, Generate Report, header notifications) SHALL remain disabled with `title="Coming soon"` until implemented. Analytics / Live Map / Archive / Settings routes are active. | C | — | `ControlBar.tsx`, `TopNav.tsx`, `StatsSidebar.tsx` | Manual: disabled + tooltip on placeholders only. |
+| **FR-UI-5** | ~~Placeholder controls~~ **Implemented (2026-06-18):** Record (WebM via `MediaRecorder`), Export (session JSON), Generate Report (HTML), header notifications dropdown. Analytics / Live Map / Archive / Settings routes remain active. | C | — | `ControlBar.tsx`, `TopNav.tsx`, `StatsSidebar.tsx`, `features/session-recording/`, `features/session-export/`, `features/report-generation/` | Vitest: `ControlBar.test.tsx`, `DashboardPage.test.tsx`. |
 | **FR-UI-6** | The running-state primary control label SHALL read **Stop Monitoring** (not "Pause"); true pause/resume semantics are **Won't** this release. | M | — | `ControlBar.tsx` | Visual: label matches behavior. |
+| **FR-UI-7** | WHEN the user clicks **Record** while monitoring, the system SHALL capture the camera stream to WebM and download on stop. | C | — | `features/session-recording/useSessionRecording.ts`, `ControlBar.tsx` | Manual + `ControlBar.test.tsx`. |
+| **FR-UI-8** | WHEN the user clicks **Export** on the dashboard with an active or recent session, the system SHALL download session + frames + detections as JSON. | C | — | `features/session-export/exportLiveSession.ts` | `DashboardPage.test.tsx`. |
+| **FR-UI-9** | WHEN the user clicks **Generate Report** (dashboard or archive preview), the system SHALL produce a printable HTML report (stats + alerts or frame trail). | C | — | `features/report-generation/buildHtmlReport.ts` | `buildHtmlReport.test.ts`. |
+| **FR-UI-10** | Header **Notifications** SHALL show recent WARNING/DANGER alerts from the live monitoring session (text only). | C | — | `AlertHistoryProvider.tsx`, `TopNav.tsx` | Manual on dashboard. |
+| **FR-UI-11** | Settings **Add Source** and per-custom-source **Settings** SHALL persist sensor metadata in `localStorage`. | C | — | `shared/lib/customSourcesStorage.ts`, `SensorSourceGrid.tsx` | `SettingsPage.test.tsx`, `customSourcesStorage.test.ts`. |
+| **FR-UI-12** | SideNav **Health**, **Assets**, **Help**, and **Logout** SHALL open health/readiness, asset metadata, scenario help, or clear local preferences respectively. | C | — | `SideNav.tsx`, `shared/api/health.ts` | `SideNav.test.tsx`. |
 
 ## 3. Non-Functional Requirements
 
@@ -119,7 +125,7 @@ From [`docs/PRD.md`](PRD.md) §9 — explicitly **Won't (W)**:
 | FR-3 (logic origin) | §5.1 | `train/src/inference/collision_avoidance.py` |
 | FR-4, FR-10 (UI) | §5.2 | `application/frontend/src/widgets/video-stage/`, `entities/detection/PersonBBox.tsx` |
 | FR-5 | §5.2 | `application/frontend/src/widgets/stats-sidebar/ui/StatsSidebar.tsx` |
-| FR-UI-1 … FR-UI-6 | §5.2, §5.3 | `pages/dashboard/`, `widgets/control-bar/`, `features/crowd-detection/` — see [`DESIGN.md`](DESIGN.md) §9 |
+| FR-UI-1 … FR-UI-12 | §5.2, §5.3 | `pages/dashboard/`, `widgets/control-bar/`, `features/crowd-detection/`, placeholder features — see [`DESIGN.md`](DESIGN.md) §9 |
 | FR-UI (pages) | §3 Vision | `pages/analytics/`, `pages/live-map/`, `pages/archive/`, `pages/settings/` — see [`DESIGN.md`](DESIGN.md) §9.8 |
 | FR-6, FR-8 | §5.1 | `application/backend/crowdnav-api/.../controller/AnalyzeFrameController.java` |
 | FR-7, FR-8 | §5.1 | `application/backend/crowdnav-api/.../service/RemoteAnalyzeFrameService.java` |

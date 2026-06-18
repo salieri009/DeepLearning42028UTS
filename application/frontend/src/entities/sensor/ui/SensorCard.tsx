@@ -4,6 +4,7 @@ import { Icon } from "@/shared/ui";
 
 type SensorCardProps = {
   source: SensorSource;
+  onOpenSettings?: () => void;
 };
 
 const Card = styled.article`
@@ -114,12 +115,17 @@ const SettingsButton = styled.button`
   color: ${({ theme }) => theme.color.textSecondary};
   cursor: pointer;
 
-  &:hover {
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
     color: ${({ theme }) => theme.color.primary};
   }
 `;
 
-export function SensorCard({ source }: SensorCardProps) {
+export function SensorCard({ source, onOpenSettings }: SensorCardProps) {
   return (
     <Card>
       <Feed>
@@ -139,9 +145,10 @@ export function SensorCard({ source }: SensorCardProps) {
         </div>
         <SettingsButton
           type="button"
-          disabled
-          title="Coming soon"
-          aria-label={`Settings for ${source.name} (coming soon)`}
+          onClick={onOpenSettings}
+          disabled={!onOpenSettings}
+          aria-label={`Settings for ${source.name}`}
+          title={onOpenSettings ? "Edit source settings" : "Session sources are read-only"}
         >
           <Icon name="settings" size={20} />
         </SettingsButton>

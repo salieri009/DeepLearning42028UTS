@@ -1,7 +1,10 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { AnalyzeFrameResponse } from "@/entities/detection";
-import { useAlertHistory } from "@/features/alert-history";
+import { useAlertHistoryContext } from "@/app/providers/AlertHistoryProvider";
 import { useCrowdDetection } from "@/features/crowd-detection";
+import { exportLiveSession } from "@/features/session-export";
+import { buildHtmlReport, downloadHtmlReport } from "@/features/report-generation";
+import { useSessionRecording } from "@/features/session-recording";
 import { useRiskAlerts } from "@/features/risk-alerts";
 import { ControlBar } from "@/widgets/control-bar";
 import { DashboardShell } from "@/widgets/dashboard-shell";
@@ -12,7 +15,9 @@ import { LiveRegion } from "@/shared/ui";
 
 export function DashboardPage() {
   const { triggerAlert, reset: resetAlerts, cancel: cancelSpeech } = useRiskAlerts();
-  const { alerts, pushFromRisk, reset: resetHistory, formatAlertMeta } = useAlertHistory();
+  const { alerts, pushFromRisk, reset: resetHistory, formatAlertMeta } = useAlertHistoryContext();
+  const { recording, toggleRecording, stopRecording } = useSessionRecording();
+  const [exporting, setExporting] = useState(false);
 
   const handleAnalyzed = useCallback(
     (response: AnalyzeFrameResponse) => {
@@ -23,9 +28,21 @@ export function DashboardPage() {
     [triggerAlert, pushFromRisk],
   );
 
-  const { running, data, latencyMs, videoRef, start, stop } = useCrowdDetection({
+  const {
+    running,
+    data,
+    latencyMs,
+    sessionId,
+    lastSessionId,
+    videoRef,
+    getStream,
+    start,
+    stop,
+  } = useCrowdDetection({
     onAnalyzed: handleAnalyzed,
   });
+
+  const exportSessionId = sessionId ?? lastSessionId;
 
   const handleStart = async () => {
     resetAlerts();
@@ -34,10 +51,34 @@ export function DashboardPage() {
   };
 
   const handleStop = () => {
+    if (recording) stopRecording(true);
     stop();
     cancelSpeech();
     resetAlerts();
     resetHistory();
+  };
+
+  const handleRecord = () => {
+    toggleRecording(getStream());
+  };
+
+  const handleExport = () => {
+    if (exportSessionId == null || exporting) return;
+    setExporting(true);
+    void exportLiveSession(exportSessionId).finally(() => setExporting(false));
+  };
+
+  const handleGenerateReport = () => {
+    const html = buildHtmlReport({
+      kind: "live",
+      generatedAt: new Date().toISOString(),
+      sessionId: exportSessionId,
+      data,
+      latencyMs,
+      alerts,
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadHtmlReport(html, `crowdnav-live-report-${stamp}.html`);
   };
 
   const liveMessage = useMemo(() => {
@@ -64,9 +105,21 @@ export function DashboardPage() {
           latencyMs={latencyMs}
           alerts={alerts}
           formatAlertMeta={formatAlertMeta}
+          onGenerateReport={handleGenerateReport}
+          reportDisabled={!data}
         />
       }
-      controlBar={<ControlBar running={running} onStart={handleStart} onStop={handleStop} />}
+      controlBar={
+        <ControlBar
+          running={running}
+          recording={recording}
+          exportDisabled={exportSessionId == null || exporting}
+          onStart={handleStart}
+          onStop={handleStop}
+          onRecord={handleRecord}
+          onExport={handleExport}
+        />
+      }
       liveRegion={
         <LiveRegion message={liveMessage} politeness={alertPoliteness as "polite" | "assertive"} />
       }

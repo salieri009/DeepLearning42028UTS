@@ -18,5 +18,10 @@ public class WebConfig implements WebMvcConfigurer {
 				.allowedMethods("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")
 				.allowedHeaders("*")
 				.maxAge(3600);
+		registry.addMapping("/actuator/**")
+				.allowedOrigins(allowedOrigins)
+				.allowedMethods("GET", "OPTIONS")
+				.allowedHeaders("*")
+				.maxAge(3600);
 	}
 }

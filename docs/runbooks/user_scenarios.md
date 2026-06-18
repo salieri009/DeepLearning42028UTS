@@ -82,7 +82,8 @@ flowchart TB
 2. Grant camera permission → live feed + colour-coded bboxes (SAFE=green, WARNING=yellow, DANGER=red)
 3. Read StatsSidebar: people count, `crowd_density`, `max_proximity_risk`, `recommendation`
 4. On WARNING/DANGER, read text + colour cues in StatsSidebar (PRD §9 — no audio/haptic)
-5. Click **Stop Monitoring** → camera released, panel cleared
+5. Optional: **Record** session video (WebM), **Export** JSON, **Generate Report** (HTML) from ControlBar / StatsSidebar
+6. Click **Stop Monitoring** → camera released, panel cleared
 
 ### Code flow
 
@@ -132,7 +133,9 @@ Implemented (FR-1–5, FR-UI-1–6). Wheelchair **class detection not shipped** 
 2. Each `analyze-frame` call includes `session_id` → async persist (no raw frames)
 3. On Stop, session closed via `PATCH /sessions/{id}`
 4. Open `/archive` → filter by date/risk/source → select session → view worst risk & threat distribution
-5. Click **EXPORT DATA** → downloads JSON bundle (session + frame trail + detections)
+5. Click **VIEW DETAIL** or row to select session preview
+6. Click **EXPORT DATA** → downloads JSON bundle (session + frame trail + detections)
+7. Click **Generate Full PDF Report** → printable HTML report (browser print-to-PDF)
 
 ### Code flow
 

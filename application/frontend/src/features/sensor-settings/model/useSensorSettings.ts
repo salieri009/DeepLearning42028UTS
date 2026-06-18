@@ -6,6 +6,11 @@ import {
   type SensorSource,
 } from "@/entities/sensor";
 import type { SessionResponse } from "@/entities/session";
+import {
+  addCustomSource,
+  loadCustomSources,
+  updateCustomSource,
+} from "@/shared/lib/customSourcesStorage";
 import { getSettings, listSessions, updateSettings } from "@/shared/api";
 import {
   loadSensorSettings,
@@ -25,6 +30,15 @@ function sessionsToSources(sessions: SessionResponse[]): SensorSource[] {
     }));
 }
 
+function mergeSources(sessionSources: SensorSource[]): SensorSource[] {
+  const custom = loadCustomSources();
+  const byId = new Map<string, SensorSource>();
+  for (const source of [...sessionSources, ...custom]) {
+    byId.set(source.id, source);
+  }
+  return [...byId.values()];
+}
+
 export function useSensorSettings() {
   const [sources, setSources] = useState<SensorSource[]>([]);
   const [settings, setSettings] = useState<SensorSettingsState>(() => loadSensorSettings());
@@ -32,6 +46,11 @@ export function useSensorSettings() {
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshSources = useCallback(async (signal?: AbortSignal) => {
+    const sessions = await listSessions(20, 0, signal);
+    setSources(mergeSources(sessionsToSources(sessions.items)));
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,9 +63,9 @@ export function useSensorSettings() {
       setError(null);
 
       try {
-        const [remoteSettings, sessions] = await Promise.all([
+        const [remoteSettings] = await Promise.all([
           getSettings(controller.signal),
-          listSessions(20, 0, controller.signal),
+          refreshSources(controller.signal),
         ]);
 
         const normalized = {
@@ -61,13 +80,13 @@ export function useSensorSettings() {
         setDraft(normalized);
         saveSensorSettings(normalized);
         setDirty(false);
-        setSources(sessionsToSources(sessions.items));
       } catch (err) {
         if (controller.signal.aborted) return;
         reportError(err);
         const local = loadSensorSettings();
         setSettings(local);
         setDraft(local);
+        setSources(mergeSources([]));
         setError("Using local settings; backend unavailable.");
       } finally {
         if (!controller.signal.aborted) {
@@ -77,7 +96,7 @@ export function useSensorSettings() {
     })();
 
     return () => controller.abort();
-  }, []);
+  }, [refreshSources]);
 
   const updateDraft = useCallback(<K extends keyof SensorSettingsState>(
     key: K,
@@ -126,8 +145,26 @@ export function useSensorSettings() {
     setDirty(false);
   };
 
+  const addSource = (name: string, ip: string, feedLabel: string) => {
+    const created = addCustomSource({
+      name,
+      ip,
+      feedLabel,
+      connected: true,
+    });
+    setSources((prev) => [...prev.filter((s) => s.id !== created.id), created]);
+    return created;
+  };
+
+  const updateSource = (id: string, patch: Partial<SensorSource>) => {
+    const updated = updateCustomSource(id, patch);
+    if (!updated) return null;
+    setSources((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  };
+
   return {
-    sources: sources.length > 0 ? sources : [],
+    sources,
     draft,
     dirty,
     loading,
@@ -139,6 +176,8 @@ export function useSensorSettings() {
     setWebrtcAccess,
     save,
     discard,
+    addSource,
+    updateSource,
     defaults: DEFAULT_SETTINGS,
   };
 }

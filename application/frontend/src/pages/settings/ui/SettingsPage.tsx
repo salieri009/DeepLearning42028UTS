@@ -59,7 +59,11 @@ export function SettingsPage() {
           </Notice>
         ) : null}
 
-        <SensorSourcesGrid sources={settings.sources} />
+        <SensorSourcesGrid
+          sources={settings.sources}
+          onAddSource={settings.addSource}
+          onUpdateSource={settings.updateSource}
+        />
 
         <TwoCol>
           <DetectionModelPanel model={settings.draft.model} onChange={settings.setModel} />

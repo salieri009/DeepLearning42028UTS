@@ -1,11 +1,12 @@
-import styled from "styled-components";
 import { useCallback, useState } from "react";
+import styled from "styled-components";
 import { useSessionArchive } from "@/features/session-archive";
 import {
   buildSessionExportBundle,
   downloadSessionJson,
 } from "@/features/session-archive/lib/exportSessionJson";
 import { useSessionPreview } from "@/features/session-archive/model/useSessionPreview";
+import { buildHtmlReport, printHtmlReport } from "@/features/report-generation";
 import { ArchiveFilters } from "@/widgets/archive-filters";
 import { AppShell } from "@/widgets/app-shell";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -83,6 +84,19 @@ export function ArchivePage() {
     }
   }, [archive.selectedDetail, exporting]);
 
+  const handleGenerateReport = useCallback(() => {
+    const session = archive.selectedDetail;
+    if (!session) return;
+    const html = buildHtmlReport({
+      kind: "archive",
+      generatedAt: new Date().toISOString(),
+      session,
+      frames: preview.frames,
+      stats: preview.stats ?? undefined,
+    });
+    printHtmlReport(html);
+  }, [archive.selectedDetail, preview.frames, preview.stats]);
+
   return (
     <AppShell
       topNav={<TopNav />}
@@ -142,6 +156,8 @@ export function ArchivePage() {
             stats={archive.selectedDetail ? preview.stats : null}
             frames={archive.selectedDetail ? preview.frames : []}
             statsError={preview.error}
+            onGenerateReport={handleGenerateReport}
+            reportDisabled={archive.selectedDetail == null}
           />
         </PreviewCol>
       </Grid>

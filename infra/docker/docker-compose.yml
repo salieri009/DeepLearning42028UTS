@@ -1,20 +1,14 @@
 # =============================================================================
-# CrowdNav webapp — multi-service compose (ADR-0003).
-#   frontend  : Nginx static + /api reverse-proxy → backend
-#   backend   : Spring Boot 3.5.6 (Java 21), forwards inference to `inference`
-#   inference : FastAPI + Ultralytics YOLO, loads best.pt from a host volume
+# CrowdNav v2.5.0 — thin wrapper (no PostgreSQL; session APIs need application stack)
+# For full persistence use application/docker-compose.yml
 #
-# Training is NOT performed in this stack. SageMaker produces `best.pt`
-# (see infra/sagemaker/) and the operator drops it into `${MODEL_DIR}/best.pt`
-# on the host before `docker compose up`.
-#
-# Run from `infra/docker/`:
-#   MODEL_DIR=$PWD/../../runs/train/best docker compose up --build
-# Or set MODEL_DIR in a `.env` next to this file.
+# Run from infra/docker/:
+#   MODEL_DIR=$PWD/../../application/models docker compose up --build
 # =============================================================================
 
 services:
   frontend:
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:2.5.0
     build:
       context: ../../application/frontend
       dockerfile: Dockerfile
@@ -29,6 +23,7 @@ services:
     restart: unless-stopped
 
   backend:
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:2.5.0
     build:
       context: ../../application/backend/crowdnav-api
       dockerfile: Dockerfile
@@ -38,14 +33,22 @@ services:
         condition: service_healthy
     environment:
       APP_INFERENCE_MODE: remote
-      APP_INFERENCE_URL: http://inference:9000
+      APP_INFERENCE_BASE_URL: http://inference:9000
+      APP_CORS_ALLOWED_ORIGINS: "http://localhost:8080"
       SERVER_PORT: "8080"
       SPRING_PROFILES_ACTIVE: docker
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   inference:
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:2.5.0
     build:
       context: ../../application/inference-service
       dockerfile: Dockerfile
@@ -54,21 +57,8 @@ services:
       MODEL_PATH: /opt/model/best.pt
       HOST: 0.0.0.0
       PORT: "9000"
-    # Mount the trained checkpoint produced by SageMaker (ADR-0003 handoff).
-    # MODEL_DIR must point to a host directory containing `best.pt`.
     volumes:
-      - "${MODEL_DIR:-../../runs/train/crowdnav_yolo/weights}:/opt/model:ro"
+      - "${MODEL_DIR:-../../application/models}:/opt/model:ro"
     expose:
       - "9000"
     restart: unless-stopped
-    # GPU support (optional). Uncomment if running on a host with NVIDIA + nvidia-container-toolkit.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
-# No named volumes: the only persistent artifact is `best.pt`, which is
-# bind-mounted from MODEL_DIR per ADR-0003 (handoff via filesystem).

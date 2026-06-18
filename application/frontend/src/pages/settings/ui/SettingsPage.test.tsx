@@ -54,13 +54,22 @@ describe("SettingsPage UX", () => {
     });
   });
 
-  it("keeps Add Source disabled as placeholder", () => {
+  it("opens Add Source modal and persists custom source", async () => {
+    const user = userEvent.setup();
     renderWithProviders(
       <MemoryRouter>
         <SettingsPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: /Add Source/i })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: /Add source/i }));
+    await user.type(screen.getByLabelText(/^Name$/i), "Lobby Cam");
+    const submitButtons = screen.getAllByRole("button", { name: /^Add Source$/i });
+    await user.click(submitButtons[submitButtons.length - 1]!);
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem("crowdnav.custom-sources.v1") ?? "[]");
+      expect(stored[0]?.name).toBe("Lobby Cam");
+    });
   });
 });

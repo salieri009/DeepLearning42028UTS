@@ -2,7 +2,7 @@ import styled from "styled-components";
 import type { FrameItem, SessionDetailResponse } from "@/entities/session";
 import { formatSessionDuration } from "@/entities/session";
 import type { SessionPreviewStats } from "@/features/session-archive/model/useSessionPreview";
-import { Button, GlassPanel, Icon, VisuallyHidden } from "@/shared/ui";
+import { Button, GlassPanel, Icon } from "@/shared/ui";
 
 type SessionPreviewProps = {
   session: SessionDetailResponse | null;
@@ -10,6 +10,8 @@ type SessionPreviewProps = {
   stats: SessionPreviewStats | null;
   frames?: FrameItem[];
   statsError?: string | null;
+  onGenerateReport?: () => void;
+  reportDisabled?: boolean;
 };
 
 const Panel = styled(GlassPanel)`
@@ -213,7 +215,15 @@ function formatDensityLabel(maxCrowdDensity: number, frameCount: number): string
   return "—";
 }
 
-export function SessionPreview({ session, loading, stats, frames = [], statsError }: SessionPreviewProps) {
+export function SessionPreview({
+  session,
+  loading,
+  stats,
+  frames = [],
+  statsError,
+  onGenerateReport,
+  reportDisabled = true,
+}: SessionPreviewProps) {
   if (loading) {
     return (
       <Panel>
@@ -300,9 +310,16 @@ export function SessionPreview({ session, loading, stats, frames = [], statsErro
           )}
         </FrameTrail>
 
-        <Button type="button" $variant="ghost" $fullWidth disabled title="Coming soon">
+        <Button
+          type="button"
+          $variant="ghost"
+          $fullWidth
+          disabled={reportDisabled}
+          onClick={onGenerateReport}
+          aria-label="Generate full session report"
+          title={reportDisabled ? "Select a session first" : "Open printable HTML report"}
+        >
           Generate Full PDF Report
-          <VisuallyHidden> (coming soon)</VisuallyHidden>
         </Button>
       </Stats>
     </Panel>

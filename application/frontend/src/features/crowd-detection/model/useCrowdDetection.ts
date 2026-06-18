@@ -17,6 +17,8 @@ export function useCrowdDetection({
   const [running, setRunning] = useState(false);
   const [data, setData] = useState<AnalyzeFrameResponse | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [lastSessionId, setLastSessionId] = useState<number | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -49,8 +51,10 @@ export function useCrowdDetection({
     const activeSessionId = sessionIdRef.current;
     sessionIdRef.current = null;
     if (activeSessionId != null) {
+      setLastSessionId(activeSessionId);
       closeSession(activeSessionId).catch((e) => reportError("Close session error", e));
     }
+    setSessionId(null);
     setRunning(false);
     setData(null);
     setLatencyMs(null);
@@ -71,9 +75,12 @@ export function useCrowdDetection({
       try {
         const session = await createSession("WEBCAM");
         sessionIdRef.current = session.id;
+        setSessionId(session.id);
+        setLastSessionId(session.id);
       } catch (e) {
         reportError("Create session error", e);
         sessionIdRef.current = null;
+        setSessionId(null);
       }
 
       intervalRef.current = window.setInterval(async () => {
@@ -110,11 +117,16 @@ export function useCrowdDetection({
     };
   }, []);
 
+  const getStream = useCallback(() => streamRef.current, []);
+
   return {
     running,
     data,
     latencyMs,
+    sessionId,
+    lastSessionId,
     videoRef,
+    getStream,
     start,
     stop,
   };

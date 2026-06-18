@@ -61,38 +61,48 @@ const PageButton = styled.button`
   }
 `;
 
-const columns: DataTableColumn<SessionDetailResponse>[] = [
-  {
-    key: "start",
-    header: "Session Start",
-    render: (s) => formatSessionStart(s.started_at),
-  },
-  {
-    key: "duration",
-    header: "Duration",
-    render: (s) => formatSessionDuration(s.started_at, s.ended_at),
-  },
-  {
-    key: "risk",
-    header: "Max Risk",
-    render: (s) => <RiskBadge risk={s.worst_risk} />,
-  },
-  {
-    key: "detections",
-    header: "Detections",
-    render: (s) => s.frame_count,
-  },
-  {
-    key: "action",
-    header: "Action",
-    align: "right",
-    render: () => (
-      <AquaPillButton type="button" $size="sm" disabled title="Coming soon" aria-label="View detail (coming soon)">
-        VIEW DETAIL
-      </AquaPillButton>
-    ),
-  },
-];
+function buildColumns(onSelect: (id: number) => void): DataTableColumn<SessionDetailResponse>[] {
+  return [
+    {
+      key: "start",
+      header: "Session Start",
+      render: (s) => formatSessionStart(s.started_at),
+    },
+    {
+      key: "duration",
+      header: "Duration",
+      render: (s) => formatSessionDuration(s.started_at, s.ended_at),
+    },
+    {
+      key: "risk",
+      header: "Max Risk",
+      render: (s) => <RiskBadge risk={s.worst_risk} />,
+    },
+    {
+      key: "detections",
+      header: "Detections",
+      render: (s) => s.frame_count,
+    },
+    {
+      key: "action",
+      header: "Action",
+      align: "right",
+      render: (s) => (
+        <AquaPillButton
+          type="button"
+          $size="sm"
+          aria-label={`View detail for session ${s.id}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(s.id);
+          }}
+        >
+          VIEW DETAIL
+        </AquaPillButton>
+      ),
+    },
+  ];
+}
 
 export function SessionTable({
   sessions,
@@ -124,7 +134,7 @@ export function SessionTable({
 
   return (
     <DataTable
-      columns={columns}
+      columns={buildColumns(onSelect)}
       rows={sessions}
       rowKey={(s) => s.id}
       selectedKey={selectedId}

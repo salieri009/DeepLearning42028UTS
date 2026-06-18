@@ -240,7 +240,7 @@ Orchestrator-Workers 패턴 강제.
 
 **Scope:** Single-page dashboard monitoring UX — start/stop camera, 500 ms analyze loop, live overlays, stats sidebar.
 
-**Out of scope (this release):** Record/Export, Generate Report, true pause/resume. Session `session_id` is auto-managed on Start/Stop (FR-11 — implemented).
+**Out of scope (this release):** true pause/resume. Session `session_id` is auto-managed on Start/Stop (FR-11 — implemented). Record/Export/Report/notifications implemented per FR-UI-5–9 (2026-06-18).
 
 **In scope (2026-06-17+):** Multi-page routing — Analytics, Live Map (OpenFreeMap), Archive (session API), Settings.
 
@@ -277,7 +277,9 @@ Below 1024px the sidebar hides; alert chip repositions under the header.
 | Start Monitoring | `!running` | `handleStart` | Reset alerts/history → `useCrowdDetection.start()` |
 | Stop Monitoring | `running` | `handleStop` | `$variant="danger"` — full stop |
 | Stop icon | `running` | `handleStop` | Same as Stop Monitoring |
-| Record / Export | always | — | Disabled, `title="Coming soon"` |
+| Record | `running` | `handleRecord` → `useSessionRecording` | WebM download on stop |
+| Export | `sessionId` or `lastSessionId` | `handleExport` → `exportLiveSession` | JSON bundle download |
+| Generate Report | `data` present | `handleGenerateReport` → `buildHtmlReport` | HTML file download |
 
 ```mermaid
 stateDiagram-v2
@@ -320,8 +322,9 @@ stateDiagram-v2
 | FR-UI-2 | Stop releases resources | `stop()` + `handleStop` resets | PASS |
 | FR-UI-3 | Stop = danger variant | `ControlBar` danger styling | PASS |
 | FR-UI-4 | Overlay safe zones | `layout.videoSafeInsetBottom` on `OverlayLayer` | PASS |
-| FR-UI-5 | Placeholders disabled | Record/Export/Generate Report disabled; routes active | PASS |
+| FR-UI-5 | Record/Export/Report/notifications | `session-recording`, `session-export`, `report-generation`, `TopNav` | PASS |
 | FR-UI-6 | Label "Stop Monitoring" | `ControlBar` label | PASS |
+| FR-UI-7–12 | SideNav, Settings sources, archive detail | `SideNav`, `SensorSourceGrid`, `SessionTable` | PASS |
 | FR-5 | People count in panel | `StatsSidebar` StatCard | PASS |
 | FR-11 | `session_id` on analyze | `useCrowdDetection` creates session on Start, passes `session_id` on each `analyzeFrame` | PASS |
 | NFR-7 | Token-based styling | `theme.layout.*` for safe zones | PASS |
