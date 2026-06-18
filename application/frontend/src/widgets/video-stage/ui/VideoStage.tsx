@@ -13,7 +13,8 @@ type VideoStageProps = {
 const Stage = styled.main`
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: ${({ theme }) => theme.layout.zIndex.stage};
+  pointer-events: none;
   background: ${({ theme }) => theme.tokens.color.surface.lowest};
 `;
 

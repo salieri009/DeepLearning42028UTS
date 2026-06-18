@@ -58,6 +58,9 @@ export function SensorSourceGrid({ sources }: SensorSourceGridProps) {
         </AddLink>
       </Header>
       <Grid>
+        {sources.length === 0 ? (
+          <p style={{ margin: 0, opacity: 0.7 }}>No active webcam sessions yet. Start the dashboard camera to register a source.</p>
+        ) : null}
         {sources.map((source) => (
           <SensorCard key={source.id} source={source} />
         ))}

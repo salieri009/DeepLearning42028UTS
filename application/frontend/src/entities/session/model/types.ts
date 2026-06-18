@@ -37,3 +37,18 @@ export type DetectionItem = {
 export type DetectionListResponse = {
   items: DetectionItem[];
 };
+
+export type FrameItem = {
+  id: number;
+  sequence_no: number;
+  captured_at: string;
+  latency_ms: number | null;
+  crowd_density: "LOW" | "MEDIUM" | "HIGH";
+  max_proximity_risk: ProximityRisk;
+  recommendation: "PROCEED" | "CAUTION" | "STOP";
+  person_count: number;
+};
+
+export type FrameListResponse = {
+  items: FrameItem[];
+};

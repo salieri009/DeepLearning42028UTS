@@ -22,7 +22,7 @@ const Aside = styled.aside`
   position: fixed;
   top: ${({ theme }) => theme.layout.headerHeight};
   right: 0;
-  z-index: 40;
+  z-index: ${({ theme }) => theme.layout.zIndex.sidebar};
   width: ${({ theme }) => theme.layout.sidebarWidth};
   height: calc(100vh - ${({ theme }) => theme.layout.headerHeight});
   display: flex;

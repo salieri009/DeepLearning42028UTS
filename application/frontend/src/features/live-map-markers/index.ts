@@ -1,2 +1,2 @@
-export { useMapMarkers, MAP_MARKERS, UTS_SYDNEY_CENTER } from "./model/useMapMarkers";
-export type { MapMarker } from "./model/useMapMarkers";
+export { useMapMarkers, UTS_SYDNEY_CENTER, ZONE_ANCHORS } from "./model/useMapMarkers";
+export type { MapMarker } from "./model/types";

@@ -19,22 +19,28 @@ const Subtitle = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const Badge = styled(GlassPanel)`
+const Disclaimer = styled.p`
+  margin: ${({ theme }) => theme.spacing[1]} 0 0;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.warning};
+`;
+
+const Badge = styled(GlassPanel)<{ $live?: boolean }>`
   padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[4]}`};
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[2]};
   font-family: ${({ theme }) => theme.typography.family.mono};
   font-size: ${({ theme }) => theme.typography.size[1]};
-  color: ${({ theme }) => theme.color.success};
+  color: ${({ theme, $live }) => ($live ? theme.color.success : theme.color.textSecondary)};
 `;
 
-const LiveDot = styled.span`
+const LiveDot = styled.span<{ $live?: boolean }>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.color.success};
-  animation: pulse 2s ease-in-out infinite;
+  background: ${({ theme, $live }) => ($live ? theme.color.success : theme.color.textSecondary)};
+  animation: ${({ $live }) => ($live ? "pulse 2s ease-in-out infinite" : "none")};
 
   @keyframes pulse {
     0%,
@@ -61,11 +67,22 @@ export function LiveMapPage() {
           <ChromeText style={{ fontSize: "32px", textTransform: "uppercase" }}>
             Live Map
           </ChromeText>
-          <Subtitle>OpenFreeMap overlay with real-time sensor risk markers.</Subtitle>
+          <Subtitle>
+            GPS position plus zone risk from the last 24h of session telemetry
+            {mapData.loading ? " · syncing…" : ""}
+            {mapData.error ? ` · ${mapData.error}` : ""}
+            {mapData.gpsError ? " · location unavailable" : ""}
+          </Subtitle>
+          {mapData.nearCampus === false && (
+            <Disclaimer>
+              Zone markers show a demo aggregate for UTS Sydney — not calibrated to your
+              current area.
+            </Disclaimer>
+          )}
         </div>
-        <Badge>
-          <LiveDot />
-          LIVE FEED ACTIVE
+        <Badge $live={mapData.isLive}>
+          <LiveDot $live={mapData.isLive} />
+          {mapData.isLive ? "LIVE TELEMETRY" : "TELEMETRY SYNC"}
         </Badge>
       </Header>
 

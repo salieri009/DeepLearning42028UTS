@@ -107,6 +107,7 @@ export function ArchivePage() {
             session={archive.selectedDetail}
             loading={preview.loading}
             stats={archive.selectedDetail ? preview.stats : null}
+            frames={archive.selectedDetail ? preview.frames : []}
             statsError={preview.error}
           />
         </PreviewCol>

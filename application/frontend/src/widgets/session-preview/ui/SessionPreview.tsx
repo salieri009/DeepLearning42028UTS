@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import type { SessionDetailResponse } from "@/entities/session";
+import type { FrameItem, SessionDetailResponse } from "@/entities/session";
 import { formatSessionDuration } from "@/entities/session";
 import type { SessionPreviewStats } from "@/features/session-archive/model/useSessionPreview";
 import { Button, GlassPanel, Icon } from "@/shared/ui";
@@ -8,6 +8,7 @@ type SessionPreviewProps = {
   session: SessionDetailResponse | null;
   loading: boolean;
   stats: SessionPreviewStats | null;
+  frames?: FrameItem[];
   statsError?: string | null;
 };
 
@@ -170,13 +171,49 @@ const EmptyState = styled.div`
   font-family: ${({ theme }) => theme.typography.family.mono};
 `;
 
+const FrameTrail = styled.div`
+  padding: 0 ${({ theme }) => theme.spacing[4]} ${({ theme }) => theme.spacing[4]};
+`;
+
+const FrameList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid ${({ theme }) => theme.color.glass.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+`;
+
+const FrameRow = styled.li`
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: ${({ theme }) => theme.spacing[2]};
+  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: 10px;
+  border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const RiskTag = styled.span<{ $risk: string }>`
+  color: ${({ theme, $risk }) => {
+    if ($risk === "DANGER") return theme.color.danger;
+    if ($risk === "WARNING") return theme.color.warning;
+    return theme.color.success;
+  }};
+`;
+
 function formatDensityLabel(maxCrowdDensity: number, frameCount: number): string {
   if (maxCrowdDensity > 0) return `${maxCrowdDensity} persons`;
   if (frameCount > 0) return `${frameCount} frames`;
   return "—";
 }
 
-export function SessionPreview({ session, loading, stats, statsError }: SessionPreviewProps) {
+export function SessionPreview({ session, loading, stats, frames = [], statsError }: SessionPreviewProps) {
   if (loading) {
     return (
       <Panel>
@@ -243,6 +280,25 @@ export function SessionPreview({ session, loading, stats, statsError }: SessionP
             <DangerLabel>{threat.danger}% DNG</DangerLabel>
           </BarLegend>
         </ThreatBar>
+
+        <FrameTrail>
+          <StatLabel>Frame Trail ({frames.length})</StatLabel>
+          {frames.length === 0 ? (
+            <EmptyState style={{ padding: "12px" }}>No persisted frames yet.</EmptyState>
+          ) : (
+            <FrameList>
+              {frames.map((frame) => (
+                <FrameRow key={frame.id}>
+                  <span>#{frame.sequence_no}</span>
+                  <span>
+                    {frame.person_count} persons · {frame.crowd_density}
+                  </span>
+                  <RiskTag $risk={frame.max_proximity_risk}>{frame.max_proximity_risk}</RiskTag>
+                </FrameRow>
+              ))}
+            </FrameList>
+          )}
+        </FrameTrail>
 
         <Button type="button" $variant="ghost" $fullWidth disabled title="Coming soon">
           Generate Full PDF Report

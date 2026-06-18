@@ -12,7 +12,7 @@ const Nav = styled.nav`
   bottom: ${({ theme }) => theme.spacing[5]};
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: ${({ theme }) => theme.layout.zIndex.chrome};
   display: flex;
   justify-content: center;
   padding: 0 ${({ theme }) => theme.spacing[4]};

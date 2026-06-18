@@ -323,7 +323,7 @@ stateDiagram-v2
 | FR-UI-5 | Placeholders disabled | Record/Export/Generate Report disabled; routes active | PASS |
 | FR-UI-6 | Label "Stop Monitoring" | `ControlBar` label | PASS |
 | FR-5 | People count in panel | `StatsSidebar` StatCard | PASS |
-| FR-11 | `session_id` on analyze | Not sent from frontend | GAP (Should, deferred) |
+| FR-11 | `session_id` on analyze | `useCrowdDetection` creates session on Start, passes `session_id` on each `analyzeFrame` | PASS |
 | NFR-7 | Token-based styling | `theme.layout.*` for safe zones | PASS |
 
 ### 9.8 Multi-page routing (FSD)

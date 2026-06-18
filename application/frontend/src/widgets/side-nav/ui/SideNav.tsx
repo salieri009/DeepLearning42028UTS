@@ -30,7 +30,7 @@ const Aside = styled.aside`
   top: ${({ theme }) => theme.layout.headerHeight};
   width: ${({ theme }) => theme.layout.leftSidebarWidth};
   height: calc(100vh - ${({ theme }) => theme.layout.headerHeight});
-  z-index: 40;
+  z-index: ${({ theme }) => theme.layout.zIndex.sidebar};
   flex-direction: column;
   padding: ${({ theme }) => theme.spacing[4]} 0;
   background: ${({ theme }) => theme.color.glass.fill};

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Base64;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,12 +17,19 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.crowdnav.api.support.TestSettingsSupport;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class AnalyzeFrameControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @BeforeEach
+    void resetSettings() throws Exception {
+        TestSettingsSupport.resetSettings(mockMvc);
+    }
 
     /** A minimal valid base64 payload (3 arbitrary bytes). */
     private static final String VALID_B64 = Base64.getEncoder().encodeToString(new byte[] { 1, 2, 3 });
@@ -34,7 +42,7 @@ class AnalyzeFrameControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.persons").isArray())
                 .andExpect(jsonPath("$.persons.length()").value(2))
-                .andExpect(jsonPath("$.crowd_density").value("LOW"))
+                .andExpect(jsonPath("$.crowd_density").value("MEDIUM"))
                 .andExpect(jsonPath("$.max_proximity_risk").value("WARNING"))
                 .andExpect(jsonPath("$.recommendation").value("CAUTION"));
     }
@@ -60,7 +68,7 @@ class AnalyzeFrameControllerTest {
         var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[] { 0, 0 });
         mockMvc.perform(multipart("/api/v1/analyze-frame").file(file))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.crowd_density").value("LOW"))
+                .andExpect(jsonPath("$.crowd_density").value("MEDIUM"))
                 .andExpect(jsonPath("$.recommendation").value("CAUTION"));
     }
 

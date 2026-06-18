@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
+import com.crowdnav.api.support.TestSettingsSupport;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,11 +42,12 @@ class SessionControllerTest {
 	private DetectionRepository detectionRepository;
 
 	@BeforeEach
-	void resetDb() throws InterruptedException {
+	void resetDb() throws Exception {
 		TimeUnit.MILLISECONDS.sleep(200);
 		detectionRepository.deleteAll();
 		frameRepository.deleteAll();
 		sessionRepository.deleteAll();
+		TestSettingsSupport.resetSettings(mockMvc);
 	}
 
 	@Test
@@ -177,6 +179,31 @@ class SessionControllerTest {
 	@Test
 	void listDetections_notFound_returns404() throws Exception {
 		mockMvc.perform(get("/api/v1/sessions/999999/detections"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void listFrames_afterPersist_returnsTrail() throws Exception {
+		long sessionId = createSessionId("frame-trail", "WEBCAM");
+
+		mockMvc.perform(post("/api/v1/analyze-frame")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+				.andExpect(status().isOk());
+
+		TimeUnit.MILLISECONDS.sleep(300);
+
+		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/frames"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].sequence_no").value(0))
+				.andExpect(jsonPath("$.items[0].person_count").isNumber());
+	}
+
+	@Test
+	void listFrames_notFound_returns404() throws Exception {
+		mockMvc.perform(get("/api/v1/sessions/999999/frames"))
 				.andExpect(status().isNotFound());
 	}
 

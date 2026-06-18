@@ -40,6 +40,25 @@ vi.mock("@/features/alert-history", () => ({
   }),
 }));
 
+vi.mock("@/features/analytics-data", () => ({
+  useAnalyticsData: () => ({
+    data: {
+      safetyScore: 82,
+      safetyLabel: "Nominal",
+      trendPercent: 0,
+      eventCount: 0,
+      busiestWindow: "14:00",
+      peakHours: [{ label: "14:00", heightPercent: 100, peak: true }],
+      zoneRisks: [],
+      hotspots: [],
+      frameCount: 0,
+      sessionCount: 0,
+    },
+    loading: false,
+    error: null,
+  }),
+}));
+
 vi.mock("@/features/session-archive", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/features/session-archive")>();
   return {

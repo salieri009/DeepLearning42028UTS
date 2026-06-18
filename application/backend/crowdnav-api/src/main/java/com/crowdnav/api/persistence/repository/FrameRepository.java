@@ -1,5 +1,6 @@
 package com.crowdnav.api.persistence.repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +24,14 @@ public interface FrameRepository extends JpaRepository<Frame, Long> {
 
 	@Query("SELECT f.maxProximityRisk FROM Frame f WHERE f.session.id = :sessionId")
 	List<String> findMaxProximityRisksBySessionId(@Param("sessionId") Long sessionId);
+
+	@Query("""
+			SELECT f FROM Frame f
+			JOIN FETCH f.session s
+			WHERE f.capturedAt >= :since
+			ORDER BY f.capturedAt ASC
+			""")
+	List<Frame> findRecentWithSession(@Param("since") Instant since);
+
+	long countByCapturedAtGreaterThanEqual(Instant since);
 }

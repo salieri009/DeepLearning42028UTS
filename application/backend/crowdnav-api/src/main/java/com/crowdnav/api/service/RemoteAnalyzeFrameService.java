@@ -1,6 +1,7 @@
 package com.crowdnav.api.service;
 
 import java.net.http.HttpClient;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -23,9 +24,12 @@ import com.crowdnav.api.dto.AnalyzeFrameResponse;
 public class RemoteAnalyzeFrameService implements AnalyzeFrameService {
 
 private final RestClient restClient;
+private final SettingsService settingsService;
 
 public RemoteAnalyzeFrameService(
-@Value("${app.inference.url:${app.inference.base-url:http://127.0.0.1:9000}}") String baseUrl) {
+		SettingsService settingsService,
+		@Value("${app.inference.url:${app.inference.base-url:http://127.0.0.1:9000}}") String baseUrl) {
+	this.settingsService = settingsService;
 // Force HTTP/1.1: the JDK HttpClient backing RestClient defaults to HTTP/2 and sends
 // an `Upgrade: h2c` header. uvicorn (FastAPI inference) does not support h2c cleartext
 // upgrade and drops the request body, so inference receives an empty frame_base64 and
@@ -47,10 +51,16 @@ return analyzeFrame(frameBase64);
 
 @Override
 public AnalyzeFrameResponse analyzeFrame(String frameBase64) {
-AnalyzeFrameResponse response = restClient.post()
+	var settings = settingsService.getSettings();
+	Map<String, Object> body = new HashMap<>();
+	body.put("frame_base64", frameBase64 != null ? frameBase64 : "");
+	body.put("conf_thresh", settings.confidence() / 100.0);
+	body.put("density_limit", settings.densityLimit());
+
+	AnalyzeFrameResponse response = restClient.post()
 .uri("/internal/infer")
 .contentType(MediaType.APPLICATION_JSON)
-.body(Map.of("frame_base64", frameBase64 != null ? frameBase64 : ""))
+.body(body)
 .retrieve()
 .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
 if (res.getStatusCode().is4xxClientError()) {

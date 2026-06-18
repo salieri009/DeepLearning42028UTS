@@ -114,5 +114,10 @@ export const tokens = {
     videoSafeInsetBottom: "96px",
     maxWidth: "1120px",
     mediaMaxWidth: "760px",
+    zIndex: {
+      stage: 0,
+      sidebar: 40,
+      chrome: 100,
+    },
   },
 } as const;
