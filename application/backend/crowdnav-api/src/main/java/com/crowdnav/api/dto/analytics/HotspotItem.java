@@ -7,7 +7,7 @@ public record HotspotItem(
 		String label,
 		@JsonProperty("metric_label") String metricLabel,
 		String risk,
-		String top,
-		String left,
+		double lat,
+		double lng,
 		@JsonProperty("synthetic") boolean synthetic) {
 }

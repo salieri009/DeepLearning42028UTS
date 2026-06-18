@@ -116,7 +116,7 @@ describe("Four-page TopNav routing", () => {
     renderApp("/");
 
     await user.click(mobileNav().getByRole("link", { name: "Analytics" }));
-    expect(screen.getByText(/Session Danger Hotspots/i)).toBeInTheDocument();
+    expect(screen.getByText(/Risk Hotspot Map/i)).toBeInTheDocument();
   });
 
   it("navigates to Live Map", async () => {

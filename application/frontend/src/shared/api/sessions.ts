@@ -15,10 +15,12 @@ export { SESSION_TOKEN_HEADER };
 export async function createSession(
   sourceType: SourceType = "WEBCAM",
   clientLabel = "CrowdNav Dashboard",
+  zoneId?: string,
 ): Promise<SessionResponse> {
   const { data } = await apiClient.post<SessionResponse>("/v1/sessions", {
     source_type: sourceType,
     client_label: clientLabel,
+    ...(zoneId ? { zone_id: zoneId } : {}),
   });
   if (data.access_token) {
     storeSessionToken(data.id, data.access_token);

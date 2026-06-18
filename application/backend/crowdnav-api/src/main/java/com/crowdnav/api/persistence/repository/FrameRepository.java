@@ -11,8 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 import com.crowdnav.api.persistence.entity.Frame;
 import com.crowdnav.api.persistence.projection.FrameRiskAggregateRow;
-import com.crowdnav.api.persistence.projection.HotspotAggregateRow;
 import com.crowdnav.api.persistence.projection.PeakHourAggregateRow;
+import com.crowdnav.api.persistence.projection.ZoneHotspotAggregateRow;
 
 public interface FrameRepository extends JpaRepository<Frame, Long> {
 
@@ -64,16 +64,16 @@ public interface FrameRepository extends JpaRepository<Frame, Long> {
 	List<FrameRiskAggregateRow> aggregateRiskBySourceSince(@Param("since") Instant since);
 
 	@Query("""
-			SELECT f.session.id AS sessionId,
-			       f.session.clientLabel AS clientLabel,
-			       COUNT(f) AS dangerCount
+			SELECT f.session.zone.id AS zoneId,
+			       SUM(CASE WHEN f.maxProximityRisk = 'DANGER' THEN 1 ELSE 0 END) AS dangerCount,
+			       SUM(CASE WHEN f.maxProximityRisk = 'WARNING' THEN 1 ELSE 0 END) AS warningCount
 			FROM Frame f
 			WHERE f.capturedAt >= :since
-			  AND f.maxProximityRisk = 'DANGER'
-			GROUP BY f.session.id, f.session.clientLabel
-			ORDER BY COUNT(f) DESC
+			GROUP BY f.session.zone.id
+			HAVING SUM(CASE WHEN f.maxProximityRisk = 'DANGER' THEN 1 ELSE 0 END) > 0
+			ORDER BY SUM(CASE WHEN f.maxProximityRisk = 'DANGER' THEN 1 ELSE 0 END) DESC
 			""")
-	List<HotspotAggregateRow> findTopDangerHotspotsSince(@Param("since") Instant since, Pageable pageable);
+	List<ZoneHotspotAggregateRow> aggregateDangerHotspotsByZoneSince(@Param("since") Instant since);
 
 	@Query(value = """
 			SELECT CAST(EXTRACT(HOUR FROM f.captured_at) AS INT) AS hourOfDay,

@@ -18,7 +18,7 @@ export type HotspotMarker = {
   label: string;
   metricLabel: string;
   risk: "DANGER" | "WARNING";
-  top: string;
-  left: string;
+  lat: number;
+  lng: number;
   synthetic?: boolean;
 };

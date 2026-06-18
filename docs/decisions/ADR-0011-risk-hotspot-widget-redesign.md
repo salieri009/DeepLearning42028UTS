@@ -1,6 +1,6 @@
 # ADR-0011: Risk Hotspot Map widget — rename/reshape vs real geo hotspot map
 
-- **Status**: Proposed
+- **Status**: Accepted (Option B — geo hotspot map, 2026-06-19)
 - **Date**: 2026-06-18
 - **Deciders**: TBD (pending review)
 - **Related**: FR-14, FR-17, [`analytics_hotspot_gap_analysis.md`](../reports/analytics_hotspot_gap_analysis.md), [`BACKEND_ERD.md`](../BACKEND_ERD.md)
@@ -21,7 +21,7 @@ FR-14 is satisfied for API wiring and chart population; **semantic accuracy** of
 
 ## Decision
 
-**No decision yet.** This ADR records the remediation fork. Implementation proceeds only after one option is accepted.
+**Option B accepted (2026-06-19):** Real geographic hotspot map using `campus_zone` reference table, `analysis_session.zone_id`, zone-aggregated DANGER frames, and MapLibre markers on `/analytics`.
 
 ## Alternatives Considered
 

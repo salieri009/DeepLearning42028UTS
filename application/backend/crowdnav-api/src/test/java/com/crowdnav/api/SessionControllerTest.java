@@ -84,6 +84,14 @@ class SessionControllerTest {
 	}
 
 	@Test
+	void createSession_invalidZoneId_returns400() throws Exception {
+		mockMvc.perform(post("/api/v1/sessions")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"client_label\":\"demo\",\"source_type\":\"WEBCAM\",\"zone_id\":\"unknown\"}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void listAndGetSession_returnsAggregates() throws Exception {
 		CreatedSession created = SessionTestSupport.createSession(mockMvc, "laptop", "MOCK");
 

@@ -1,15 +1,18 @@
-import { useCallback, useState } from "react";
-import styled, { keyframes } from "styled-components";
+import { useCallback, useRef } from "react";
+import Map, { Marker, type MapRef } from "react-map-gl/maplibre";
+import styled, { keyframes, useTheme } from "styled-components";
 import type { HotspotMarker } from "@/entities/analytics";
-import { GlassPanel, HudButton, Icon } from "@/shared/ui";
+import type { AppTheme } from "@/shared/config/theme";
+import { UTS_SYDNEY_CENTER } from "@/shared/config/campusZones";
+import { GlassPanel, Icon } from "@/shared/ui";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
+const DEFAULT_ZOOM = 15.5;
 
 type RiskHotspotMapProps = {
   hotspots: HotspotMarker[];
 };
-
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 2;
-const ZOOM_STEP = 0.25;
 
 const Card = styled(GlassPanel)`
   position: relative;
@@ -18,49 +21,17 @@ const Card = styled(GlassPanel)`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
-const MapViewport = styled.div<{ $zoom: number }>`
-  position: absolute;
-  inset: 0;
-  transform: scale(${({ $zoom }) => $zoom});
-  transform-origin: center center;
-  transition: transform 120ms ease;
-`;
-
-const MapImage = styled.div`
-  position: absolute;
-  inset: 0;
-  background: ${({ theme }) => theme.color.surfaceHigh};
-  opacity: 0.6;
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 33% 25%, ${({ theme }) => theme.color.danger}4d 0%, transparent 40%),
-      radial-gradient(circle at 75% 66%, ${({ theme }) => theme.color.warning}33 0%, transparent 40%);
-  }
-`;
-
-const Scanline = styled.div`
-  position: absolute;
-  inset: 0;
-  opacity: 0.1;
-  background: linear-gradient(transparent 50%, ${({ theme }) => theme.color.tint.scanlineBand} 50%);
-  background-size: 100% 2px;
-  pointer-events: none;
-`;
-
 const Legend = styled.div`
   position: absolute;
   top: ${({ theme }) => theme.spacing[6]};
   left: ${({ theme }) => theme.spacing[6]};
-  z-index: 10;
+  z-index: 2;
   padding: ${({ theme }) => theme.spacing[4]};
   border-radius: ${({ theme }) => theme.radius.lg};
   background: ${({ theme }) => theme.color.glass.fill};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur})
+    saturate(${({ theme }) => theme.effects.glassSaturation});
 `;
 
 const LegendTitle = styled.h3`
@@ -72,9 +43,16 @@ const LegendTitle = styled.h3`
   color: ${({ theme }) => theme.color.textPrimary};
 `;
 
+const LegendHint = styled.p`
+  margin: ${({ theme }) => theme.spacing[2]} 0 0;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const LegendRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing[4]};
+  margin-top: ${({ theme }) => theme.spacing[2]};
 `;
 
 const LegendItem = styled.div`
@@ -87,15 +65,24 @@ const LegendItem = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const Dot = styled.span<{ $variant: "danger" | "warning" | "safe" }>`
+const Dot = styled.span<{ $variant: "danger" | "warning" }>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${({ theme, $variant }) => {
-    if ($variant === "danger") return theme.color.danger;
-    if ($variant === "warning") return theme.color.warning;
-    return theme.color.success;
-  }};
+  background: ${({ theme, $variant }) =>
+    $variant === "danger" ? theme.color.danger : theme.color.warning};
+`;
+
+const Attribution = styled.div`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing[2]};
+  right: ${({ theme }) => theme.spacing[2]};
+  z-index: 2;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
+  background: ${({ theme }) => theme.color.glass.scrim};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
 const ping = keyframes`
@@ -103,33 +90,30 @@ const ping = keyframes`
   100% { transform: scale(1.5); opacity: 0; }
 `;
 
-const Marker = styled.div<{ $top: string; $left: string }>`
-  position: absolute;
-  top: ${({ $top }) => $top};
-  left: ${({ $left }) => $left};
-  transform: translate(-50%, -50%);
-  z-index: 20;
+const MarkerShell = styled.div`
+  position: relative;
+  width: 48px;
+  height: 48px;
 `;
 
-const Ping = styled.div<{ $variant: "danger" | "warning" }>`
+const Ping = styled.div<{ $color: string }>`
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid
-    ${({ theme, $variant }) =>
-      $variant === "danger" ? theme.color.danger : theme.color.warning};
+  border: 2px solid ${({ $color }) => $color};
   animation: ${ping} 2s ease-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
-const MarkerCore = styled.div<{ $variant: "danger" | "warning" }>`
+const MarkerCore = styled.div<{ $color: string }>`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid
-    ${({ theme, $variant }) =>
-      $variant === "danger" ? theme.color.danger : theme.color.warning};
-  background: ${({ theme, $variant }) =>
-    $variant === "danger" ? `${theme.color.danger}66` : `${theme.color.warning}66`};
+  border: 2px solid ${({ $color }) => $color};
+  background: ${({ $color }) => `${$color}66`};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,102 +121,74 @@ const MarkerCore = styled.div<{ $variant: "danger" | "warning" }>`
   position: relative;
 `;
 
-const Hud = styled.div`
-  position: absolute;
-  bottom: ${({ theme }) => theme.spacing[6]};
-  right: ${({ theme }) => theme.spacing[6]};
-  display: flex;
-  gap: ${({ theme }) => theme.spacing[2]};
-  z-index: 10;
-`;
-
-const SyntheticNote = styled.p`
-  margin: ${({ theme }) => theme.spacing[2]} 0 0;
-  font-size: ${({ theme }) => theme.typography.size[1]};
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
+function riskColor(theme: AppTheme, risk: HotspotMarker["risk"]) {
+  return risk === "DANGER" ? theme.color.danger : theme.color.warning;
+}
 
 export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
-  const [zoom, setZoom] = useState(MIN_ZOOM);
-  const [layersVisible, setLayersVisible] = useState(true);
-  const hasSynthetic = hotspots.some((spot) => spot.synthetic);
+  const theme = useTheme();
+  const mapRef = useRef<MapRef>(null);
+  const [lat, lng] = UTS_SYDNEY_CENTER;
 
-  const zoomIn = useCallback(() => {
-    setZoom((current) => Math.min(MAX_ZOOM, current + ZOOM_STEP));
-  }, []);
-
-  const resetView = useCallback(() => {
-    setZoom(MIN_ZOOM);
-  }, []);
-
-  const toggleLayers = useCallback(() => {
-    setLayersVisible((visible) => !visible);
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.on("styleimagemissing", (event) => {
+      const size = 1;
+      map.addImage(event.id, { width: size, height: size, data: new Uint8Array(size * size * 4) });
+    });
   }, []);
 
   return (
-    <Card>
-      <MapViewport $zoom={zoom} aria-label="Risk hotspot map viewport">
-        <MapImage />
-        <Scanline />
+    <Card tabIndex={-1} aria-label="Geographic risk hotspot map">
+      <Legend>
+        <LegendTitle>Risk Hotspot Map</LegendTitle>
+        <LegendHint>
+          DANGER frames aggregated by campus zone (UTS Building 11 vicinity). Markers use real
+          coordinates.
+        </LegendHint>
+        <LegendRow>
+          <LegendItem>
+            <Dot $variant="danger" /> Critical zone
+          </LegendItem>
+          <LegendItem>
+            <Dot $variant="warning" /> Elevated
+          </LegendItem>
+        </LegendRow>
+      </Legend>
 
-        {layersVisible && (
-          <Legend>
-            <LegendTitle>Session Danger Hotspots</LegendTitle>
-            {hasSynthetic ? (
-              <SyntheticNote>
-                Layout is illustrative; rankings use real danger-frame counts per session.
-              </SyntheticNote>
-            ) : null}
-            <LegendRow>
-              <LegendItem>
-                <Dot $variant="danger" /> Critical
-              </LegendItem>
-              <LegendItem>
-                <Dot $variant="warning" /> Congested
-              </LegendItem>
-              <LegendItem>
-                <Dot $variant="safe" /> Optimal
-              </LegendItem>
-            </LegendRow>
-          </Legend>
-        )}
-
-        {layersVisible &&
-          hotspots.map((spot) => {
-            const variant = spot.risk === "DANGER" ? "danger" : "warning";
-            return (
-              <Marker key={spot.id} $top={spot.top} $left={spot.left} role="img" aria-label={`${spot.label}, ${spot.risk} risk, ${spot.metricLabel}`}>
-                <Ping $variant={variant} />
-                <MarkerCore $variant={variant}>
+      <Map
+        ref={mapRef}
+        initialViewState={{ latitude: lat, longitude: lng, zoom: DEFAULT_ZOOM }}
+        style={{ width: "100%", height: "100%" }}
+        mapStyle={OPENFREEMAP_STYLE}
+        attributionControl={false}
+        onLoad={handleMapLoad}
+      >
+        {hotspots.map((spot) => {
+          const color = riskColor(theme, spot.risk);
+          return (
+            <Marker
+              key={spot.id}
+              latitude={spot.lat}
+              longitude={spot.lng}
+              anchor="center"
+            >
+              <MarkerShell
+                role="img"
+                aria-label={`${spot.label}, ${spot.risk} risk, ${spot.metricLabel}`}
+              >
+                <Ping $color={color} />
+                <MarkerCore $color={color}>
                   <Icon name="warning" size={20} />
                 </MarkerCore>
-              </Marker>
-            );
-          })}
-      </MapViewport>
+              </MarkerShell>
+            </Marker>
+          );
+        })}
+      </Map>
 
-      <Hud>
-        <HudButton
-          type="button"
-          aria-label="Layers"
-          aria-pressed={layersVisible}
-          $active={layersVisible}
-          onClick={toggleLayers}
-        >
-          <Icon name="layers" size={20} />
-        </HudButton>
-        <HudButton
-          type="button"
-          aria-label="Zoom in"
-          onClick={zoomIn}
-          disabled={zoom >= MAX_ZOOM}
-        >
-          <Icon name="zoom_in" size={20} />
-        </HudButton>
-        <HudButton type="button" aria-label="My location" onClick={resetView} disabled={zoom === MIN_ZOOM}>
-          <Icon name="my_location" size={20} />
-        </HudButton>
-      </Hud>
+      <Attribution>© OpenFreeMap · OpenStreetMap</Attribution>
     </Card>
   );
 }

@@ -18,7 +18,7 @@ Released with **v2.0.0** — see commit range `v0.1.0..v2.0.0`.
 | [0008](docs/decisions/ADR-0008-clearml-secret-hygiene.md) | No plaintext ClearML secrets | **Accepted** | `.env` gitignored; `train/.env.example` + `clearml-init` pattern |
 | [0009](docs/decisions/ADR-0009-keras-skeleton-removal.md) | Remove Keras skeleton | **Accepted** | `infra/train_*_skeleton.py` and `train/src/data/keras/` deleted |
 | [0010](docs/decisions/ADR-0010-train-packaging-remove-syspath-hacks.md) | Editable `crowdnav-train` package | **Accepted** | `train/pyproject.toml` v2.0.0; `sys.path.insert` hacks removed |
-| [0011](docs/decisions/ADR-0011-risk-hotspot-widget-redesign.md) | Risk Hotspot Map redesign fork | **Proposed** | Gap documented; Option A (rename/rank UI) vs Option B (geo map) — no implementation yet |
+| [0011](docs/decisions/ADR-0011-risk-hotspot-widget-redesign.md) | Risk Hotspot Map redesign fork | **Accepted** | Option B geo map — `campus_zone` + MapLibre analytics widget |
 
 ---
 
@@ -67,7 +67,7 @@ Released with **v2.0.0** — see commit range `v0.1.0..v2.0.0`.
 - [ ] ADR-0005: springdoc-openapi or committed `openapi.yaml` + TS codegen in CI
 - [ ] ADR-0006: SHA-256 inventory script + LEGACY_CATALOG update
 - [ ] ADR-0007: label provenance worker CLI + merge gate report
-- [ ] ADR-0011: accept Option A (rename/rank UI) or Option B (geo hotspot map) and implement
+- [x] ADR-0011: accept Option B (geo hotspot map) and implement — 2026-06-19
 - [x] Session API auth hardening — `X-Session-Token` on create; required for session-scoped reads/writes (2026-06-19)
 
 ---

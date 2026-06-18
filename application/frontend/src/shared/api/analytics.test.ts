@@ -17,9 +17,9 @@ describe("mapAnalyticsSummary", () => {
           label: "demo (illustrative layout)",
           metric_label: "3 danger frames",
           risk: "DANGER",
-          top: "20%",
-          left: "25%",
-          synthetic: true,
+          lat: -33.8834,
+          lng: 151.2005,
+          synthetic: false,
         },
       ],
       frame_count: 10,
@@ -32,6 +32,8 @@ describe("mapAnalyticsSummary", () => {
     expect(mapped.zoneRisks[0]?.synthetic).toBe(true);
     expect(mapped.hotspots[0]?.risk).toBe("DANGER");
     expect(mapped.hotspots[0]?.metricLabel).toBe("3 danger frames");
+    expect(mapped.hotspots[0]?.lat).toBeCloseTo(-33.8834);
+    expect(mapped.hotspots[0]?.synthetic).toBe(false);
     expect(mapped.frameCount).toBe(10);
   });
 });

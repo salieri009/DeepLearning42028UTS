@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalyzeFrameResponse } from "@/entities/detection";
 import { analyzeFrame, closeSession, createSession } from "@/shared/api";
+import { pickNearestZoneId } from "@/shared/config/campusZones";
 import { reportError } from "@/shared/lib/reportError";
 
 type UseCrowdDetectionOptions = {
@@ -74,7 +75,22 @@ export function useCrowdDetection({
       setRunning(true);
 
       try {
-        const session = await createSession("WEBCAM");
+        let zoneId: string | undefined;
+        if (typeof navigator !== "undefined" && navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 3000,
+                maximumAge: 60_000,
+              });
+            });
+            zoneId = pickNearestZoneId(position.coords.latitude, position.coords.longitude);
+          } catch {
+            zoneId = undefined;
+          }
+        }
+        const session = await createSession("WEBCAM", "CrowdNav Dashboard", zoneId);
         sessionIdRef.current = session.id;
         setSessionId(session.id);
         setLastSessionId(session.id);

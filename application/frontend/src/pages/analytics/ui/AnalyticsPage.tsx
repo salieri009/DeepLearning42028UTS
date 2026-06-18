@@ -89,9 +89,8 @@ export function AnalyticsPage() {
       {error ? <EmptyState>{error}</EmptyState> : null}
 
       <Disclaimer>
-        Hotspot map layout and zone labels use session-source breakdowns, not geographic GPS
-        zones. Use peak hours and safety score for timing decisions; see widget notes for
-        synthetic rankings.
+        Hotspot map uses campus zone coordinates (Building 11 area). Sessions are tagged to the
+        nearest zone at start; peak hours and safety score guide timing decisions.
       </Disclaimer>
 
       <Grid>

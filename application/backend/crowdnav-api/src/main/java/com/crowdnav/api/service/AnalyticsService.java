@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +19,11 @@ import com.crowdnav.api.dto.analytics.AnalyticsSummaryResponse;
 import com.crowdnav.api.dto.analytics.HotspotItem;
 import com.crowdnav.api.dto.analytics.PeakHourItem;
 import com.crowdnav.api.dto.analytics.ZoneRiskItem;
+import com.crowdnav.api.persistence.entity.CampusZone;
 import com.crowdnav.api.persistence.projection.FrameRiskAggregateRow;
-import com.crowdnav.api.persistence.projection.HotspotAggregateRow;
 import com.crowdnav.api.persistence.projection.PeakHourAggregateRow;
+import com.crowdnav.api.persistence.projection.ZoneHotspotAggregateRow;
+import com.crowdnav.api.persistence.repository.CampusZoneRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
 
 @Service
@@ -32,9 +33,11 @@ public class AnalyticsService {
 	private static final int[] PEAK_HOUR_BUCKETS = { 8, 10, 12, 14, 16, 18, 20 };
 
 	private final FrameRepository frameRepository;
+	private final CampusZoneRepository zoneRepository;
 
-	public AnalyticsService(FrameRepository frameRepository) {
+	public AnalyticsService(FrameRepository frameRepository, CampusZoneRepository zoneRepository) {
 		this.frameRepository = frameRepository;
+		this.zoneRepository = zoneRepository;
 	}
 
 	public AnalyticsSummaryResponse buildSummary(int days) {
@@ -63,8 +66,7 @@ public class AnalyticsService {
 		List<PeakHourItem> peakHours = buildPeakHours(frameRepository.aggregatePeakHoursSince(since));
 		String busiestWindow = busiestWindow(peakHours);
 		List<ZoneRiskItem> zoneRisks = buildZoneRisks(frameRepository.aggregateRiskBySourceSince(since));
-		List<HotspotItem> hotspots = buildHotspots(
-				frameRepository.findTopDangerHotspotsSince(since, PageRequest.of(0, 3)));
+		List<HotspotItem> hotspots = buildHotspots(frameRepository.aggregateDangerHotspotsByZoneSince(since));
 
 		return new AnalyticsSummaryResponse(
 				safetyScore,
@@ -198,24 +200,30 @@ public class AnalyticsService {
 		};
 	}
 
-	private List<HotspotItem> buildHotspots(List<HotspotAggregateRow> ranked) {
+	private List<HotspotItem> buildHotspots(List<ZoneHotspotAggregateRow> ranked) {
+		Map<String, CampusZone> zonesById = new LinkedHashMap<>();
+		for (CampusZone zone : zoneRepository.findAll()) {
+			zonesById.put(zone.getId(), zone);
+		}
+
 		List<HotspotItem> hotspots = new ArrayList<>();
-		int index = 0;
-		for (HotspotAggregateRow row : ranked) {
-			if (row.getDangerCount() == 0) {
+		for (ZoneHotspotAggregateRow row : ranked) {
+			CampusZone zone = zonesById.get(row.getZoneId());
+			if (zone == null) {
 				continue;
 			}
-			String top = (20 + index * 18) + "%";
-			String left = (25 + index * 22) + "%";
+			long dangerCount = row.getDangerCount();
+			if (dangerCount == 0) {
+				continue;
+			}
 			hotspots.add(new HotspotItem(
-					"session-" + row.getSessionId(),
-					row.getClientLabel() + " (illustrative layout)",
-					row.getDangerCount() + " danger frames",
+					zone.getId(),
+					zone.getLabel(),
+					dangerCount + " danger frames",
 					"DANGER",
-					top,
-					left,
-					true));
-			index++;
+					zone.getLat().doubleValue(),
+					zone.getLng().doubleValue(),
+					false));
 		}
 		return hotspots;
 	}

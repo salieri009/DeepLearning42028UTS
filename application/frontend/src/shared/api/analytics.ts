@@ -23,8 +23,8 @@ export type AnalyticsSummaryResponse = {
     label: string;
     metric_label: string;
     risk: HotspotMarker["risk"];
-    top: string;
-    left: string;
+    lat: number;
+    lng: number;
     synthetic?: boolean;
   }>;
   frame_count: number;
@@ -67,8 +67,8 @@ export function mapAnalyticsSummary(response: AnalyticsSummaryResponse): Analyti
       label: hotspot.label,
       metricLabel: hotspot.metric_label,
       risk: hotspot.risk,
-      top: hotspot.top,
-      left: hotspot.left,
+      lat: hotspot.lat,
+      lng: hotspot.lng,
       synthetic: hotspot.synthetic,
     })),
     frameCount: response.frame_count,

@@ -227,12 +227,13 @@ Query: `?days=7` (default, positive integer). Response `200`:
   "zone_risks": [{ "name": "Webcam sessions", "level": "HIGH RISK", "percent": 42 }],
   "hotspots": [
     {
-      "id": "session-42",
-      "label": "Building A Lobby",
-      "capacity": "96% CAPACITY",
+      "id": "zone-a4",
+      "label": "Zone A-4 Congestion",
+      "metric_label": "42 danger frames",
       "risk": "DANGER",
-      "top": "20%",
-      "left": "25%"
+      "lat": -33.8842,
+      "lng": 151.2018,
+      "synthetic": false
     }
   ],
   "frame_count": 1240,
@@ -246,15 +247,18 @@ Empty database → `200` with zeroed summary fields and `hotspots: []`.
 
 > Full gap analysis: [`reports/analytics_hotspot_gap_analysis.md`](reports/analytics_hotspot_gap_analysis.md). Remediation: [ADR-0011](decisions/ADR-0011-risk-hotspot-widget-redesign.md).
 
+> **ADR-0011 Option B (2026-06-19):** Geo hotspot map — zones from `campus_zone` table; aggregation by `analysis_session.zone_id`.
+
 | Field | Meaning |
 |-------|---------|
-| `id` | `"session-"` + numeric session PK |
-| `label` | `analysis_session.client_label` (free text; not normalized place) |
-| `risk` | Always `"DANGER"` for ranked items (only DANGER frames counted) |
-| `metric_label` | Human-readable danger metric, e.g. `"42 danger frames"` (not occupancy/capacity) |
-| `top`, `left` | CSS placement on decorative map — **rank index**, not geographic coordinates (`20+index×18%`, `25+index×22%`) |
+| `id` | `campus_zone.id` (e.g. `node-alpha`, `zone-a4`) |
+| `label` | `campus_zone.label` (facility zone name) |
+| `risk` | `"DANGER"` when zone has DANGER frames in window |
+| `metric_label` | Danger frame count label, e.g. `"42 danger frames"` |
+| `lat`, `lng` | WGS84 coordinates from `campus_zone` |
+| `synthetic` | `false` for geo-backed zones |
 
-Aggregation: count frames where `max_proximity_risk = DANGER`, group by `session_id`, sort descending, **limit 3**. Not grouped by place/zone.
+Aggregation: count frames where `max_proximity_risk = DANGER`, **group by `zone_id`**, sort descending. Sessions tagged via optional `zone_id` on `POST /sessions` (defaults to `node-alpha`; dashboard picks nearest zone from GPS when available).
 
 ## 5.2 Settings API (FR-15)
 

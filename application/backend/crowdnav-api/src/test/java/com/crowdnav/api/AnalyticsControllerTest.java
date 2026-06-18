@@ -76,6 +76,7 @@ class AnalyticsControllerTest {
 				.andExpect(jsonPath("$.frame_count").value(1))
 				.andExpect(jsonPath("$.session_count").value(1))
 				.andExpect(jsonPath("$.zone_risks").isArray())
-				.andExpect(jsonPath("$.peak_hours").isArray());
+				.andExpect(jsonPath("$.peak_hours").isArray())
+				.andExpect(jsonPath("$.hotspots").isArray());
 	}
 }

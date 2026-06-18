@@ -22,11 +22,13 @@ import com.crowdnav.api.dto.session.SessionDetailResponse;
 import com.crowdnav.api.dto.session.SessionListResponse;
 import com.crowdnav.api.dto.session.SessionResponse;
 import com.crowdnav.api.persistence.entity.AnalysisSession;
+import com.crowdnav.api.persistence.entity.CampusZone;
 import com.crowdnav.api.persistence.entity.Detection;
 import com.crowdnav.api.persistence.entity.Frame;
 import com.crowdnav.api.persistence.entity.SourceType;
 import com.crowdnav.api.persistence.mapper.PersistenceMapper;
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
+import com.crowdnav.api.persistence.repository.CampusZoneRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
 
@@ -38,21 +40,25 @@ public class SessionService {
 	private static final Set<String> VALID_CLASSES = Set.of("person", "wheelchair", "luggage");
 	private static final Instant ALL_TIME_START = Instant.EPOCH;
 	private static final String NO_FILTER = "";
+	private static final String DEFAULT_ZONE_ID = "node-alpha";
 
 	private final AnalysisSessionRepository sessionRepository;
 	private final FrameRepository frameRepository;
 	private final DetectionRepository detectionRepository;
 	private final SessionAuthProperties sessionAuth;
+	private final CampusZoneRepository zoneRepository;
 
 	public SessionService(
 			AnalysisSessionRepository sessionRepository,
 			FrameRepository frameRepository,
 			DetectionRepository detectionRepository,
-			SessionAuthProperties sessionAuth) {
+			SessionAuthProperties sessionAuth,
+			CampusZoneRepository zoneRepository) {
 		this.sessionRepository = sessionRepository;
 		this.frameRepository = frameRepository;
 		this.detectionRepository = detectionRepository;
 		this.sessionAuth = sessionAuth;
+		this.zoneRepository = zoneRepository;
 	}
 
 	@Transactional
@@ -64,11 +70,20 @@ public class SessionService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid source_type: " + request.sourceType());
 		}
 
+		CampusZone zone = resolveZone(request.zoneId());
+
 		AnalysisSession session = sessionRepository.save(new AnalysisSession(
 				Instant.now(),
 				request.clientLabel(),
-				sourceType));
+				sourceType,
+				zone));
 		return toSessionResponse(session, true);
+	}
+
+	private CampusZone resolveZone(String zoneId) {
+		String safeZoneId = zoneId == null || zoneId.isBlank() ? DEFAULT_ZONE_ID : zoneId;
+		return zoneRepository.findById(safeZoneId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid zone_id: " + safeZoneId));
 	}
 
 	public SessionListResponse listSessions(
