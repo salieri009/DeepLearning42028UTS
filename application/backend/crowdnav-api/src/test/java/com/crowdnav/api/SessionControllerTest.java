@@ -1,10 +1,14 @@
 package com.crowdnav.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import static com.crowdnav.api.support.SessionTestSupport.getDetections;
+import static com.crowdnav.api.support.SessionTestSupport.getFrames;
+import static com.crowdnav.api.support.SessionTestSupport.patchSession;
+import static com.crowdnav.api.support.SessionTestSupport.withSessionToken;
 
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
@@ -16,11 +20,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
+import com.crowdnav.api.support.SessionTestSupport;
+import com.crowdnav.api.support.SessionTestSupport.CreatedSession;
 import com.crowdnav.api.support.TestSettingsSupport;
 
 @SpringBootTest
@@ -51,12 +56,13 @@ class SessionControllerTest {
 	}
 
 	@Test
-	void createSession_returns201() throws Exception {
+	void createSession_returns201WithAccessToken() throws Exception {
 		mockMvc.perform(post("/api/v1/sessions")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"client_label\":\"demo\",\"source_type\":\"WEBCAM\"}"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.id").isNumber())
+				.andExpect(jsonPath("$.access_token").isNotEmpty())
 				.andExpect(jsonPath("$.client_label").value("demo"))
 				.andExpect(jsonPath("$.source_type").value("WEBCAM"));
 	}
@@ -79,23 +85,24 @@ class SessionControllerTest {
 
 	@Test
 	void listAndGetSession_returnsAggregates() throws Exception {
-		MvcResult created = mockMvc.perform(post("/api/v1/sessions")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"client_label\":\"laptop\",\"source_type\":\"MOCK\"}"))
-				.andExpect(status().isCreated())
-				.andReturn();
-
-		long id = Long.parseLong(created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "laptop", "MOCK");
 
 		mockMvc.perform(get("/api/v1/sessions"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isArray())
 				.andExpect(jsonPath("$.total").isNumber());
 
-		mockMvc.perform(get("/api/v1/sessions/" + id))
+		mockMvc.perform(withSessionToken(get("/api/v1/sessions/" + created.id()), created.accessToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.frame_count").value(0))
 				.andExpect(jsonPath("$.worst_risk").value("SAFE"));
+	}
+
+	@Test
+	void getSession_withoutToken_returns403() throws Exception {
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "protected", "MOCK");
+		mockMvc.perform(get("/api/v1/sessions/" + created.id()))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -106,26 +113,27 @@ class SessionControllerTest {
 
 	@Test
 	void closeSession_setsEndedAt() throws Exception {
-		long id = createSessionId("close-test", "WEBCAM");
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "close-test", "WEBCAM");
 
-		mockMvc.perform(patch("/api/v1/sessions/" + id))
+		mockMvc.perform(patchSession(created.id(), created.accessToken()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.ended_at").isNotEmpty());
+				.andExpect(jsonPath("$.ended_at").isNotEmpty())
+				.andExpect(jsonPath("$.access_token").doesNotExist());
 
-		mockMvc.perform(patch("/api/v1/sessions/" + id))
+		mockMvc.perform(patchSession(created.id(), created.accessToken()))
 				.andExpect(status().isConflict());
 	}
 
 	@Test
 	void closeSession_notFound_returns404() throws Exception {
-		mockMvc.perform(patch("/api/v1/sessions/999999"))
+		mockMvc.perform(patchSession(999999, "invalid-token"))
 				.andExpect(status().isNotFound());
 	}
 
 	@Test
 	void listSessions_offsetSkipsCorrectly() throws Exception {
 		for (int i = 0; i < 3; i++) {
-			createSessionId("offset-" + i, "MOCK");
+			SessionTestSupport.createSession(mockMvc, "offset-" + i, "MOCK");
 		}
 
 		long total = sessionRepository.count();
@@ -138,8 +146,8 @@ class SessionControllerTest {
 
 	@Test
 	void listSessions_filtersBySourceType() throws Exception {
-		createSessionId("webcam-only", "WEBCAM");
-		createSessionId("mock-only", "MOCK");
+		SessionTestSupport.createSession(mockMvc, "webcam-only", "WEBCAM");
+		SessionTestSupport.createSession(mockMvc, "mock-only", "MOCK");
 
 		mockMvc.perform(get("/api/v1/sessions").param("source_type", "MOCK"))
 				.andExpect(status().isOk())
@@ -149,42 +157,50 @@ class SessionControllerTest {
 
 	@Test
 	void listDetections_afterPersist_returnsItems() throws Exception {
-		long sessionId = createSessionId("det-test", "WEBCAM");
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "det-test", "WEBCAM");
 
-		mockMvc.perform(post("/api/v1/analyze-frame")
+		mockMvc.perform(withSessionToken(post("/api/v1/analyze-frame")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + created.id() + "}"),
+				created.accessToken()))
 				.andExpect(status().isOk());
 
 		TimeUnit.MILLISECONDS.sleep(300);
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/detections"))
+		mockMvc.perform(getDetections(created.id(), created.accessToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isArray())
 				.andExpect(jsonPath("$.items.length()").value(2));
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/detections").param("risk", "WARNING"))
+		mockMvc.perform(getDetections(created.id(), created.accessToken()).param("risk", "WARNING"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(1));
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/detections").param("class", "person"))
+		mockMvc.perform(getDetections(created.id(), created.accessToken()).param("class", "person"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(2));
 	}
 
 	@Test
-	void listDetections_invalidRisk_returns400() throws Exception {
-		long sessionId = createSessionId("risk-filter", "MOCK");
+	void listDetections_withoutToken_returns403() throws Exception {
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "idor", "MOCK");
+		mockMvc.perform(get("/api/v1/sessions/" + created.id() + "/detections"))
+				.andExpect(status().isForbidden());
+	}
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/detections").param("risk", "FOOBAR"))
+	@Test
+	void listDetections_invalidRisk_returns400() throws Exception {
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "risk-filter", "MOCK");
+
+		mockMvc.perform(getDetections(created.id(), created.accessToken()).param("risk", "FOOBAR"))
 				.andExpect(status().isBadRequest());
 	}
 
 	@Test
 	void listDetections_invalidClass_returns400() throws Exception {
-		long sessionId = createSessionId("class-filter", "MOCK");
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "class-filter", "MOCK");
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/detections").param("class", "dog"))
+		mockMvc.perform(getDetections(created.id(), created.accessToken()).param("class", "dog"))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -196,16 +212,17 @@ class SessionControllerTest {
 
 	@Test
 	void listFrames_afterPersist_returnsTrail() throws Exception {
-		long sessionId = createSessionId("frame-trail", "WEBCAM");
+		CreatedSession created = SessionTestSupport.createSession(mockMvc, "frame-trail", "WEBCAM");
 
-		mockMvc.perform(post("/api/v1/analyze-frame")
+		mockMvc.perform(withSessionToken(post("/api/v1/analyze-frame")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + created.id() + "}"),
+				created.accessToken()))
 				.andExpect(status().isOk());
 
 		TimeUnit.MILLISECONDS.sleep(300);
 
-		mockMvc.perform(get("/api/v1/sessions/" + sessionId + "/frames"))
+		mockMvc.perform(getFrames(created.id(), created.accessToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items").isArray())
 				.andExpect(jsonPath("$.items.length()").value(1))
@@ -217,14 +234,5 @@ class SessionControllerTest {
 	void listFrames_notFound_returns404() throws Exception {
 		mockMvc.perform(get("/api/v1/sessions/999999/frames"))
 				.andExpect(status().isNotFound());
-	}
-
-	private long createSessionId(String label, String sourceType) throws Exception {
-		MvcResult created = mockMvc.perform(post("/api/v1/sessions")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"client_label\":\"" + label + "\",\"source_type\":\"" + sourceType + "\"}"))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return Long.parseLong(created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
 	}
 }

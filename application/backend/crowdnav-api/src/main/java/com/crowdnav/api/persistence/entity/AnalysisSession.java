@@ -11,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.crowdnav.api.support.SessionAccessToken;
+
 @Entity
 @Table(name = "analysis_session")
 public class AnalysisSession {
@@ -32,6 +34,9 @@ public class AnalysisSession {
 	@Column(name = "source_type", nullable = false, length = 16)
 	private SourceType sourceType;
 
+	@Column(name = "access_token", nullable = false, length = 64, updatable = false)
+	private String accessToken;
+
 	protected AnalysisSession() {
 	}
 
@@ -39,6 +44,7 @@ public class AnalysisSession {
 		this.startedAt = startedAt;
 		this.clientLabel = clientLabel;
 		this.sourceType = sourceType;
+		this.accessToken = SessionAccessToken.generate();
 	}
 
 	public Long getId() {
@@ -63,5 +69,9 @@ public class AnalysisSession {
 
 	public SourceType getSourceType() {
 		return sourceType;
+	}
+
+	public String getAccessToken() {
+		return accessToken;
 	}
 }

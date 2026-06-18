@@ -68,7 +68,7 @@ Released with **v2.0.0** — see commit range `v0.1.0..v2.0.0`.
 - [ ] ADR-0006: SHA-256 inventory script + LEGACY_CATALOG update
 - [ ] ADR-0007: label provenance worker CLI + merge gate report
 - [ ] ADR-0011: accept Option A (rename/rank UI) or Option B (geo hotspot map) and implement
-- [ ] Session API auth hardening (demo IDOR noted in security review)
+- [x] Session API auth hardening — `X-Session-Token` on create; required for session-scoped reads/writes (2026-06-19)
 
 ---
 

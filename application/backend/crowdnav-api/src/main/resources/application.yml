@@ -45,3 +45,5 @@ app:
     enabled: ${APP_PERSISTENCE_ENABLED:true}
   upload:
     max-frame-bytes: ${APP_UPLOAD_MAX_FRAME_BYTES:5242880}
+  session:
+    require-access-token: ${APP_SESSION_REQUIRE_ACCESS_TOKEN:true}

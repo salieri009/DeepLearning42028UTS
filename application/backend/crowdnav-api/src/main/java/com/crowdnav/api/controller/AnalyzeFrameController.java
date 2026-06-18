@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.crowdnav.api.config.FrameUploadProperties;
+import com.crowdnav.api.config.SessionAuthProperties;
 import com.crowdnav.api.dto.AnalyzeFrameRequest;
 import com.crowdnav.api.dto.AnalyzeFrameResponse;
 import com.crowdnav.api.service.AnalyzeFrameService;
@@ -41,7 +43,9 @@ public class AnalyzeFrameController {
 	 * JSON body: {@code frame_base64} is a base64-encoded JPEG/PNG frame.
 	 */
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public AnalyzeFrameResponse analyzeFrameJson(@RequestBody(required = false) AnalyzeFrameRequest request) {
+	public AnalyzeFrameResponse analyzeFrameJson(
+			@RequestBody(required = false) AnalyzeFrameRequest request,
+			@RequestHeader(value = SessionAuthProperties.ACCESS_TOKEN_HEADER, required = false) String accessToken) {
 		if (request == null || request.frameBase64() == null || request.frameBase64().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "frame_base64 is required");
 		}
@@ -52,7 +56,7 @@ public class AnalyzeFrameController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid base64 in frame_base64");
 		}
 		if (request.sessionId() != null) {
-			sessionService.requireSessionOpen(request.sessionId());
+			sessionService.requireSessionOpen(request.sessionId(), accessToken);
 		}
 		return analyzeFrameService.analyzeFrame(request.frameBase64(), request.sessionId());
 	}
@@ -64,7 +68,8 @@ public class AnalyzeFrameController {
 	@PostMapping(path = "/analyze-frame", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public AnalyzeFrameResponse analyzeFrameMultipart(
 			@RequestPart(value = "image", required = false) MultipartFile image,
-			@RequestParam(value = "session_id", required = false) Long sessionId) {
+			@RequestParam(value = "session_id", required = false) Long sessionId,
+			@RequestHeader(value = SessionAuthProperties.ACCESS_TOKEN_HEADER, required = false) String accessToken) {
 		String frameBase64 = null;
 		if (image != null && !image.isEmpty()) {
 			if (image.getSize() > uploadLimits.maxFrameBytes()) {
@@ -77,7 +82,7 @@ public class AnalyzeFrameController {
 			}
 		}
 		if (sessionId != null) {
-			sessionService.requireSessionOpen(sessionId);
+			sessionService.requireSessionOpen(sessionId, accessToken);
 		}
 		return analyzeFrameService.analyzeFrame(frameBase64, sessionId);
 	}

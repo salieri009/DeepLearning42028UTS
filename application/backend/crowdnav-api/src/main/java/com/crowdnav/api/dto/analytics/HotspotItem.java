@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record HotspotItem(
 		String id,
 		String label,
-		String capacity,
+		@JsonProperty("metric_label") String metricLabel,
 		String risk,
 		String top,
 		String left,

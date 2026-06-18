@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static com.crowdnav.api.support.SessionTestSupport.withSessionToken;
+
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
@@ -15,11 +17,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
+import com.crowdnav.api.support.SessionTestSupport;
+import com.crowdnav.api.support.SessionTestSupport.CreatedSession;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -58,11 +61,12 @@ class AnalyticsControllerTest {
 
 	@Test
 	void summary_afterAnalyze_returnsAggregates() throws Exception {
-		long sessionId = createSessionId("analytics", "WEBCAM");
+		CreatedSession session = SessionTestSupport.createSession(mockMvc, "analytics", "WEBCAM");
 
-		mockMvc.perform(post("/api/v1/analyze-frame")
+		mockMvc.perform(withSessionToken(post("/api/v1/analyze-frame")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + session.id() + "}"),
+				session.accessToken()))
 				.andExpect(status().isOk());
 
 		TimeUnit.MILLISECONDS.sleep(300);
@@ -73,14 +77,5 @@ class AnalyticsControllerTest {
 				.andExpect(jsonPath("$.session_count").value(1))
 				.andExpect(jsonPath("$.zone_risks").isArray())
 				.andExpect(jsonPath("$.peak_hours").isArray());
-	}
-
-	private long createSessionId(String label, String sourceType) throws Exception {
-		MvcResult created = mockMvc.perform(post("/api/v1/sessions")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"client_label\":\"" + label + "\",\"source_type\":\"" + sourceType + "\"}"))
-				.andExpect(status().isCreated())
-				.andReturn();
-		return Long.parseLong(created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
 	}
 }

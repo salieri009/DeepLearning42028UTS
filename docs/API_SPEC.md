@@ -28,7 +28,7 @@ Formal contract for the **public** API (Spring Boot, port 8080) and the **intern
 | Casing | Response/request bodies: `snake_case`. Java DTOs map via `@JsonProperty`. |
 | Transport | Backend→inference pinned to **HTTP/1.1** (uvicorn lacks h2c; HTTP/2 drops the body). |
 | CORS | `app.cors.allowed-origins` — `http://localhost:5173,3000,8081` (dev), `http://localhost` (Docker). |
-| Auth | None (local demo). Session IDs are enumerable — treat as **IDOR risk** if port 8080 is public. Planned: session-scoped token (ADR tracker). Do not expose port 9000 publicly. |
+| Auth | Session-scoped `X-Session-Token` returned on `POST /sessions` (create only). Required on `GET/PATCH /sessions/{id}`, `/detections`, `/frames`, and `analyze-frame` when `session_id` is set. `GET /sessions` list remains open (aggregate metadata). Disable via `app.session.require-access-token=false`. Settings/analytics endpoints still unauthenticated (local demo). |
 | Upload limits | JSON `frame_base64` and multipart `image` capped at **5 MB** decoded (`app.upload.max-frame-bytes`, default 5242880). Oversize → **413**. |
 
 ## 2. Shared Schemas
@@ -251,7 +251,7 @@ Empty database → `200` with zeroed summary fields and `hotspots: []`.
 | `id` | `"session-"` + numeric session PK |
 | `label` | `analysis_session.client_label` (free text; not normalized place) |
 | `risk` | Always `"DANGER"` for ranked items (only DANGER frames counted) |
-| `capacity` | **Not occupancy.** `min(99, danger_frame_count × 8) + "% CAPACITY"` — misleading label; see G-8 |
+| `metric_label` | Human-readable danger metric, e.g. `"42 danger frames"` (not occupancy/capacity) |
 | `top`, `left` | CSS placement on decorative map — **rank index**, not geographic coordinates (`20+index×18%`, `25+index×22%`) |
 
 Aggregation: count frames where `max_proximity_risk = DANGER`, group by `session_id`, sort descending, **limit 3**. Not grouped by place/zone.
@@ -301,7 +301,8 @@ Spring returns `ResponseStatusException` → standard error body
 | 400 | Invalid `source_type` on `POST /sessions` | `SessionService` |
 | 400 | Missing/blank `source_type` on `POST /sessions` | Bean validation (`@NotBlank`) |
 | 400 | Invalid settings payload on `PUT /settings` | `SettingsService.validate` |
-| 404 | `session_id` not found on `analyze-frame` | `AnalyzeFrameController` → `SessionService.requireSessionExists` |
+| 403 | Missing/invalid `X-Session-Token` on protected session endpoints | `SessionService.loadSessionForAccess` |
+| 404 | `session_id` not found on `analyze-frame` | `SessionService.loadSessionForAccess` |
 | 404 | `GET /sessions/{id}`, `/detections`, or `/frames` — session not found | `SessionService` |
 | 409 | `PATCH /sessions/{id}` — session already closed | `SessionService.closeSession` |
 | 502 | Inference returned 5xx / empty body | `RemoteAnalyzeFrameService` (`BAD_GATEWAY`) |

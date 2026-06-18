@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.crowdnav.api.config.SessionAuthProperties;
 import com.crowdnav.api.dto.session.CloseSessionRequest;
 import com.crowdnav.api.dto.session.CreateSessionRequest;
 import com.crowdnav.api.dto.session.DetectionItemResponse;
@@ -41,14 +42,17 @@ public class SessionService {
 	private final AnalysisSessionRepository sessionRepository;
 	private final FrameRepository frameRepository;
 	private final DetectionRepository detectionRepository;
+	private final SessionAuthProperties sessionAuth;
 
 	public SessionService(
 			AnalysisSessionRepository sessionRepository,
 			FrameRepository frameRepository,
-			DetectionRepository detectionRepository) {
+			DetectionRepository detectionRepository,
+			SessionAuthProperties sessionAuth) {
 		this.sessionRepository = sessionRepository;
 		this.frameRepository = frameRepository;
 		this.detectionRepository = detectionRepository;
+		this.sessionAuth = sessionAuth;
 	}
 
 	@Transactional
@@ -64,7 +68,7 @@ public class SessionService {
 				Instant.now(),
 				request.clientLabel(),
 				sourceType));
-		return toSessionResponse(session);
+		return toSessionResponse(session, true);
 	}
 
 	public SessionListResponse listSessions(
@@ -88,7 +92,8 @@ public class SessionService {
 		return new SessionListResponse(items, total);
 	}
 
-	public SessionDetailResponse getSession(Long id) {
+	public SessionDetailResponse getSession(Long id, String accessToken) {
+		validateSessionAccess(id, accessToken);
 		List<Object[]> rows = sessionRepository.findSessionSummaryRowsById(id);
 		if (rows.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
@@ -96,10 +101,9 @@ public class SessionService {
 		return toSessionDetail(rows.get(0));
 	}
 
-	public DetectionListResponse listDetections(Long sessionId, String risk, String classLabel, int limit) {
-		if (!sessionRepository.existsById(sessionId)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
-		}
+	public DetectionListResponse listDetections(
+			Long sessionId, String accessToken, String risk, String classLabel, int limit) {
+		validateSessionAccess(sessionId, accessToken);
 
 		validateRiskFilter(risk);
 		validateClassFilter(classLabel);
@@ -113,10 +117,8 @@ public class SessionService {
 		return new DetectionListResponse(items);
 	}
 
-	public FrameListResponse listFrames(Long sessionId, int limit) {
-		if (!sessionRepository.existsById(sessionId)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
-		}
+	public FrameListResponse listFrames(Long sessionId, String accessToken, int limit) {
+		validateSessionAccess(sessionId, accessToken);
 
 		int safeLimit = Math.clamp(limit, 1, 500);
 		List<FrameItemResponse> items = frameRepository
@@ -128,9 +130,8 @@ public class SessionService {
 	}
 
 	@Transactional
-	public SessionResponse closeSession(Long id, CloseSessionRequest request) {
-		AnalysisSession session = sessionRepository.findById(id)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
+	public SessionResponse closeSession(Long id, String accessToken, CloseSessionRequest request) {
+		AnalysisSession session = loadSessionForAccess(id, accessToken);
 
 		if (session.getEndedAt() != null) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Session already closed");
@@ -138,20 +139,41 @@ public class SessionService {
 
 		Instant endedAt = request != null && request.endedAt() != null ? request.endedAt() : Instant.now();
 		session.setEndedAt(endedAt);
-		return toSessionResponse(session);
+		return toSessionResponse(session, false);
+	}
+
+	public void validateSessionAccess(Long sessionId, String accessToken) {
+		if (!sessionAuth.requireAccessToken()) {
+			requireSessionExists(sessionId);
+			return;
+		}
+		loadSessionForAccess(sessionId, accessToken);
+	}
+
+	public void requireSessionOpen(Long sessionId, String accessToken) {
+		AnalysisSession session = loadSessionForAccess(sessionId, accessToken);
+		if (session.getEndedAt() != null) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Session already closed");
+		}
+	}
+
+	private AnalysisSession loadSessionForAccess(Long sessionId, String accessToken) {
+		AnalysisSession session = sessionRepository.findById(sessionId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
+		if (sessionAuth.requireAccessToken()) {
+			if (accessToken == null || accessToken.isBlank()) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "X-Session-Token header is required");
+			}
+			if (!session.getAccessToken().equals(accessToken)) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid session access token");
+			}
+		}
+		return session;
 	}
 
 	public void requireSessionExists(Long sessionId) {
 		if (!sessionRepository.existsById(sessionId)) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
-		}
-	}
-
-	public void requireSessionOpen(Long sessionId) {
-		AnalysisSession session = sessionRepository.findById(sessionId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
-		if (session.getEndedAt() != null) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Session already closed");
 		}
 	}
 
@@ -243,13 +265,14 @@ public class SessionService {
 		throw new IllegalArgumentException("Unsupported timestamp type: " + value.getClass());
 	}
 
-	private SessionResponse toSessionResponse(AnalysisSession session) {
+	private SessionResponse toSessionResponse(AnalysisSession session, boolean includeAccessToken) {
 		return new SessionResponse(
 				session.getId(),
 				session.getStartedAt(),
 				session.getEndedAt(),
 				session.getClientLabel(),
-				session.getSourceType().name());
+				session.getSourceType().name(),
+				includeAccessToken ? session.getAccessToken() : null);
 	}
 
 	private DetectionItemResponse toDetectionItem(Detection detection) {

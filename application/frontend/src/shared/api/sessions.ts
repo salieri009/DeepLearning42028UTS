@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { SESSION_TOKEN_HEADER, sessionAuthHeaders, storeSessionToken } from "@/shared/lib/sessionTokenStorage";
 import type {
   DetectionListResponse,
   FrameListResponse,
@@ -9,6 +10,8 @@ import type {
   SourceType,
 } from "@/entities/session";
 
+export { SESSION_TOKEN_HEADER };
+
 export async function createSession(
   sourceType: SourceType = "WEBCAM",
   clientLabel = "CrowdNav Dashboard",
@@ -17,11 +20,16 @@ export async function createSession(
     source_type: sourceType,
     client_label: clientLabel,
   });
+  if (data.access_token) {
+    storeSessionToken(data.id, data.access_token);
+  }
   return data;
 }
 
 export async function closeSession(id: number): Promise<SessionResponse> {
-  const { data } = await apiClient.patch<SessionResponse>(`/v1/sessions/${id}`, {});
+  const { data } = await apiClient.patch<SessionResponse>(`/v1/sessions/${id}`, {}, {
+    headers: sessionAuthHeaders(id),
+  });
   return data;
 }
 
@@ -59,6 +67,7 @@ export async function getSession(
   signal?: AbortSignal,
 ): Promise<SessionDetailResponse> {
   const { data } = await apiClient.get<SessionDetailResponse>(`/v1/sessions/${id}`, {
+    headers: sessionAuthHeaders(id),
     signal,
   });
   return data;
@@ -81,6 +90,7 @@ export async function listDetections(
       class: params.classLabel,
       limit: params.limit ?? 100,
     },
+    headers: sessionAuthHeaders(id),
     signal,
   });
   return data;
@@ -93,6 +103,7 @@ export async function listSessionFrames(
 ): Promise<FrameListResponse> {
   const { data } = await apiClient.get<FrameListResponse>(`/v1/sessions/${id}/frames`, {
     params: { limit },
+    headers: sessionAuthHeaders(id),
     signal,
   });
   return data;

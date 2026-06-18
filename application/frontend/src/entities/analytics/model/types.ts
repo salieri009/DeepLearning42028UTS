@@ -16,7 +16,7 @@ export type PeakHour = {
 export type HotspotMarker = {
   id: string;
   label: string;
-  capacity: string;
+  metricLabel: string;
   risk: "DANGER" | "WARNING";
   top: string;
   left: string;

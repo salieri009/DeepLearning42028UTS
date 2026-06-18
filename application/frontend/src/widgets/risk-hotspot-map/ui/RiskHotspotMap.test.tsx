@@ -9,7 +9,7 @@ const hotspots: HotspotMarker[] = [
   {
     id: "a1",
     label: "Zone A",
-    capacity: "80%",
+    metricLabel: "80 danger frames",
     risk: "DANGER",
     top: "30%",
     left: "40%",

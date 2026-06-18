@@ -15,7 +15,7 @@ describe("mapAnalyticsSummary", () => {
         {
           id: "session-1",
           label: "demo (illustrative layout)",
-          capacity: "3 danger frames",
+          metric_label: "3 danger frames",
           risk: "DANGER",
           top: "20%",
           left: "25%",
@@ -31,7 +31,7 @@ describe("mapAnalyticsSummary", () => {
     expect(mapped.zoneRisks[0]?.name).toBe("Webcam sessions (source type)");
     expect(mapped.zoneRisks[0]?.synthetic).toBe(true);
     expect(mapped.hotspots[0]?.risk).toBe("DANGER");
-    expect(mapped.hotspots[0]?.synthetic).toBe(true);
+    expect(mapped.hotspots[0]?.metricLabel).toBe("3 danger frames");
     expect(mapped.frameCount).toBe(10);
   });
 });

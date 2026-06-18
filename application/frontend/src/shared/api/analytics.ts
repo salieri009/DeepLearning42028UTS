@@ -21,7 +21,7 @@ export type AnalyticsSummaryResponse = {
   hotspots: Array<{
     id: string;
     label: string;
-    capacity: string;
+    metric_label: string;
     risk: HotspotMarker["risk"];
     top: string;
     left: string;
@@ -65,7 +65,7 @@ export function mapAnalyticsSummary(response: AnalyticsSummaryResponse): Analyti
     hotspots: response.hotspots.map((hotspot) => ({
       id: hotspot.id,
       label: hotspot.label,
-      capacity: hotspot.capacity,
+      metricLabel: hotspot.metric_label,
       risk: hotspot.risk,
       top: hotspot.top,
       left: hotspot.left,

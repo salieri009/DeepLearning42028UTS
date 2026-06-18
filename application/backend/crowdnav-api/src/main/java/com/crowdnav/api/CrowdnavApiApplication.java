@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import com.crowdnav.api.config.FrameUploadProperties;
+import com.crowdnav.api.config.SessionAuthProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(FrameUploadProperties.class)
+@EnableConfigurationProperties({ FrameUploadProperties.class, SessionAuthProperties.class })
 public class CrowdnavApiApplication {
 
 	public static void main(String[] args) {

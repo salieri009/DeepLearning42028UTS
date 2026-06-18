@@ -8,23 +8,33 @@ vi.mock("./client", () => ({
   },
 }));
 
+vi.mock("@/shared/lib/sessionTokenStorage", () => ({
+  sessionAuthHeaders: (sessionId: number) => ({ "X-Session-Token": `token-${sessionId}` }),
+}));
+
 describe("analyzeFrame API", () => {
-  it("includes session_id when provided", async () => {
+  it("includes session_id and auth header when provided", async () => {
     vi.mocked(apiClient.post).mockClear();
     await analyzeFrame("abc123", 42);
 
-    expect(apiClient.post).toHaveBeenCalledWith("/v1/analyze-frame", {
-      frame_base64: "abc123",
-      session_id: 42,
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/v1/analyze-frame",
+      {
+        frame_base64: "abc123",
+        session_id: 42,
+      },
+      { headers: { "X-Session-Token": "token-42" } },
+    );
   });
 
   it("omits session_id when not provided", async () => {
     vi.mocked(apiClient.post).mockClear();
     await analyzeFrame("abc123");
 
-    expect(apiClient.post).toHaveBeenCalledWith("/v1/analyze-frame", {
-      frame_base64: "abc123",
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/v1/analyze-frame",
+      { frame_base64: "abc123" },
+      undefined,
+    );
   });
 });

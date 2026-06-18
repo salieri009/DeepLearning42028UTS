@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static com.crowdnav.api.support.SessionTestSupport.withSessionToken;
+
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
@@ -14,11 +16,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
 import com.crowdnav.api.persistence.repository.DetectionRepository;
 import com.crowdnav.api.persistence.repository.FrameRepository;
+import com.crowdnav.api.support.SessionTestSupport;
+import com.crowdnav.api.support.SessionTestSupport.CreatedSession;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -64,23 +67,17 @@ class AnalyzeFramePersistenceTest {
 
 	@Test
 	void analyzeFrame_withSessionId_persistsFrameAndDetections() throws Exception {
-		MvcResult session = mockMvc.perform(post("/api/v1/sessions")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"client_label\":\"persist-test\",\"source_type\":\"WEBCAM\"}"))
-				.andExpect(status().isCreated())
-				.andReturn();
+		CreatedSession session = SessionTestSupport.createSession(mockMvc, "persist-test", "WEBCAM");
 
-		long sessionId = Long.parseLong(
-				session.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
-
-		mockMvc.perform(post("/api/v1/analyze-frame")
+		mockMvc.perform(withSessionToken(post("/api/v1/analyze-frame")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+						.content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + session.id() + "}"),
+				session.accessToken()))
 				.andExpect(status().isOk());
 
 		TimeUnit.MILLISECONDS.sleep(300);
 
-		assertThat(frameRepository.countBySessionId(sessionId)).isEqualTo(1);
+		assertThat(frameRepository.countBySessionId(session.id())).isEqualTo(1);
 		assertThat(detectionRepository.findAll()).hasSizeGreaterThanOrEqualTo(2);
 	}
 

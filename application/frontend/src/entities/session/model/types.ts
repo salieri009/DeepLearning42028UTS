@@ -8,6 +8,7 @@ export type SessionResponse = {
   ended_at: string | null;
   client_label: string;
   source_type: SourceType;
+  access_token?: string;
 };
 
 export type SessionDetailResponse = SessionResponse & {

@@ -201,7 +201,7 @@ export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
           hotspots.map((spot) => {
             const variant = spot.risk === "DANGER" ? "danger" : "warning";
             return (
-              <Marker key={spot.id} $top={spot.top} $left={spot.left} role="img" aria-label={`${spot.label}, ${spot.risk} risk, capacity ${spot.capacity}`}>
+              <Marker key={spot.id} $top={spot.top} $left={spot.left} role="img" aria-label={`${spot.label}, ${spot.risk} risk, ${spot.metricLabel}`}>
                 <Ping $variant={variant} />
                 <MarkerCore $variant={variant}>
                   <Icon name="warning" size={20} />
