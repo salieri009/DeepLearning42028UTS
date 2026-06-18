@@ -28,6 +28,7 @@ const Dialog = styled(GlassPanel)<{ $width: string }>`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
 const Header = styled.div`

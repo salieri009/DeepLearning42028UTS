@@ -42,7 +42,7 @@ const Aside = styled.aside`
   background: ${({ theme }) => theme.color.glass.fill};
   backdrop-filter: blur(20px);
   border-right: 1px solid ${({ theme }) => theme.color.glass.border};
-  box-shadow: ${({ theme }) => theme.shadow.md};
+  box-shadow: ${({ theme }) => theme.shadow.glow};
 
   @media (min-width: 1024px) {
     display: flex;

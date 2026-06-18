@@ -17,7 +17,7 @@ type StatCardProps = {
 const badgeStyles = {
   safe: css`
     background: ${({ theme }) => theme.color.tint.success};
-    color: ${({ theme }) => theme.color.success};
+    color: ${({ theme }) => theme.color.neutral[100]};
   `,
   warning: css`
     background: ${({ theme }) => theme.color.warning};
@@ -36,16 +36,21 @@ const badgeStyles = {
 const Card = styled(GlassPanel)<{ $accent?: boolean }>`
   padding: ${({ theme }) => theme.spacing[4]};
   cursor: default;
-  transition: background 120ms ease;
+  transition: background 120ms ease, box-shadow 120ms ease;
   ${({ $accent, theme }) =>
     $accent &&
     css`
-      border-left: 2px solid ${theme.color.warning};
-      background: ${theme.color.surfaceHigh};
+      border-left: 3px solid ${theme.color.warning};
+      background: ${theme.color.glass.fillStrong};
     `}
 
   &:hover {
     background: ${({ theme }) => theme.color.glass.fillStrong};
+    box-shadow: ${({ theme }) => theme.shadow.glow};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

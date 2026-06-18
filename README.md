@@ -4,7 +4,7 @@
   <p align="center"><strong>Real-time crowd & proximity alerts for mobility-impaired travellers.</strong></p>
 </p>
 
-![Release](https://img.shields.io/badge/Release-v2.5.0-blue?style=flat-square)
+![Release](https://img.shields.io/badge/Release-v2.5.1-blue?style=flat-square)
 ![Live Demo](https://img.shields.io/badge/Live_Demo-Operational-success?style=flat-square)
 ![Subject](https://img.shields.io/badge/Subject-Deep_Learning_42028-blue?style=flat-square)
 ![University](https://img.shields.io/badge/University-UTS_2026-002366?style=flat-square)
@@ -54,6 +54,7 @@ data/           Dataset root (DVC) — see docs/DATA.md
 | [`docs/PRD.md`](docs/PRD.md) | Product vision |
 | [`docs/DATA.md`](docs/DATA.md) | DVC & dataset layout |
 | [`docs/reports/Final_Training_Report.md`](docs/reports/Final_Training_Report.md) | Training results |
+| [`docs/RELEASE_v2.5.1.md`](docs/RELEASE_v2.5.1.md) | v2.5.1 release notes |
 | [`docs/RELEASE_v2.5.0.md`](docs/RELEASE_v2.5.0.md) | v2.5.0 release notes |
 | [`docs/architecture/`](docs/architecture/) · [`docs/diagrams/`](docs/diagrams/) · [`docs/decisions/`](docs/decisions/) | Architecture & ADRs |
 

@@ -11,8 +11,13 @@ const Box = styled.div<{ $color: string }>`
   position: absolute;
   box-sizing: border-box;
   border: 2px solid ${({ $color }) => $color};
-  box-shadow: 0 0 10px ${({ $color }) => $color};
+  box-shadow: 0 0 12px ${({ $color }) => $color};
   border-radius: ${({ theme }) => theme.radius.sm};
+  transition: box-shadow 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const LabelChip = styled.span<{ $color: string; $risk: string }>`

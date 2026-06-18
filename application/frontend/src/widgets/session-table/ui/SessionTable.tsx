@@ -44,8 +44,8 @@ const PageButtons = styled.div`
 `;
 
 const PageButton = styled.button`
-  width: 32px;
-  height: 32px;
+  width: ${({ theme }) => theme.spacing[7]};
+  height: ${({ theme }) => theme.spacing[7]};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,6 +54,17 @@ const PageButton = styled.button`
   background: transparent;
   color: ${({ theme }) => theme.color.textPrimary};
   cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.color.glass.fill};
+    border-color: ${({ theme }) => theme.color.primary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
 
   &:disabled {
     opacity: 0.4;

@@ -8,15 +8,20 @@ type SensorCardProps = {
 };
 
 const Card = styled.article`
-  border-radius: ${({ theme }) => theme.radius.lg};
+  border-radius: ${({ theme }) => theme.radius.xl};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
   background: ${({ theme }) => theme.color.glass.fill};
   overflow: hidden;
   box-shadow: ${({ theme }) => theme.shadow.glow};
-  transition: border-color 200ms ease;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 
   &:hover {
     border-color: ${({ theme }) => theme.color.primary};
+    box-shadow: ${({ theme }) => theme.shadow.glow};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

@@ -19,6 +19,7 @@ const Panel = styled(GlassPanel)`
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
 const Header = styled.div`
@@ -54,9 +55,9 @@ const Thumbnail = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: ${({ theme }) => theme.radius.lg};
+  border-radius: ${({ theme }) => theme.radius.xl};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  background: ${({ theme }) => theme.color.surface};
+  background: ${({ theme }) => theme.color.glass.fill};
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -64,8 +65,8 @@ const Thumbnail = styled.div`
 `;
 
 const PlayButton = styled.div`
-  width: 48px;
-  height: 48px;
+  width: ${({ theme }) => theme.spacing[7]};
+  height: ${({ theme }) => theme.spacing[7]};
   border-radius: 50%;
   background: ${({ theme }) => theme.gradient.aqua};
   display: flex;
@@ -73,6 +74,7 @@ const PlayButton = styled.div`
   justify-content: center;
   color: ${({ theme }) => theme.color.textInverse};
   box-shadow: ${({ theme }) => theme.shadow.glow};
+  border: 1px solid ${({ theme }) => theme.color.primary};
 `;
 
 const SegmentBadge = styled.span`

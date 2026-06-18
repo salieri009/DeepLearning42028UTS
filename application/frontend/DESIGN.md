@@ -121,3 +121,13 @@ Used for “Statistics” surface.
   - use `theme.color.risk.*` tokens
   - ensure overlay contrast works over live video (`glass.scrim` on chips)
 
+### Design enrichment loop (agent)
+
+Run one queue slice per tick (Glass×Y2K polish only — see `docs/DESIGN_RULES.md`):
+
+```powershell
+.\application\scripts\loop-design-enrich.ps1 -Once
+```
+
+Cursor: `/loop 10m Run design enrichment per .cursor/rules/design-enrichment-loop.mdc and loop-design-enrich.ps1 sentinel`
+

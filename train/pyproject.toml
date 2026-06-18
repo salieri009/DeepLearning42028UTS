@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crowdnav-train"
-version = "2.5.0"
+version = "2.5.1"
 description = "CrowdNav training, preprocessing, and inference packages (UTS 42028 DL A3)"
 readme = "README.md"
 requires-python = ">=3.10"

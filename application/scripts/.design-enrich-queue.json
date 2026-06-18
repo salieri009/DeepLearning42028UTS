@@ -1,0 +1,101 @@
+﻿{
+    "index":  5,
+    "lastTarget":  "pages/archive",
+    "queue":  [
+                  {
+                      "id":  "s1-video",
+                      "label":  "S1 Video core",
+                      "target":  "widgets/video-stage",
+                      "files":  [
+                                    "application/frontend/src/widgets/video-stage/ui/VideoStage.tsx",
+                                    "application/frontend/src/entities/detection/ui/PersonBBox.tsx"
+                                ],
+                      "designRulesSection":  "3.5"
+                  },
+                  {
+                      "id":  "s1-controls",
+                      "label":  "S1 Controls",
+                      "target":  "widgets/control-bar",
+                      "files":  [
+                                    "application/frontend/src/widgets/control-bar/ui/ControlBar.tsx"
+                                ],
+                      "designRulesSection":  "3.1"
+                  },
+                  {
+                      "id":  "s1-stats",
+                      "label":  "S1 Stats",
+                      "target":  "widgets/stats-sidebar",
+                      "files":  [
+                                    "application/frontend/src/widgets/stats-sidebar/ui/StatsSidebar.tsx",
+                                    "application/frontend/src/entities/crowd-stats/ui/StatCard.tsx"
+                                ],
+                      "designRulesSection":  "3.4"
+                  },
+                  {
+                      "id":  "chrome-nav",
+                      "label":  "Chrome nav",
+                      "target":  "widgets/top-nav",
+                      "files":  [
+                                    "application/frontend/src/widgets/top-nav/ui/TopNav.tsx",
+                                    "application/frontend/src/widgets/side-nav/ui/SideNav.tsx",
+                                    "application/frontend/src/widgets/bottom-nav/ui/BottomNav.tsx"
+                                ],
+                      "designRulesSection":  "3.2"
+                  },
+                  {
+                      "id":  "s2-archive",
+                      "label":  "S2 Archive",
+                      "target":  "pages/archive",
+                      "files":  [
+                                    "application/frontend/src/pages/archive/ui/ArchivePage.tsx",
+                                    "application/frontend/src/widgets/session-table/ui/SessionTable.tsx",
+                                    "application/frontend/src/widgets/session-preview/ui/SessionPreview.tsx"
+                                ],
+                      "designRulesSection":  "3.2"
+                  },
+                  {
+                      "id":  "s3-live-map",
+                      "label":  "S3 Live Map",
+                      "target":  "pages/live-map",
+                      "files":  [
+                                    "application/frontend/src/pages/live-map/ui/LiveMapPage.tsx"
+                                ],
+                      "designRulesSection":  "3.2"
+                  },
+                  {
+                      "id":  "s4-analytics",
+                      "label":  "S4 Analytics",
+                      "target":  "pages/analytics",
+                      "files":  [
+                                    "application/frontend/src/pages/analytics/ui/AnalyticsPage.tsx",
+                                    "application/frontend/src/widgets/risk-hotspot-map/ui/RiskHotspotMap.tsx",
+                                    "application/frontend/src/widgets/weekly-safety-gauge/ui/WeeklySafetyGauge.tsx"
+                                ],
+                      "designRulesSection":  "3.2"
+                  },
+                  {
+                      "id":  "s5-settings",
+                      "label":  "S5 Settings",
+                      "target":  "pages/settings",
+                      "files":  [
+                                    "application/frontend/src/pages/settings/ui/SettingsPage.tsx",
+                                    "application/frontend/src/widgets/sensor-source-grid/ui/SensorSourceGrid.tsx",
+                                    "application/frontend/src/entities/sensor/ui/SensorCard.tsx"
+                                ],
+                      "designRulesSection":  "3.2"
+                  },
+                  {
+                      "id":  "shared-ui",
+                      "label":  "Shared UI kit",
+                      "target":  "shared/ui",
+                      "files":  [
+                                    "application/frontend/src/shared/ui/Button/Button.tsx",
+                                    "application/frontend/src/shared/ui/Card/Card.tsx",
+                                    "application/frontend/src/shared/ui/GlassPanel/GlassPanel.tsx",
+                                    "application/frontend/src/shared/ui/Modal/Modal.tsx",
+                                    "application/frontend/src/shared/ui/DataTable/DataTable.tsx"
+                                ],
+                      "designRulesSection":  "3.1"
+                  }
+              ]
+}

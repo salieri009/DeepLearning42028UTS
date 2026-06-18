@@ -27,11 +27,24 @@ const Bar = styled(GlassPanel)`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[2]};
-  padding: ${({ theme }) => theme.spacing[2]};
+  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
   border-radius: ${({ theme }) => theme.radius.full};
+  box-shadow: ${({ theme }) => theme.shadow.glow};
   pointer-events: auto;
   max-width: 100%;
   overflow-x: auto;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+const Divider = styled.span`
+  width: 1px;
+  height: ${({ theme }) => theme.spacing[6]};
+  margin: 0 ${({ theme }) => theme.spacing[1]};
+  background: ${({ theme }) => theme.color.glass.border};
+  flex-shrink: 0;
 `;
 
 export function ControlBar({
@@ -58,9 +71,12 @@ export function ControlBar({
           </Button>
         )}
 
+        <Divider aria-hidden="true" />
+
         <Button
           type="button"
           $variant={recording ? "danger" : "ghost"}
+          $size="md"
           disabled={!running}
           onClick={onRecord}
           aria-pressed={recording}
@@ -74,6 +90,7 @@ export function ControlBar({
         <Button
           type="button"
           $variant="ghost"
+          $size="md"
           disabled={exportDisabled}
           onClick={onExport}
           aria-label="Export session data"

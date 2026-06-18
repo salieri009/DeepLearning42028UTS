@@ -48,6 +48,12 @@ const variantStyles = {
     &:hover:not(:disabled) {
       filter: brightness(1.08);
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::after {
+        display: none;
+      }
+    }
   `,
   danger: css`
     background: ${({ theme }) => theme.color.danger};

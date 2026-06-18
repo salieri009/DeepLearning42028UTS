@@ -52,6 +52,16 @@ const NavLinkItem = styled(NavLink)`
   &.active {
     background: ${({ theme }) => theme.gradient.aqua};
     color: ${({ theme }) => theme.color.textInverse};
+    box-shadow: ${({ theme }) => theme.shadow.md};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

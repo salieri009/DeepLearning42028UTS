@@ -83,6 +83,7 @@ const AlertChip = styled(GlassPanel)<{ $tone: "warning" | "danger" }>`
   border-left: 4px solid
     ${({ theme, $tone }) => ($tone === "danger" ? theme.color.danger : theme.color.warning)};
   background: ${({ theme }) => theme.color.glass.scrim};
+  box-shadow: ${({ theme }) => theme.shadow.glow};
 
   @media (max-width: 1024px) {
     top: calc(${({ theme }) => theme.layout.headerHeight} + ${({ theme }) => theme.spacing[4]});

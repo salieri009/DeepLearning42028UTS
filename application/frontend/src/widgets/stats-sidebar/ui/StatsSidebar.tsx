@@ -67,6 +67,10 @@ const Dot = styled.span`
       opacity: 0.5;
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const ScrollArea = styled.div`
@@ -82,8 +86,14 @@ const ScrollArea = styled.div`
   }
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.color.scrollbarThumb};
-    border-radius: 10px;
+    border-radius: ${({ theme }) => theme.radius.full};
   }
+`;
+
+const AlertsTitle = styled(Label)`
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  font-weight: ${({ theme }) => theme.typography.weight.semibold};
+  color: ${({ theme }) => theme.color.textPrimary};
 `;
 
 const AlertsSection = styled.div`
@@ -100,12 +110,18 @@ const AlertsHeader = styled.div`
 const AlertItem = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing[3]};
-  padding: ${({ theme }) => theme.spacing[2]};
+  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
   border-radius: ${({ theme }) => theme.radius.md};
-  transition: background 120ms ease;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
 
   &:hover {
     background: ${({ theme }) => theme.color.glass.fill};
+    border-color: ${({ theme }) => theme.color.glass.border};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 
@@ -120,9 +136,17 @@ const AlertBar = styled.div<{ $risk: string }>`
         : theme.color.textSecondary};
 `;
 
+const ReportButton = styled(Button)`
+  margin-top: ${({ theme }) => theme.spacing[5]};
+`;
+
 const EmptyText = styled.p`
   font-size: ${({ theme }) => theme.typography.size[2]};
   color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const SectionTitle = styled(ChromeText)`
+  font-size: ${({ theme }) => theme.typography.size[4]};
 `;
 
 export function StatsSidebar({
@@ -140,9 +164,7 @@ export function StatsSidebar({
   return (
     <Aside aria-label="Crowd statistics and alerts">
       <Header>
-        <ChromeText as="h2" style={{ fontSize: "20px" }}>
-          Crowd Tracking Statistics
-        </ChromeText>
+        <SectionTitle as="h2">Crowd Tracking Statistics</SectionTitle>
         <Subtitle>
           <Dot />
           <Label $tone="secondary">Precision Mode Active</Label>
@@ -192,9 +214,11 @@ export function StatsSidebar({
           <EmptyText>Start monitoring to view live statistics.</EmptyText>
         )}
 
-        <AlertsSection>
+        <AlertsSection aria-labelledby="stats-alerts-heading">
           <AlertsHeader>
-            <Label>Recent Alerts</Label>
+            <AlertsTitle as="h3" id="stats-alerts-heading">
+              Recent Alerts
+            </AlertsTitle>
           </AlertsHeader>
           {alerts.length === 0 ? (
             <EmptyText>No alerts yet.</EmptyText>
@@ -212,19 +236,18 @@ export function StatsSidebar({
         </AlertsSection>
       </ScrollArea>
 
-      <Button
+      <ReportButton
         type="button"
         $variant="primary"
         $fullWidth
         disabled={reportDisabled}
         onClick={onGenerateReport}
-        style={{ marginTop: 24 }}
         aria-label="Generate live session report"
         title={reportDisabled ? "Start monitoring to generate a report" : "Download HTML report"}
       >
         <Icon name="summarize" size={18} />
         Generate Report
-      </Button>
+      </ReportButton>
     </Aside>
   );
 }

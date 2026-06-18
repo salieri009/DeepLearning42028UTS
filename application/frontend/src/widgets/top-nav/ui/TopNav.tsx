@@ -62,6 +62,11 @@ const Tab = styled(NavLink)`
     color: ${({ theme }) => theme.color.primary};
     border-bottom-color: ${({ theme }) => theme.color.primary};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
 `;
 
 const Actions = styled.div`
@@ -90,6 +95,11 @@ const IconLink = styled(NavLink)`
   &.active {
     color: ${({ theme }) => theme.color.primary};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
 `;
 
 const IconButton = styled.button`
@@ -104,39 +114,46 @@ const IconButton = styled.button`
   background: transparent;
   color: ${({ theme }) => theme.color.textSecondary};
   cursor: pointer;
+  transition: color 120ms ease, background 120ms ease;
 
   &:hover {
     color: ${({ theme }) => theme.color.primary};
     background: ${({ theme }) => theme.color.glass.fill};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
 `;
 
 const Badge = styled.span`
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: ${({ theme }) => theme.spacing[1]};
+  right: ${({ theme }) => theme.spacing[1]};
+  min-width: ${({ theme }) => theme.spacing[4]};
+  height: ${({ theme }) => theme.spacing[4]};
+  padding: 0 ${({ theme }) => theme.spacing[1]};
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme }) => theme.color.danger};
   color: ${({ theme }) => theme.color.textInverse};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
-  line-height: 16px;
+  line-height: ${({ theme }) => theme.spacing[4]};
 `;
 
 const Dropdown = styled.div`
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + ${({ theme }) => theme.spacing[2]});
   right: 0;
   width: 320px;
   max-height: 360px;
   overflow-y: auto;
   border-radius: ${({ theme }) => theme.radius.lg};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  background: ${({ theme }) => theme.color.surfaceHigh};
-  box-shadow: ${({ theme }) => theme.shadow.md};
+  background: ${({ theme }) => theme.color.glass.scrim};
+  backdrop-filter: blur(12px) saturate(120%);
+  box-shadow: ${({ theme }) => theme.shadow.glow};
   padding: ${({ theme }) => theme.spacing[3]};
 `;
 
@@ -148,12 +165,25 @@ const DropdownTitle = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const AlertRow = styled.div`
+const AlertRow = styled.div<{ $risk: string }>`
   padding: ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.md};
-  border-left: 3px solid ${({ theme, color }) => color ?? theme.color.warning};
+  border-left: 3px solid
+    ${({ theme, $risk }) =>
+      $risk === "DANGER"
+        ? theme.color.danger
+        : $risk === "WARNING"
+          ? theme.color.warning
+          : theme.color.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing[2]};
   font-size: ${({ theme }) => theme.typography.size[2]};
+  background: ${({ theme }) => theme.color.glass.fill};
+`;
+
+const AlertMeta = styled.div`
+  opacity: 0.7;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const EmptyNote = styled.p`
@@ -163,11 +193,11 @@ const EmptyNote = styled.p`
 `;
 
 const Avatar = styled.div`
-  width: 32px;
-  height: 32px;
+  width: ${({ theme }) => theme.spacing[6]};
+  height: ${({ theme }) => theme.spacing[6]};
   border-radius: 50%;
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  background: ${({ theme }) => theme.color.surfaceHigh};
+  background: ${({ theme }) => theme.color.glass.fillStrong};
   overflow: hidden;
 `;
 
@@ -215,26 +245,9 @@ export function TopNav({ running = false }: TopNavProps) {
               <EmptyNote>No alerts yet. Start monitoring on the dashboard.</EmptyNote>
             ) : (
               alerts.map((alert) => (
-                <AlertRow
-                  key={alert.id}
-                  color={
-                    alert.risk === "DANGER"
-                      ? undefined
-                      : alert.risk === "WARNING"
-                        ? undefined
-                        : undefined
-                  }
-                  style={{
-                    borderLeftColor:
-                      alert.risk === "DANGER"
-                        ? "var(--danger, #ef4444)"
-                        : alert.risk === "WARNING"
-                          ? "var(--warning, #eab308)"
-                          : undefined,
-                  }}
-                >
+                <AlertRow key={alert.id} $risk={alert.risk}>
                   <strong>{alert.message}</strong>
-                  <div style={{ opacity: 0.7, fontSize: "0.85em" }}>{formatAlertMeta(alert)}</div>
+                  <AlertMeta>{formatAlertMeta(alert)}</AlertMeta>
                 </AlertRow>
               ))
             )}

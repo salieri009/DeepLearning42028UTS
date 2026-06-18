@@ -51,6 +51,10 @@ const LiveDot = styled.span<{ $live?: boolean }>`
       opacity: 0.4;
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 export function LiveMapPage() {
