@@ -26,6 +26,13 @@ const TwoCol = styled.div`
   }
 `;
 
+const Notice = styled.p`
+  margin: 0;
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.info[60]};
+`;
+
 export function SettingsPage() {
   const settings = useSensorSettings();
 
@@ -36,6 +43,9 @@ export function SettingsPage() {
       bottomNav={<BottomNav />}
     >
       <Content>
+        {settings.loading ? <Notice>Loading settings...</Notice> : null}
+        {settings.error ? <Notice>{settings.error}</Notice> : null}
+
         <SensorSourcesGrid sources={settings.sources} />
 
         <TwoCol>

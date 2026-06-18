@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useAnalyticsMock } from "@/features/analytics-mock";
+import { useAnalyticsData } from "@/features/analytics-data";
 import { AnalyticsHeader } from "@/widgets/analytics-header";
 import { AppShell } from "@/widgets/app-shell";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -44,8 +44,28 @@ const Span5 = styled.div`
   }
 `;
 
+const EmptyState = styled.div`
+  padding: ${({ theme }) => theme.spacing[8]};
+  text-align: center;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+`;
+
 export function AnalyticsPage() {
-  const data = useAnalyticsMock();
+  const { data, loading, error } = useAnalyticsData();
+
+  if (loading) {
+    return (
+      <AppShell
+        topNav={<TopNav />}
+        sideNav={<SideNav activeItem="analytics" />}
+        bottomNav={<BottomNav />}
+      >
+        <AnalyticsHeader />
+        <EmptyState>Loading analytics...</EmptyState>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
@@ -54,6 +74,8 @@ export function AnalyticsPage() {
       bottomNav={<BottomNav />}
     >
       <AnalyticsHeader />
+
+      {error ? <EmptyState>{error}</EmptyState> : null}
 
       <Grid>
         <Span8>

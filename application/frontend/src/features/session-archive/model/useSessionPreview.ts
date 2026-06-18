@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { DetectionItem } from "@/entities/session";
-import { listDetections } from "@/shared/api";
+import type { DetectionItem, FrameItem } from "@/entities/session";
+import { listDetections, listSessionFrames } from "@/shared/api";
 import { reportError } from "@/shared/lib/reportError";
 import {
   computeMaxCrowdDensity,
@@ -23,6 +23,7 @@ const EMPTY_STATS: SessionPreviewStats = {
 
 export function useSessionPreview(sessionId: number | null) {
   const [detections, setDetections] = useState<DetectionItem[]>([]);
+  const [frames, setFrames] = useState<FrameItem[]>([]);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,15 +40,20 @@ export function useSessionPreview(sessionId: number | null) {
       setError(null);
 
       try {
-        const data = await listDetections(sessionId, { limit: 500 }, controller.signal);
+        const [detectionData, frameData] = await Promise.all([
+          listDetections(sessionId, { limit: 500 }, controller.signal),
+          listSessionFrames(sessionId, 100, controller.signal),
+        ]);
         if (!controller.signal.aborted) {
-          setDetections(data.items);
+          setDetections(detectionData.items);
+          setFrames(frameData.items);
         }
       } catch (err) {
         if (controller.signal.aborted) return;
         reportError(err);
         setDetections([]);
-        setError("Failed to load session detections.");
+        setFrames([]);
+        setError("Failed to load session trail.");
       } finally {
         if (!controller.signal.aborted) {
           setFetchLoading(false);
@@ -61,6 +67,10 @@ export function useSessionPreview(sessionId: number | null) {
   const visibleDetections = useMemo(
     () => (sessionId == null ? [] : detections),
     [sessionId, detections],
+  );
+  const visibleFrames = useMemo(
+    () => (sessionId == null ? [] : frames),
+    [sessionId, frames],
   );
   const loading = sessionId != null && fetchLoading;
 
@@ -78,5 +88,6 @@ export function useSessionPreview(sessionId: number | null) {
     error: sessionId == null ? null : error,
     stats,
     detections: visibleDetections,
+    frames: visibleFrames,
   };
 }

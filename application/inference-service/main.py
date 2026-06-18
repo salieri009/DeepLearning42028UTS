@@ -76,12 +76,13 @@ def _worst_state(states: list[str]) -> str:
     return "SAFE"
 
 
-def _crowd_density(n: int, worst: str) -> str:
+def _crowd_density(n: int, worst: str, density_limit: int = 64) -> str:
     if n == 0:
         return "LOW"
-    if n >= 6 or worst == "DANGER":
+    if n >= density_limit or worst == "DANGER":
         return "HIGH"
-    if n >= 3 or worst == "WARNING":
+    medium_threshold = max(3, density_limit // 2)
+    if n >= medium_threshold or worst == "WARNING":
         return "MEDIUM"
     return "LOW"
 
@@ -95,6 +96,8 @@ def _recommendation(worst: str) -> str:
 # ---------------------------------------------------------------------------
 class InferRequest(BaseModel):
     frame_base64: str | None = None
+    conf_thresh: float | None = None
+    density_limit: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -123,9 +126,11 @@ def infer(payload: InferRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
 
     # 2. YOLO inference (class 0 = person)
+    conf_thresh = payload.conf_thresh if payload.conf_thresh is not None else CONF_THRESH
+    density_limit = payload.density_limit if payload.density_limit is not None else 64
     try:
         model = _load_model()
-        results = model.predict(img, conf=CONF_THRESH, classes=[0], verbose=False)
+        results = model.predict(img, conf=conf_thresh, classes=[0], verbose=False)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
@@ -166,7 +171,7 @@ def infer(payload: InferRequest) -> dict[str, Any]:
 
     return {
         "persons": persons,
-        "crowd_density": _crowd_density(len(persons), worst),
+        "crowd_density": _crowd_density(len(persons), worst, density_limit),
         "max_proximity_risk": worst,
         "recommendation": _recommendation(worst),
     }

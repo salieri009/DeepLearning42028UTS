@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type {
   DetectionListResponse,
+  FrameListResponse,
   SessionDetailResponse,
   SessionListResponse,
   SessionResponse,
@@ -62,6 +63,18 @@ export async function listDetections(
       class: params.classLabel,
       limit: params.limit ?? 100,
     },
+    signal,
+  });
+  return data;
+}
+
+export async function listSessionFrames(
+  id: number,
+  limit = 100,
+  signal?: AbortSignal,
+): Promise<FrameListResponse> {
+  const { data } = await apiClient.get<FrameListResponse>(`/v1/sessions/${id}/frames`, {
+    params: { limit },
     signal,
   });
   return data;

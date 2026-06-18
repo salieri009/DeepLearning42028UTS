@@ -36,6 +36,8 @@ flowchart TB
   subgraph api [Spring Boot :8080]
     Analyze["POST /v1/analyze-frame"]
     Sessions["/v1/sessions*"]
+    AnalyticsApi["GET /v1/analytics/summary"]
+    SettingsApi["GET/PUT /v1/settings"]
     Persist["PersistingAnalyzeFrameService"]
   end
   subgraph inf [FastAPI :9000]
@@ -48,6 +50,9 @@ flowchart TB
   Analyze --> Infer --> YOLO
   Analyze --> Persist --> DB
   Archive --> Sessions
+  Analytics --> AnalyticsApi --> DB
+  Settings --> SettingsApi --> DB
+  Analyze --> SettingsApi
   Sessions --> DB
 ```
 
@@ -60,8 +65,8 @@ flowchart TB
 | S1 | Real-time crowd & proximity avoidance | `/` | Live camera + YOLO API | **Done** |
 | S2 | Session recording & archive review | `/archive` | PostgreSQL sessions API | **Done** |
 | S3 | Map-based congestion avoidance | `/live-map` | GPS + session aggregates (24h poll) | **Partial** — zones anchored at UTS; risk from session DB |
-| S4 | Weekly density & risk analytics | `/analytics` | `useAnalyticsMock` | **Mock** |
-| S5 | Alert & threshold settings | `/settings` | localStorage | **Local only** |
+| S4 | Weekly density & risk analytics | `/analytics` | `GET /v1/analytics/summary` + `useAnalyticsData` | **Done** |
+| S5 | Alert & threshold settings | `/settings` | `GET/PUT /v1/settings` + inference thresholds | **Done** |
 
 ---
 
@@ -220,18 +225,20 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 | Step | Artifact |
 |------|----------|
 | Page | `pages/analytics/ui/AnalyticsPage.tsx` |
-| Data | `features/analytics-mock/model/useAnalyticsMock.ts` (fabricated) |
+| Data | `features/analytics-data/model/useAnalyticsData.ts` → `GET /v1/analytics/summary` |
+| API | `AnalyticsService` aggregates `frame` rows (peak hours, zone risks, hotspots) |
 | Widgets | `risk-hotspot-map`, `weekly-safety-score`, `peak-density-chart`, `zone-risk-distribution` |
 
 ### Status
 
-**Mock only** — not wired to Archive DB. Can aggregate from S2 session data later.
+**Done (2026-06-18)** — charts and scores derive from PostgreSQL `frame` / session data for the selected window (`days=7` default).
 
-### Legacy candidates (remove after S4 validation)
+### Legacy candidates (removed)
 
 | Path | Reason |
 |------|--------|
-| `features/analytics-dashboard/` | `useAnalyticsData` unused; page uses `analytics-mock` |
+| `features/analytics-mock/` | Replaced by `analytics-data` + backend summary API |
+| `features/analytics-dashboard/` | Orphan; page uses `analytics-data` |
 
 ---
 
@@ -246,20 +253,22 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 1. Open `/settings`
 2. Adjust density limit and confidence in AlertThresholdsPanel
 3. Toggle audible / vibration in SystemNotificationsPanel
-4. Save → persisted to localStorage
+4. Save → persisted to `app_settings` (PostgreSQL) with localStorage fallback
 
 ### Code flow
 
 | Step | Artifact |
 |------|----------|
 | Page | `pages/settings/` |
-| State | `features/sensor-settings/` |
+| State | `features/sensor-settings/` → `GET/PUT /v1/settings` |
+| Sensor list | Recent `WEBCAM` sessions from `GET /v1/sessions` |
+| Inference link | `RemoteAnalyzeFrameService` / `MockAnalyzeFrameService` read settings → `conf_thresh`, `density_limit` on `/internal/infer` |
 | Panels | `alert-thresholds-panel`, `detection-model-panel`, `sensor-sources-grid` |
 | S1 link | `useRiskAlerts` reads audible toggle from settings |
 
 ### Status
 
-**Local UI only** — thresholds not sent to inference or backend. Model picker is placeholder.
+**Done (2026-06-18)** — settings persist in DB; `confidence` and `density_limit` flow into YOLO inference per request. Model picker (`yolov8-precise` / `nano`) is stored but not yet mapped to separate weights.
 
 ### Legacy candidates (remove after S5 validation)
 
@@ -300,10 +309,10 @@ S1 [ ] Start Monitoring → camera on
 S1 [ ] StatsSidebar crowd_density / recommendation updates
 S1 [ ] Stop → camera off, stats cleared
 S2 [ ] After S1 run → Archive shows session row
-S2 [ ] Select session → preview stats load
-S3 [ ] /live-map → 3 markers visible, Zone A-4 DANGER
-S4 [ ] /analytics → charts render (mock data)
-S5 [ ] /settings → save toggles persist on reload
+S2 [ ] Select session → preview stats + frame trail load
+S3 [ ] /live-map → GPS marker + zone markers from session telemetry
+S4 [ ] /analytics → charts render from DB summary API
+S5 [ ] /settings → save persists via API; confidence affects analyze-frame
 ```
 
 ### Automated checks
