@@ -29,7 +29,7 @@ const Feed = styled.div`
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.1) 51%);
+    background: linear-gradient(to bottom, transparent 50%, ${({ theme }) => theme.color.tint.scanlineBand} 51%);
     background-size: 100% 4px;
     pointer-events: none;
   }
@@ -52,8 +52,8 @@ const StatusBadge = styled.span`
   padding: 2px ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.color.success};
-  color: ${({ theme }) => theme.color.textInverse};
-  font-size: 10px;
+  color: ${({ theme }) => theme.color.onSuccess};
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
 `;
 
@@ -80,9 +80,9 @@ const FeedLabel = styled.span`
   bottom: ${({ theme }) => theme.spacing[2]};
   left: ${({ theme }) => theme.spacing[2]};
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(0, 0, 0, 0.4);
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textOnVideo};
+  background: ${({ theme }) => theme.color.tint.labelBackdrop};
   padding: 2px ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.sm};
 `;
@@ -104,7 +104,7 @@ const Name = styled.p`
 
 const Ip = styled.p`
   margin: 0;
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -137,7 +137,12 @@ export function SensorCard({ source }: SensorCardProps) {
           <Name>{source.name}</Name>
           <Ip>IP: {source.ip}</Ip>
         </div>
-        <SettingsButton type="button" aria-label={`Settings for ${source.name}`}>
+        <SettingsButton
+          type="button"
+          disabled
+          title="Coming soon"
+          aria-label={`Settings for ${source.name} (coming soon)`}
+        >
           <Icon name="settings" size={20} />
         </SettingsButton>
       </Footer>

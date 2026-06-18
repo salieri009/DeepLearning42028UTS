@@ -65,7 +65,7 @@ const BarLabel = styled.span<{ $peak?: boolean }>`
   left: 50%;
   transform: translateX(-50%);
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme, $peak }) => ($peak ? theme.color.primary : theme.color.textSecondary)};
   font-weight: ${({ $peak, theme }) => ($peak ? theme.typography.weight.bold : theme.typography.weight.medium)};
   white-space: nowrap;

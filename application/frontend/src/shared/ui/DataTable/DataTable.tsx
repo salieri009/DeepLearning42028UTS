@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { GlassPanel } from "../GlassPanel";
 
@@ -18,6 +18,17 @@ type DataTableProps<T> = {
   emptyMessage?: string;
   footer?: ReactNode;
 };
+
+function handleRowKeyDown<T>(
+  event: KeyboardEvent<HTMLTableRowElement>,
+  row: T,
+  onRowClick: (row: T) => void,
+) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onRowClick(row);
+  }
+}
 
 const Panel = styled(GlassPanel)`
   overflow: hidden;
@@ -104,7 +115,12 @@ export function DataTable<T>({
               <Tr
                 key={key}
                 $selected={selectedKey === key}
+                tabIndex={onRowClick ? 0 : undefined}
+                aria-selected={onRowClick && selectedKey === key ? true : undefined}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick ? (event) => handleRowKeyDown(event, row, onRowClick) : undefined
+                }
               >
                 {columns.map((col) => (
                   <Td key={col.key} $align={col.align}>

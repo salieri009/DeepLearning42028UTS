@@ -53,7 +53,7 @@ export const Mono = styled.span<TextProps>`
 
 export const Caption = styled.span<TextProps>`
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   letter-spacing: 0.08em;
   text-transform: uppercase;
   ${({ $tone = "secondary" }) => toneStyles[$tone]}

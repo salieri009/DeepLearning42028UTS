@@ -24,3 +24,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-monitoring-lo
 ```
 
 Detached loops write PID files under `%TEMP%\crowdnav-loops\`.
+
+## Docs ↔ application alignment loop
+
+Re-audit `application/` against `docs/REQUIREMENTS.md` every **15 minutes** (agent self-pace prompt):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\loop-docs-alignment.ps1 -Once   # smoke / agent wake
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\loop-docs-alignment.ps1         # detached 15m loop
+```
+
+PID file: `%TEMP%\crowdnav-loops\docs-alignment.pid`. Kill that PID to stop.

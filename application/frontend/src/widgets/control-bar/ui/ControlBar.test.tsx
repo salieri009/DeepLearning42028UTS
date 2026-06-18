@@ -10,14 +10,12 @@ describe("ControlBar", () => {
     renderWithProviders(<ControlBar running={false} onStart={vi.fn()} onStop={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: /Start Monitoring/i })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Stop" })).toBeDisabled();
   });
 
   it("shows Stop Monitoring when running", () => {
     renderWithProviders(<ControlBar running onStart={vi.fn()} onStop={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: /Stop Monitoring/i })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Stop" })).toBeEnabled();
   });
 
   it("calls onStart and onStop handlers", async () => {
@@ -38,7 +36,7 @@ describe("ControlBar", () => {
       </AppProviders>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByRole("button", { name: /Stop Monitoring/i }));
     expect(onStop).toHaveBeenCalledTimes(1);
   });
 

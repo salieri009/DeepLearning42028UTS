@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: "/analytics", label: "Stats", icon: "analytics", end: false },
   { to: "/live-map", label: "Map", icon: "map", end: false },
   { to: "/archive", label: "Logs", icon: "history", end: false },
+  { to: "/settings", label: "Sensors", icon: "tune", end: false },
 ] as const;
 
 const Nav = styled.nav`
@@ -16,7 +17,8 @@ const Nav = styled.nav`
   left: 50%;
   transform: translateX(-50%);
   z-index: ${({ theme }) => theme.layout.zIndex.chrome};
-  min-width: 320px;
+  min-width: min(100%, 360px);
+  max-width: calc(100vw - ${({ theme }) => theme.spacing[6]});
   padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[6]}`};
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme }) => theme.color.glass.fill};

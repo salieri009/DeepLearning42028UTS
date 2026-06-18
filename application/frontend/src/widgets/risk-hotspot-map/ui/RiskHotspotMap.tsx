@@ -46,7 +46,7 @@ const Scanline = styled.div`
   position: absolute;
   inset: 0;
   opacity: 0.1;
-  background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+  background: linear-gradient(transparent 50%, ${({ theme }) => theme.color.tint.scanlineBand} 50%);
   background-size: 100% 2px;
   pointer-events: none;
 `;
@@ -81,7 +81,7 @@ const LegendItem = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[1]};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -189,7 +189,7 @@ export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
           hotspots.map((spot) => {
             const variant = spot.risk === "DANGER" ? "danger" : "warning";
             return (
-              <Marker key={spot.id} $top={spot.top} $left={spot.left}>
+              <Marker key={spot.id} $top={spot.top} $left={spot.left} role="img" aria-label={`${spot.label}, ${spot.risk} risk, capacity ${spot.capacity}`}>
                 <Ping $variant={variant} />
                 <MarkerCore $variant={variant}>
                   <Icon name="warning" size={20} />

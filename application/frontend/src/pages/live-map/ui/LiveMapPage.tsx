@@ -64,7 +64,7 @@ export function LiveMapPage() {
     >
       <Header>
         <div>
-          <ChromeText style={{ fontSize: "32px", textTransform: "uppercase" }}>
+          <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
             Live Map
           </ChromeText>
           <Subtitle>

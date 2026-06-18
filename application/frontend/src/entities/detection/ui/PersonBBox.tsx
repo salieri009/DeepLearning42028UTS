@@ -15,7 +15,7 @@ const Box = styled.div<{ $color: string }>`
   border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
-const LabelChip = styled.span<{ $color: string }>`
+const LabelChip = styled.span<{ $color: string; $risk: string }>`
   position: absolute;
   top: -28px;
   left: 0;
@@ -23,13 +23,23 @@ const LabelChip = styled.span<{ $color: string }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing[1]};
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
-  color: ${({ theme }) => theme.color.textInverse};
+  color: ${({ theme, $risk }) =>
+    $risk === "WARNING" ? theme.color.onWarning : theme.color.textInverse};
   background: ${({ $color }) => $color};
   padding: 2px ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.sm};
   white-space: nowrap;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: ${({ theme }) => theme.color.glass.scrim};
+    z-index: -1;
+  }
 `;
 
 export function PersonBBox({ person }: PersonBBoxProps) {
@@ -48,7 +58,7 @@ export function PersonBBox({ person }: PersonBBoxProps) {
         height: `${b.height * 100}%`,
       }}
     >
-      <LabelChip $color={color}>
+      <LabelChip $color={color} $risk={risk}>
         {risk} {Math.round((person.confidence ?? 0) * 100)}%
       </LabelChip>
     </Box>

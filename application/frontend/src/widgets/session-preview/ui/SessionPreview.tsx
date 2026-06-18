@@ -2,7 +2,7 @@ import styled from "styled-components";
 import type { FrameItem, SessionDetailResponse } from "@/entities/session";
 import { formatSessionDuration } from "@/entities/session";
 import type { SessionPreviewStats } from "@/features/session-archive/model/useSessionPreview";
-import { Button, GlassPanel, Icon } from "@/shared/ui";
+import { Button, GlassPanel, Icon, VisuallyHidden } from "@/shared/ui";
 
 type SessionPreviewProps = {
   session: SessionDetailResponse | null;
@@ -81,7 +81,7 @@ const SegmentBadge = styled.span`
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.color.danger};
   color: ${({ theme }) => theme.color.textInverse};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
 `;
 
@@ -161,7 +161,7 @@ const BarLegend = styled.div`
   justify-content: space-between;
   margin-top: ${({ theme }) => theme.spacing[2]};
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
 `;
 
 const EmptyState = styled.div`
@@ -191,7 +191,7 @@ const FrameRow = styled.li`
   gap: ${({ theme }) => theme.spacing[2]};
   padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
 
   &:last-child {
@@ -302,6 +302,7 @@ export function SessionPreview({ session, loading, stats, frames = [], statsErro
 
         <Button type="button" $variant="ghost" $fullWidth disabled title="Coming soon">
           Generate Full PDF Report
+          <VisuallyHidden> (coming soon)</VisuallyHidden>
         </Button>
       </Stats>
     </Panel>

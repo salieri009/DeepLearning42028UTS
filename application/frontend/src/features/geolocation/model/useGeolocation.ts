@@ -7,19 +7,22 @@ export type GeolocationPosition = {
   lng: number;
 };
 
+const geolocationSupported =
+  typeof navigator !== "undefined" && typeof navigator.geolocation !== "undefined";
+
 export function useGeolocation() {
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
-  const [status, setStatus] = useState<GeolocationStatus>("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<GeolocationStatus>(() =>
+    geolocationSupported ? "loading" : "denied",
+  );
+  const [error, setError] = useState<string | null>(() =>
+    geolocationSupported ? null : "Geolocation is not supported in this browser.",
+  );
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setStatus("denied");
-      setError("Geolocation is not supported in this browser.");
+    if (!geolocationSupported) {
       return;
     }
-
-    setStatus("loading");
 
     const watchId = navigator.geolocation.watchPosition(
       (coords) => {

@@ -73,4 +73,14 @@ describe("LiveMapStage", () => {
 
     expect(screen.getByText(/Blue pulse = your GPS position/i)).toBeInTheDocument();
   });
+
+  it("exposes keyboard-accessible map zoom controls", () => {
+    renderWithProviders(
+      <LiveMapStage center={UTS_SYDNEY_CENTER} zoom={16} markers={[zoneMarker]} />,
+    );
+
+    expect(screen.getByRole("button", { name: /Zoom in/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Zoom out/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Recenter map/i })).toBeInTheDocument();
+  });
 });

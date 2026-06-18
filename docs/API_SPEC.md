@@ -1,13 +1,16 @@
 ---
-last_updated: 2026-06-17
+last_updated: 2026-06-18
 status: draft
 related:
   - application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller/AnalyzeFrameController.java
   - application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller/SessionController.java
+  - application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller/AnalyticsController.java
+  - application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller/SettingsController.java
   - application/backend/crowdnav-api/src/main/java/com/crowdnav/api/service/PersistingAnalyzeFrameService.java
   - application/inference-service/main.py
   - docs/DETECTION_3CLASS_PLAN.md
   - docs/BACKEND_ERD.md
+  - docs/REQUIREMENTS.md
 ---
 
 # API Specification
@@ -144,6 +147,27 @@ Query: `?risk=DANGER&class=wheelchair&limit=100`. Response `200`: `{ "items": [D
 
 Each `DetectionItem` includes `frame_id`, `sequence_no`, `captured_at`, bbox fields, `class`, `confidence`, `proximity_risk`.
 
+### `GET /sessions/{id}/frames` — frame trail for a session (FR-16)
+
+Query: `?limit=100` (default). Response `200`: `{ "items": [FrameItem...] }`.
+
+Each `FrameItem`:
+
+```json
+{
+  "id": 101,
+  "sequence_no": 1,
+  "captured_at": "2026-06-17T03:21:05Z",
+  "latency_ms": 280,
+  "crowd_density": "MEDIUM",
+  "max_proximity_risk": "WARNING",
+  "recommendation": "CAUTION",
+  "person_count": 4
+}
+```
+
+Unknown session id → **404**. No raw image bytes are returned (NFR-9).
+
 ### `PATCH /sessions/{id}` — close an analysis session
 Optional body: `{ "ended_at": "2026-06-17T04:00:00Z" }` — omit `ended_at` to use server time.
 Response `200`: `SessionResponse` with `ended_at` set. Already closed → **409**. Unknown id → **404**.
@@ -151,6 +175,61 @@ Response `200`: `SessionResponse` with `ended_at` set. Already closed → **409*
 > **Opt-in persistence:** `analyze-frame` accepts optional `session_id` (JSON body or multipart query param).
 > When omitted, analysis is stateless (no DB access). When present, the session must exist; frame + detection
 > rows are written **asynchronously** after the inference response is returned (NFR-8).
+
+## 5.1 Analytics API (FR-14)
+
+**Implemented** in `AnalyticsController.java`. Aggregates persisted frame metadata.
+
+### `GET /analytics/summary`
+
+Query: `?days=7` (default, positive integer). Response `200`:
+
+```json
+{
+  "safety_score": 72,
+  "safety_label": "Moderate",
+  "trend_percent": -3.5,
+  "event_count": 14,
+  "busiest_window": "Mon 08:00–10:00",
+  "peak_hours": [{ "label": "08:00", "height_percent": 80, "peak": true }],
+  "zone_risks": [{ "name": "Building 1", "level": "HIGH", "percent": 42 }],
+  "hotspots": [{ "name": "Central walkway", "risk": "DANGER", "count": 5 }],
+  "frame_count": 1240,
+  "session_count": 18
+}
+```
+
+Empty database → `200` with zeroed summary fields.
+
+## 5.2 Settings API (FR-15)
+
+**Implemented** in `SettingsController.java`. Single-row `app_settings` table (PostgreSQL).
+
+### `GET /settings`
+
+Response `200`:
+
+```json
+{
+  "model": "yolov8-precise",
+  "confidence": 75,
+  "density_limit": 64,
+  "visual_overlays": true,
+  "audible_alerts": false,
+  "log_errors": true,
+  "webrtc_access": true
+}
+```
+
+### `PUT /settings`
+
+Request body: same shape as `GET` response. Response `200`: persisted settings.
+Invalid values (e.g. `confidence` outside 0–100) → **400**.
+
+Settings are read by `RemoteAnalyzeFrameService` / `MockAnalyzeFrameService` and forwarded to
+inference as `conf_thresh` on `POST /internal/infer`. Legacy JSON fields `density_limit` and
+`audible_alerts` remain in the API schema for backward compatibility but are not used for
+crowd-density classification or alerts (PRD §8 / §9).
 
 ## 6. Error Model
 
@@ -166,9 +245,9 @@ Spring returns `ResponseStatusException` → standard error body
 | 400 | Inference: undecodable image | `main.py` (`cv2.imdecode` None) |
 | 400 | Invalid `source_type` on `POST /sessions` | `SessionService` |
 | 400 | Missing/blank `source_type` on `POST /sessions` | Bean validation (`@NotBlank`) |
-| 400 | Invalid `risk` or `class` filter on `GET .../detections` | `SessionService` |
+| 400 | Invalid settings payload on `PUT /settings` | `SettingsService.validate` |
 | 404 | `session_id` not found on `analyze-frame` | `AnalyzeFrameController` → `SessionService.requireSessionExists` |
-| 404 | `GET /sessions/{id}` or `/detections` — session not found | `SessionService` |
+| 404 | `GET /sessions/{id}`, `/detections`, or `/frames` — session not found | `SessionService` |
 | 409 | `PATCH /sessions/{id}` — session already closed | `SessionService.closeSession` |
 | 502 | Inference returned 5xx / empty body | `RemoteAnalyzeFrameService` (`BAD_GATEWAY`) |
 | 503 | Model file not loaded / inference error | `main.py` (`HTTPException 503`) |
@@ -177,7 +256,8 @@ Spring returns `ResponseStatusException` → standard error body
 
 Called only by the Spring backend. Source: `application/inference-service/main.py`.
 
-**Request:** `{ "frame_base64": "<base64 image>" }` (required; 400 if empty).
+**Request:** `{ "frame_base64": "<base64 image>", "conf_thresh": 0.75, "model": "yolov8-precise" }`
+(`frame_base64` required; 400 if empty. `conf_thresh` and `model` optional — FR-15 settings.)
 **Response `200`:** identical shape to `AnalyzeFrameResponse` (§2.3). The backend deserializes it
 directly into `AnalyzeFrameResponse.class`.
 
@@ -197,4 +277,5 @@ directly into `AnalyzeFrameResponse.class`.
   - `v1.0` — `analyze-frame` (JSON + multipart), health.
   - `v1.1` — session persistence endpoints (§5), opt-in `session_id` on `analyze-frame`.
   - `v1.1.1` — `PATCH /sessions/{id}` close, inference readiness health, filter validation, pagination offset fix.
-  - `v1.2` *(planned)* — 3-class detection, `detections` alias (§7).
+  - `v1.2` — `GET /analytics/summary`, `GET/PUT /settings`, `GET /sessions/{id}/frames` (FR-14…16); per-request `conf_thresh` / `density_limit` on `/internal/infer`.
+  - `v1.3` *(planned)* — 3-class detection, `detections` alias (§7).

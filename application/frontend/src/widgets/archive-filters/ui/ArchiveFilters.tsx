@@ -50,6 +50,25 @@ const Select = styled.select`
   }
 `;
 
+const RiskFieldset = styled.fieldset`
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[1]};
+`;
+
+const RiskLegend = styled.legend`
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  padding: 0;
+  margin-bottom: ${({ theme }) => theme.spacing[1]};
+`;
+
 const RiskGroup = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing[2]};
@@ -76,7 +95,11 @@ const RiskButton = styled.button<{ $active?: boolean; $variant: "safe" | "warnin
     return "transparent";
   }};
   color: ${({ theme, $active, $variant }) => {
-    if ($active) return theme.color.textInverse;
+    if ($active) {
+      if ($variant === "danger") return theme.color.textInverse;
+      if ($variant === "warning") return theme.color.onWarning;
+      return theme.color.onSuccess;
+    }
     if ($variant === "danger") return theme.color.danger;
     if ($variant === "warning") return theme.color.warning;
     return theme.color.success;
@@ -119,13 +142,14 @@ export function ArchiveFilters({
         </Select>
       </Field>
 
-      <Field>
-        <Label>Risk Level</Label>
+      <RiskFieldset>
+        <RiskLegend>Risk Level</RiskLegend>
         <RiskGroup>
           <RiskButton
             type="button"
             $variant="safe"
             $active={riskFilter === "SAFE"}
+            aria-pressed={riskFilter === "SAFE"}
             onClick={() => onRiskFilterChange(riskFilter === "SAFE" ? "ALL" : "SAFE")}
           >
             SAFE
@@ -134,6 +158,7 @@ export function ArchiveFilters({
             type="button"
             $variant="warning"
             $active={riskFilter === "WARNING"}
+            aria-pressed={riskFilter === "WARNING"}
             onClick={() => onRiskFilterChange(riskFilter === "WARNING" ? "ALL" : "WARNING")}
           >
             WARNING
@@ -142,12 +167,13 @@ export function ArchiveFilters({
             type="button"
             $variant="danger"
             $active={riskFilter === "DANGER"}
+            aria-pressed={riskFilter === "DANGER"}
             onClick={() => onRiskFilterChange(riskFilter === "DANGER" ? "ALL" : "DANGER")}
           >
             DANGER
           </RiskButton>
         </RiskGroup>
-      </Field>
+      </RiskFieldset>
 
       <Field>
         <Label htmlFor="source-type">Source Type</Label>

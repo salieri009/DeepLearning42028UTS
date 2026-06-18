@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { Button, GlassPanel, Icon } from "@/shared/ui";
+import { Button, GlassPanel, Icon, VisuallyHidden } from "@/shared/ui";
 
 type ControlBarProps = {
   running: boolean;
@@ -7,7 +7,7 @@ type ControlBarProps = {
   onStop: () => void;
 };
 
-const Nav = styled.nav`
+const Toolbar = styled.div`
   position: fixed;
   bottom: ${({ theme }) => theme.spacing[5]};
   left: 0;
@@ -30,16 +30,9 @@ const Bar = styled(GlassPanel)`
   overflow-x: auto;
 `;
 
-const Divider = styled.div`
-  width: 1px;
-  height: 32px;
-  background: ${({ theme }) => theme.color.glass.border};
-  margin: 0 ${({ theme }) => theme.spacing[2]};
-`;
-
 export function ControlBar({ running, onStart, onStop }: ControlBarProps) {
   return (
-    <Nav>
+    <Toolbar role="toolbar" aria-label="Monitoring controls">
       <Bar>
         {!running ? (
           <Button $variant="primary" $pill onClick={onStart}>
@@ -56,25 +49,15 @@ export function ControlBar({ running, onStart, onStop }: ControlBarProps) {
         <Button $variant="ghost" disabled title="Coming soon">
           <Icon name="videocam" size={20} />
           Record
+          <VisuallyHidden> (coming soon)</VisuallyHidden>
         </Button>
 
         <Button $variant="ghost" disabled title="Coming soon">
           <Icon name="download" size={20} />
           Export
-        </Button>
-
-        <Divider />
-
-        <Button
-          $variant="danger"
-          onClick={onStop}
-          disabled={!running}
-          title={running ? "Stop monitoring" : "Not running"}
-          aria-label="Stop"
-        >
-          <Icon name="stop_circle" size={22} />
+          <VisuallyHidden> (coming soon)</VisuallyHidden>
         </Button>
       </Bar>
-    </Nav>
+    </Toolbar>
   );
 }

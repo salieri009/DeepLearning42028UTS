@@ -13,7 +13,7 @@ const Panel = styled(GlassPanel)`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
-const Title = styled.h3`
+const Title = styled.h2`
   margin: 0 0 ${({ theme }) => theme.spacing[6]};
   display: flex;
   align-items: center;
@@ -30,7 +30,7 @@ const Description = styled.p`
 export function DetectionModelPanel({ model, onChange }: DetectionModelPanelProps) {
   return (
     <Panel>
-      <Title>
+      <Title id="detection-model-heading">
         <Icon name="neurology" size={22} />
         Detection Model
       </Title>
@@ -39,18 +39,14 @@ export function DetectionModelPanel({ model, onChange }: DetectionModelPanelProp
         name="detection-model"
         value={model}
         onChange={onChange}
+        groupLabelId="detection-model-heading"
         options={[
-          { value: "yolov8-precise", label: "YOLOv8 Precise (v8.2.1)", tag: "RECOMMENDED" },
+          { value: "yolov8-precise", label: "YOLOv8 Precise (fine-tuned best.pt)", tag: "RECOMMENDED" },
           {
             value: "yolov8-nano",
-            label: "YOLOv8 Nano (Ultra-Fast)",
+            label: "YOLOv8 Nano (Ultralytics hub)",
             tag: "LOW LATENCY",
             tagMuted: true,
-          },
-          {
-            value: "custom-onnx",
-            label: "Custom ONNX Model",
-            icon: <Icon name="upload" size={18} />,
           },
         ]}
       />

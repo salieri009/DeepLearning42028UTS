@@ -9,7 +9,7 @@ import {
   getRiskBadgeVariant,
 } from "@/entities/crowd-stats";
 import type { AlertEntry } from "@/features/alert-history";
-import { Button, ChromeText, Icon, Label, Text } from "@/shared/ui";
+import { Button, ChromeText, Icon, Label, Text, VisuallyHidden } from "@/shared/ui";
 
 type StatsSidebarProps = {
   data: AnalyzeFrameResponse | null;
@@ -79,7 +79,7 @@ const ScrollArea = styled.div`
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: ${({ theme }) => theme.color.scrollbarThumb};
     border-radius: 10px;
   }
 `;
@@ -129,7 +129,7 @@ export function StatsSidebar({ data, latencyMs, alerts, formatAlertMeta }: Stats
   const recommendation = formatRecommendation(data?.recommendation);
 
   return (
-    <Aside>
+    <Aside aria-label="Crowd statistics and alerts">
       <Header>
         <ChromeText as="h2" style={{ fontSize: "20px" }}>
           Crowd Tracking Statistics
@@ -186,7 +186,6 @@ export function StatsSidebar({ data, latencyMs, alerts, formatAlertMeta }: Stats
         <AlertsSection>
           <AlertsHeader>
             <Label>Recent Alerts</Label>
-            <Label $tone="secondary">View All</Label>
           </AlertsHeader>
           {alerts.length === 0 ? (
             <EmptyText>No alerts yet.</EmptyText>
@@ -207,6 +206,7 @@ export function StatsSidebar({ data, latencyMs, alerts, formatAlertMeta }: Stats
       <Button $variant="primary" $fullWidth disabled title="Coming soon" style={{ marginTop: 24 }}>
         <Icon name="summarize" size={18} />
         Generate Report
+        <VisuallyHidden> (coming soon)</VisuallyHidden>
       </Button>
     </Aside>
   );

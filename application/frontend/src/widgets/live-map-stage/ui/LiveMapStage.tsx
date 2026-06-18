@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
-import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
+import { useCallback, useEffect, useRef } from "react";
+import Map, { Marker, type MapRef } from "react-map-gl/maplibre";
 import styled, { css, keyframes, useTheme } from "styled-components";
 import type { AppTheme } from "@/shared/config/theme";
 import type { MapMarker } from "@/features/live-map-markers";
-import { GlassPanel } from "@/shared/ui";
+import { GlassPanel, HudButton, Icon, VisuallyHidden } from "@/shared/ui";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
@@ -52,11 +52,20 @@ const Attribution = styled.div`
   bottom: ${({ theme }) => theme.spacing[2]};
   right: ${({ theme }) => theme.spacing[2]};
   z-index: 2;
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
   background: ${({ theme }) => theme.color.glass.scrim};
   padding: 2px 6px;
   border-radius: ${({ theme }) => theme.radius.sm};
+`;
+
+const MapHud = styled.div`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing[6]};
+  right: ${({ theme }) => theme.spacing[6]};
+  display: flex;
+  gap: ${({ theme }) => theme.spacing[2]};
+  z-index: 3;
 `;
 
 const pulse = keyframes`
@@ -99,14 +108,33 @@ export function LiveMapStage({ center, zoom, markers }: LiveMapStageProps) {
     mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 1200 });
   }, [hasUserMarker, lat, lng, zoom]);
 
+  const zoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
+
+  const recenter = useCallback(() => {
+    mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 800 });
+  }, [lng, lat, zoom]);
+
   return (
-    <Wrapper>
+    <Wrapper tabIndex={-1} aria-label="Live risk map with GPS and zone markers">
       <Legend>
         <LegendTitle>Live Risk Map</LegendTitle>
         <LegendHint>
           {hasUserMarker ? "Blue pulse = your GPS position" : "Enable location for live position"}
         </LegendHint>
       </Legend>
+      <VisuallyHidden as="ul">
+        {markers.map((marker) => (
+          <li key={marker.id}>
+            {marker.label}: {marker.risk} risk
+          </li>
+        ))}
+      </VisuallyHidden>
       <Map
         ref={mapRef}
         initialViewState={{ longitude: lng, latitude: lat, zoom }}
@@ -114,17 +142,28 @@ export function LiveMapStage({ center, zoom, markers }: LiveMapStageProps) {
         mapStyle={OPENFREEMAP_STYLE}
         attributionControl={false}
       >
-        <NavigationControl position="bottom-right" />
         {markers.map((marker) => (
           <Marker key={marker.id} longitude={marker.lng} latitude={marker.lat} anchor="center">
             <MarkerDot
               $color={riskColor(theme, marker.risk, marker.kind)}
               $kind={marker.kind}
-              title={marker.label}
+              role="img"
+              aria-label={`${marker.label}, ${marker.risk} risk`}
             />
           </Marker>
         ))}
       </Map>
+      <MapHud>
+        <HudButton type="button" aria-label="Zoom in" onClick={zoomIn}>
+          <Icon name="zoom_in" size={20} />
+        </HudButton>
+        <HudButton type="button" aria-label="Zoom out" onClick={zoomOut}>
+          <Icon name="zoom_out" size={20} />
+        </HudButton>
+        <HudButton type="button" aria-label="Recenter map" onClick={recenter}>
+          <Icon name="my_location" size={20} />
+        </HudButton>
+      </MapHud>
       <Attribution>OpenFreeMap · OpenStreetMap</Attribution>
     </Wrapper>
   );

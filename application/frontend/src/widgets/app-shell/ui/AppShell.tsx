@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
+import { SkipLink } from "@/shared/ui";
 
 const Shell = styled.div`
   position: relative;
@@ -75,9 +76,10 @@ type AppShellProps = {
 export function AppShell({ topNav, sideNav, bottomNav, children }: AppShellProps) {
   return (
     <Shell>
+      <SkipLink />
       {topNav}
       {sideNav}
-      <Main>
+      <Main id="main-content">
         <Content>{children}</Content>
       </Main>
       {bottomNav}

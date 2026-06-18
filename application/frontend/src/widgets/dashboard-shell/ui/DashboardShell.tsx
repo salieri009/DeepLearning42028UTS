@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
+import { SkipLink } from "@/shared/ui";
 
 const Shell = styled.div`
   position: relative;
@@ -12,11 +13,20 @@ type DashboardShellProps = {
   videoStage: ReactNode;
   statsSidebar: ReactNode;
   controlBar: ReactNode;
+  liveRegion?: ReactNode;
 };
 
-export function DashboardShell({ topNav, videoStage, statsSidebar, controlBar }: DashboardShellProps) {
+export function DashboardShell({
+  topNav,
+  videoStage,
+  statsSidebar,
+  controlBar,
+  liveRegion,
+}: DashboardShellProps) {
   return (
     <Shell>
+      <SkipLink targetId="dashboard-main" />
+      {liveRegion}
       {videoStage}
       {topNav}
       {statsSidebar}

@@ -49,7 +49,7 @@ export function AnalyticsHeader() {
   return (
     <Header>
       <div>
-        <ChromeText style={{ fontSize: "32px", textTransform: "uppercase" }}>
+        <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
           System Intelligence
         </ChromeText>
         <Subtitle>Real-time predictive risk analytics and facility throughput metrics.</Subtitle>

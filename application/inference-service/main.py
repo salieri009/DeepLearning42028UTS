@@ -1,13 +1,15 @@
 """
 FastAPI inference service for CrowdNav.
-Loads best.pt (YOLOv8) and runs person detection + collision-avoidance heuristics.
+Loads YOLOv8 weights and runs person detection + collision-avoidance heuristics.
 
 Run:
     uvicorn main:app --reload --port 9000
 
 Environment variables:
-    MODEL_PATH   Path to best.pt (default: ./best.pt)
-    CONF_THRESH  YOLO confidence threshold 0-1 (default: 0.35)
+    MODEL_PATH          Default precise weights (default: ./best.pt)
+    MODEL_PRECISE_PATH  yolov8-precise checkpoint (falls back to MODEL_PATH)
+    MODEL_NANO_PATH     yolov8-nano weights (default: yolov8n.pt — Ultralytics hub)
+    CONF_THRESH         YOLO confidence threshold 0-1 (default: 0.35)
 """
 
 from __future__ import annotations
@@ -29,26 +31,49 @@ app = FastAPI(title="CrowdNav Inference", version="1.0.0")
 # ---------------------------------------------------------------------------
 MODEL_PATH = os.environ.get("MODEL_PATH", "./best.pt")
 CONF_THRESH = float(os.environ.get("CONF_THRESH", "0.35"))
+DEFAULT_MODEL_KEY = "yolov8-precise"
+VALID_MODEL_KEYS = frozenset({"yolov8-precise", "yolov8-nano"})
+
+MODEL_PATH_BY_KEY: dict[str, str] = {
+    "yolov8-precise": os.environ.get("MODEL_PRECISE_PATH", MODEL_PATH),
+    "yolov8-nano": os.environ.get("MODEL_NANO_PATH", "yolov8n.pt"),
+}
 
 # ---------------------------------------------------------------------------
-# Lazy model loader
+# Lazy model loader (one YOLO instance per model key)
 # ---------------------------------------------------------------------------
-_model = None
+_models: dict[str, Any] = {}
 
 
-def _load_model():
-    global _model
-    if _model is not None:
-        return _model
-    model_path = Path(MODEL_PATH)
-    if not model_path.exists():
+def _resolve_model_key(model_key: str | None) -> str:
+    if model_key is None or model_key == "":
+        return DEFAULT_MODEL_KEY
+    if model_key == "custom-onnx":
+        raise FileNotFoundError(
+            "custom-onnx is not supported by the FastAPI inference service (use yolov8-precise or yolov8-nano)"
+        )
+    if model_key not in VALID_MODEL_KEYS:
+        return DEFAULT_MODEL_KEY
+    return model_key
+
+
+def _load_model(model_key: str | None = None):
+    key = _resolve_model_key(model_key)
+    if key in _models:
+        return _models[key]
+
+    model_path = Path(MODEL_PATH_BY_KEY[key])
+    if key == "yolov8-precise" and not model_path.exists():
         raise FileNotFoundError(
             f"Model file not found: {model_path.resolve()}. "
-            "Set MODEL_PATH env var to the correct path."
+            "Set MODEL_PRECISE_PATH or MODEL_PATH to the fine-tuned best.pt checkpoint."
         )
+
     from ultralytics import YOLO  # imported lazily to allow fast startup
-    _model = YOLO(str(model_path))
-    return _model
+
+    loaded = YOLO(str(model_path))
+    _models[key] = loaded
+    return loaded
 
 
 # ---------------------------------------------------------------------------
@@ -76,15 +101,21 @@ def _worst_state(states: list[str]) -> str:
     return "SAFE"
 
 
-def _crowd_density(n: int, worst: str, density_limit: int = 64) -> str:
+def _crowd_density(n: int, worst: str) -> str:
+    """PRD §8: n≤2 LOW, n≤5 MEDIUM, else HIGH. FR-2 allows risk elevation."""
     if n == 0:
         return "LOW"
-    if n >= density_limit or worst == "DANGER":
+    if n <= 2:
+        base = "LOW"
+    elif n <= 5:
+        base = "MEDIUM"
+    else:
+        base = "HIGH"
+    if worst == "DANGER":
         return "HIGH"
-    medium_threshold = max(3, density_limit // 2)
-    if n >= medium_threshold or worst == "WARNING":
+    if worst == "WARNING" and base == "LOW":
         return "MEDIUM"
-    return "LOW"
+    return base
 
 
 def _recommendation(worst: str) -> str:
@@ -97,7 +128,7 @@ def _recommendation(worst: str) -> str:
 class InferRequest(BaseModel):
     frame_base64: str | None = None
     conf_thresh: float | None = None
-    density_limit: int | None = None
+    model: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +136,9 @@ class InferRequest(BaseModel):
 # ---------------------------------------------------------------------------
 @app.get("/health")
 def health() -> dict[str, str]:
-    if not Path(MODEL_PATH).exists():
-        raise HTTPException(status_code=503, detail="Model file not found")
+    precise_path = Path(MODEL_PATH_BY_KEY["yolov8-precise"])
+    if not precise_path.exists():
+        raise HTTPException(status_code=503, detail="Precise model file not found")
     return {"status": "ok", "model": "ready"}
 
 
@@ -114,6 +146,9 @@ def health() -> dict[str, str]:
 def infer(payload: InferRequest) -> dict[str, Any]:
     if not payload.frame_base64:
         raise HTTPException(status_code=400, detail="frame_base64 is required")
+
+    if payload.model == "custom-onnx":
+        raise HTTPException(status_code=400, detail="custom-onnx inference is not supported")
 
     # 1. Decode base64 → numpy BGR image
     try:
@@ -127,9 +162,8 @@ def infer(payload: InferRequest) -> dict[str, Any]:
 
     # 2. YOLO inference (class 0 = person)
     conf_thresh = payload.conf_thresh if payload.conf_thresh is not None else CONF_THRESH
-    density_limit = payload.density_limit if payload.density_limit is not None else 64
     try:
-        model = _load_model()
+        model = _load_model(payload.model)
         results = model.predict(img, conf=conf_thresh, classes=[0], verbose=False)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -171,7 +205,7 @@ def infer(payload: InferRequest) -> dict[str, Any]:
 
     return {
         "persons": persons,
-        "crowd_density": _crowd_density(len(persons), worst, density_limit),
+        "crowd_density": _crowd_density(len(persons), worst),
         "max_proximity_risk": worst,
         "recommendation": _recommendation(worst),
     }

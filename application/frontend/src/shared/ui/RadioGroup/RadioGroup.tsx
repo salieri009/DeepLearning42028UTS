@@ -13,7 +13,15 @@ type RadioGroupProps<T extends string> = {
   value: T;
   options: RadioOption<T>[];
   onChange: (value: T) => void;
+  groupLabelId?: string;
 };
+
+const Fieldset = styled.fieldset`
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+`;
 
 const Options = styled.div`
   display: flex;
@@ -28,7 +36,7 @@ const Option = styled.label`
   padding: ${({ theme }) => theme.spacing[3]};
   border-radius: ${({ theme }) => theme.radius.lg};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  background: rgba(0, 0, 0, 0.2);
+  background: ${({ theme }) => theme.color.tint.overlay};
   cursor: pointer;
 
   &:hover {
@@ -45,7 +53,7 @@ const OptionLeft = styled.div`
 `;
 
 const Tag = styled.span<{ $muted?: boolean }>`
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   padding: 2px ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme, $muted }) =>
@@ -58,9 +66,11 @@ export function RadioGroup<T extends string>({
   value,
   options,
   onChange,
+  groupLabelId,
 }: RadioGroupProps<T>) {
   return (
-    <Options>
+    <Fieldset aria-labelledby={groupLabelId}>
+      <Options role="radiogroup">
       {options.map((option) => (
         <Option key={option.value}>
           <OptionLeft>
@@ -75,6 +85,7 @@ export function RadioGroup<T extends string>({
           {option.icon ?? (option.tag ? <Tag $muted={option.tagMuted}>{option.tag}</Tag> : null)}
         </Option>
       ))}
-    </Options>
+      </Options>
+    </Fieldset>
   );
 }

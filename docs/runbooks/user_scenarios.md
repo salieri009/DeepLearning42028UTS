@@ -60,13 +60,13 @@ flowchart TB
 
 ## Scenario summary
 
-| ID | Scenario | Route | Data source | Status |
-|----|----------|-------|-------------|--------|
-| S1 | Real-time crowd & proximity avoidance | `/` | Live camera + YOLO API | **Done** |
-| S2 | Session recording & archive review | `/archive` | PostgreSQL sessions API | **Done** |
-| S3 | Map-based congestion avoidance | `/live-map` | GPS + session aggregates (24h poll) | **Partial** — zones anchored at UTS; risk from session DB |
-| S4 | Weekly density & risk analytics | `/analytics` | `GET /v1/analytics/summary` + `useAnalyticsData` | **Done** |
-| S5 | Alert & threshold settings | `/settings` | `GET/PUT /v1/settings` + inference thresholds | **Done** |
+| ID | Scenario | Route | Data source | FR | Status |
+|----|----------|-------|-------------|-----|--------|
+| S1 | Real-time crowd & proximity avoidance | `/` | Live camera + YOLO API | FR-1…5, FR-UI-1…6 | **Done** |
+| S2 | Session recording & archive review | `/archive` | PostgreSQL sessions API | FR-11, FR-12, FR-16 | **Done** |
+| S3 | Map-based congestion avoidance | `/live-map` | GPS + session aggregates (24h poll) | FR-17 | **Done** — GPS marker + zone risk from session DB (fixed UTS anchors) |
+| S4 | Weekly density & risk analytics | `/analytics` | `GET /v1/analytics/summary` + `useAnalyticsData` | FR-14 | **Done** |
+| S5 | Alert & threshold settings | `/settings` | `GET/PUT /v1/settings` + inference thresholds | FR-15 | **Done** |
 
 ---
 
@@ -81,7 +81,7 @@ flowchart TB
 1. Open `/` Dashboard → click **Start Monitoring**
 2. Grant camera permission → live feed + colour-coded bboxes (SAFE=green, WARNING=yellow, DANGER=red)
 3. Read StatsSidebar: people count, `crowd_density`, `max_proximity_risk`, `recommendation`
-4. On WARNING/DANGER, optional speech + vibration (if enabled in Settings)
+4. On WARNING/DANGER, read text + colour cues in StatsSidebar (PRD §9 — no audio/haptic)
 5. Click **Stop Monitoring** → camera released, panel cleared
 
 ### Code flow
@@ -132,7 +132,7 @@ Implemented (FR-1–5, FR-UI-1–6). Wheelchair **class detection not shipped** 
 2. Each `analyze-frame` call includes `session_id` → async persist (no raw frames)
 3. On Stop, session closed via `PATCH /sessions/{id}`
 4. Open `/archive` → filter by date/risk/source → select session → view worst risk & threat distribution
-5. **Export DATA** remains disabled (Coming soon)
+5. Click **EXPORT DATA** → downloads JSON bundle (session + frame trail + detections)
 
 ### Code flow
 
@@ -170,7 +170,7 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 1. Open `/live-map`
 2. View MapLibre + OpenFreeMap tiles with risk-coloured markers
 3. See **Zone A-4 Congestion** (DANGER, 88% CAPACITY) → decide to avoid
-4. *(Ideal, not implemented)* Current GPS position shown on map
+4. Blue pulse marker shows current GPS position on map
 
 ### Code flow
 
@@ -182,7 +182,7 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 
 ### Status
 
-**Partial — implemented (2026-06-18)**
+**Done (2026-06-18)**
 
 - **GPS:** `useGeolocation` watches browser position; blue pulse marker on map.
 - **Session telemetry:** `useMapMarkers` polls `GET /v1/sessions` + `GET /v1/sessions/{id}` every 10s for the last 24h; aggregates `worst_risk`, `frame_count`, and active sessions into zone `risk` / `capacity`.
@@ -244,15 +244,15 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 
 ## S5 — Pre-trip alert & threshold settings
 
-**Persona:** User with different audible/haptic preferences.
+**Persona:** User tuning detection sensitivity and visual overlays before monitoring.
 
-**Goal:** Tune crowd density limit, audible alerts, and visual overlays.
+**Goal:** Adjust YOLO confidence threshold and notification preferences (PRD §9 — text/visual only).
 
 ### User journey
 
 1. Open `/settings`
-2. Adjust density limit and confidence in AlertThresholdsPanel
-3. Toggle audible / vibration in SystemNotificationsPanel
+2. Adjust detection confidence in AlertThresholdsPanel (crowd density follows PRD §8 fixed bands)
+3. Toggle visual overlays / logging / WebRTC in SystemNotificationsPanel
 4. Save → persisted to `app_settings` (PostgreSQL) with localStorage fallback
 
 ### Code flow
@@ -262,13 +262,12 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 | Page | `pages/settings/` |
 | State | `features/sensor-settings/` → `GET/PUT /v1/settings` |
 | Sensor list | Recent `WEBCAM` sessions from `GET /v1/sessions` |
-| Inference link | `RemoteAnalyzeFrameService` / `MockAnalyzeFrameService` read settings → `conf_thresh`, `density_limit` on `/internal/infer` |
+| Inference link | `RemoteAnalyzeFrameService` → `conf_thresh`, `model` on `/internal/infer` |
 | Panels | `alert-thresholds-panel`, `detection-model-panel`, `sensor-sources-grid` |
-| S1 link | `useRiskAlerts` reads audible toggle from settings |
 
 ### Status
 
-**Done (2026-06-18)** — settings persist in DB; `confidence` and `density_limit` flow into YOLO inference per request. Model picker (`yolov8-precise` / `nano`) is stored but not yet mapped to separate weights.
+**Done (2026-06-18)** — settings persist in DB; `confidence` and `model` (`yolov8-precise` / `yolov8-nano`) flow into `/internal/infer`.
 
 ### Legacy candidates (remove after S5 validation)
 

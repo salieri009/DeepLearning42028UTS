@@ -51,6 +51,29 @@ export const tokens = {
       highlight: "rgba(255, 255, 255, 0.45)",
       scrim: "rgba(15, 15, 15, 0.55)",
     },
+    riskTint: {
+      danger: "rgba(218, 30, 40, 0.2)",
+      warning: "rgba(241, 194, 27, 0.2)",
+    },
+    tint: {
+      success: "rgba(36, 161, 72, 0.2)",
+      info: "rgba(37, 153, 214, 0.2)",
+      overlay: "rgba(0, 0, 0, 0.2)",
+      labelBackdrop: "rgba(0, 0, 0, 0.4)",
+      scanlineBand: "rgba(0, 0, 0, 0.1)",
+    },
+    textOnVideo: "rgba(255, 255, 255, 0.7)",
+    overlayBorderSubtle: "rgba(36, 161, 72, 0.65)",
+    scrollbarThumb: "rgba(255, 255, 255, 0.10)",
+    onWarning: "#0F0F0F",
+    onSuccess: "#0F0F0F",
+    gaugeTrack: "rgba(255, 255, 255, 0.05)",
+    texture: {
+      gridDot: "rgba(255, 255, 255, 0.05)",
+      scanlineFade: "rgba(18, 16, 16, 0)",
+      scanlineChroma:
+        "linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02))",
+    },
     focus: "#0F62FE",
   },
   gradient: {

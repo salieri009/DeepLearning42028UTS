@@ -43,7 +43,7 @@ public class MockAnalyzeFrameService implements AnalyzeFrameService {
 		}
 
 		String worst = worstRisk(persons);
-		String density = crowdDensity(persons.size(), worst, settings.densityLimit());
+		String density = crowdDensity(persons.size(), worst);
 
 		return new AnalyzeFrameResponse(persons, density, worst, recommendation(worst));
 	}
@@ -57,18 +57,25 @@ public class MockAnalyzeFrameService implements AnalyzeFrameService {
 		return warning ? "WARNING" : "SAFE";
 	}
 
-	private String crowdDensity(int count, String worst, int densityLimit) {
+	private String crowdDensity(int count, String worst) {
 		if (count == 0) {
 			return "LOW";
 		}
-		if (count >= densityLimit || "DANGER".equals(worst)) {
+		String base;
+		if (count <= 2) {
+			base = "LOW";
+		} else if (count <= 5) {
+			base = "MEDIUM";
+		} else {
+			base = "HIGH";
+		}
+		if ("DANGER".equals(worst)) {
 			return "HIGH";
 		}
-		int mediumThreshold = Math.max(3, densityLimit / 2);
-		if (count >= mediumThreshold || "WARNING".equals(worst)) {
+		if ("WARNING".equals(worst) && "LOW".equals(base)) {
 			return "MEDIUM";
 		}
-		return "LOW";
+		return base;
 	}
 
 	private String recommendation(String worst) {

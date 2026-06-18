@@ -75,7 +75,7 @@ const NodeTitle = styled.p`
 
 const NodeSubtitle = styled.p`
   margin: 0;
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: ${({ theme }) => theme.color.info[60]};
@@ -149,7 +149,7 @@ const ITEMS: { id: SideNavItem; icon: string; label: string }[] = [
 
 export function SideNav({ activeItem }: SideNavProps) {
   return (
-    <Aside>
+    <Aside aria-label="Primary navigation">
       <NodeCard>
         <NodeIcon>
           <Icon name="hub" size={22} />
@@ -173,7 +173,7 @@ export function SideNav({ activeItem }: SideNavProps) {
           }
 
           return (
-            <NavItemDisabled key={id} type="button" disabled title="Coming soon">
+            <NavItemDisabled key={id} type="button" disabled title="Coming soon" aria-label={`${label} (coming soon)`}>
               <Icon name={icon} size={20} />
               {label}
             </NavItemDisabled>
@@ -182,11 +182,11 @@ export function SideNav({ activeItem }: SideNavProps) {
       </NavList>
 
       <Footer>
-        <NavItemDisabled type="button" disabled title="Coming soon">
+        <NavItemDisabled type="button" disabled title="Coming soon" aria-label="Help (coming soon)">
           <Icon name="help" size={20} />
           Help
         </NavItemDisabled>
-        <NavItemDisabled type="button" disabled title="Coming soon">
+        <NavItemDisabled type="button" disabled title="Coming soon" aria-label="Logout (coming soon)">
           <Icon name="logout" size={20} />
           Logout
         </NavItemDisabled>

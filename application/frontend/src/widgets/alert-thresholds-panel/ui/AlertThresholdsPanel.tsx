@@ -3,9 +3,7 @@ import { GlassPanel, Icon, RangeSlider } from "@/shared/ui";
 
 type AlertThresholdsPanelProps = {
   confidence: number;
-  densityLimit: number;
   onConfidenceChange: (v: number) => void;
-  onDensityChange: (v: number) => void;
 };
 
 const Panel = styled(GlassPanel)`
@@ -13,7 +11,7 @@ const Panel = styled(GlassPanel)`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
-const Title = styled.h3`
+const Title = styled.h2`
   margin: 0 0 ${({ theme }) => theme.spacing[6]};
   display: flex;
   align-items: center;
@@ -28,12 +26,14 @@ const Sliders = styled.div`
   gap: ${({ theme }) => theme.spacing[6]};
 `;
 
-export function AlertThresholdsPanel({
-  confidence,
-  densityLimit,
-  onConfidenceChange,
-  onDensityChange,
-}: AlertThresholdsPanelProps) {
+const DensityNote = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  color: ${({ theme }) => theme.color.textMuted};
+  line-height: 1.5;
+`;
+
+export function AlertThresholdsPanel({ confidence, onConfidenceChange }: AlertThresholdsPanelProps) {
   return (
     <Panel>
       <Title>
@@ -50,15 +50,10 @@ export function AlertThresholdsPanel({
           hint="Higher values reduce false positives but may miss partial occlusions."
           onChange={onConfidenceChange}
         />
-        <RangeSlider
-          label="Crowd Density Limit"
-          value={densityLimit}
-          min={10}
-          max={100}
-          displayValue={`${densityLimit} / m²`}
-          hint="Triggers notification when local density exceeds the specified metric."
-          onChange={onDensityChange}
-        />
+        <DensityNote>
+          Crowd density (PRD §8): ≤2 people LOW · ≤5 MEDIUM · 6+ HIGH. Proximity risk may elevate
+          severity (FR-2).
+        </DensityNote>
       </Sliders>
     </Panel>
   );

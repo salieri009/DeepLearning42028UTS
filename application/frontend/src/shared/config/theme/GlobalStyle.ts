@@ -15,7 +15,8 @@ export const GlobalStyle = createGlobalStyle`
 
   body {
     margin: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     font-family: ${({ theme }) => theme.typography.family.sans};
     font-size: ${({ theme }) => theme.typography.size[3]};
     line-height: ${({ theme }) => theme.typography.lineHeight.normal};

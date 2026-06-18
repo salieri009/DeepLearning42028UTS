@@ -1,5 +1,10 @@
 import styled from "styled-components";
+import { useCallback, useState } from "react";
 import { useSessionArchive } from "@/features/session-archive";
+import {
+  buildSessionExportBundle,
+  downloadSessionJson,
+} from "@/features/session-archive/lib/exportSessionJson";
 import { useSessionPreview } from "@/features/session-archive/model/useSessionPreview";
 import { ArchiveFilters } from "@/widgets/archive-filters";
 import { AppShell } from "@/widgets/app-shell";
@@ -8,6 +13,8 @@ import { SessionHistoryTable } from "@/widgets/session-history-table";
 import { SessionPreviewPanel } from "@/widgets/session-preview-panel";
 import { SideNav } from "@/widgets/side-nav";
 import { TopNav } from "@/widgets/top-nav";
+import { listDetections, listSessionFrames } from "@/shared/api";
+import { reportError } from "@/shared/lib/reportError";
 import { AquaPillButton, ChromeText, Icon } from "@/shared/ui";
 
 const Header = styled.div`
@@ -54,6 +61,27 @@ const FiltersCol = styled.div`
 export function ArchivePage() {
   const archive = useSessionArchive();
   const preview = useSessionPreview(archive.selectedId);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = useCallback(async () => {
+    const session = archive.selectedDetail;
+    if (!session || exporting) return;
+
+    setExporting(true);
+    try {
+      const [detectionData, frameData] = await Promise.all([
+        listDetections(session.id, { limit: 500 }),
+        listSessionFrames(session.id, 100),
+      ]);
+      downloadSessionJson(
+        buildSessionExportBundle(session, frameData.items, detectionData.items),
+      );
+    } catch (err) {
+      reportError("Export session error", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [archive.selectedDetail, exporting]);
 
   return (
     <AppShell
@@ -63,14 +91,19 @@ export function ArchivePage() {
     >
       <Header>
         <div>
-          <ChromeText style={{ fontSize: "32px", textTransform: "uppercase" }}>
+          <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
             Analysis Archive
           </ChromeText>
           <Subtitle>RETRIEVING HISTORICAL TELEMETRY DATA...</Subtitle>
         </div>
-        <AquaPillButton type="button" disabled title="Coming soon">
+        <AquaPillButton
+          type="button"
+          disabled={archive.selectedDetail == null || exporting}
+          title={archive.selectedDetail == null ? "Select a session first" : "Download JSON export"}
+          onClick={() => void handleExport()}
+        >
           <Icon name="download" size={18} />
-          EXPORT DATA
+          {exporting ? "EXPORTING..." : "EXPORT DATA"}
         </AquaPillButton>
       </Header>
 

@@ -16,7 +16,7 @@ type StatCardProps = {
 
 const badgeStyles = {
   safe: css`
-    background: rgba(36, 161, 72, 0.2);
+    background: ${({ theme }) => theme.color.tint.success};
     color: ${({ theme }) => theme.color.success};
   `,
   warning: css`
@@ -28,7 +28,7 @@ const badgeStyles = {
     color: ${({ theme }) => theme.color.textInverse};
   `,
   neutral: css`
-    background: rgba(37, 153, 214, 0.2);
+    background: ${({ theme }) => theme.color.tint.info};
     color: ${({ theme }) => theme.color.primary};
   `,
 } satisfies Record<StatBadgeVariant, ReturnType<typeof css>>;
@@ -58,7 +58,7 @@ const Header = styled.div`
 
 const Badge = styled.span<{ $variant: StatBadgeVariant }>`
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
   padding: 2px ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.sm};

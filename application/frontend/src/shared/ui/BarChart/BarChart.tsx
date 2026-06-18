@@ -66,23 +66,40 @@ const BarLabel = styled.span<{ $peak?: boolean }>`
   left: 50%;
   transform: translateX(-50%);
   font-family: ${({ theme }) => theme.typography.family.mono};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme, $peak }) => ($peak ? theme.color.primary : theme.color.textSecondary)};
   font-weight: ${({ $peak, theme }) =>
     $peak ? theme.typography.weight.bold : theme.typography.weight.medium};
   white-space: nowrap;
 `;
 
+const PeakTag = styled.span`
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  font-weight: ${({ theme }) => theme.typography.weight.bold};
+  color: ${({ theme }) => theme.color.primary};
+  text-transform: uppercase;
+`;
+
 export function BarChart({ title, items, badge }: BarChartProps) {
+  const chartSummary = items
+    .map((item) => `${item.label} ${item.heightPercent}%${item.peak ? " (peak)" : ""}`)
+    .join(", ");
+
   return (
     <Card>
       <Header>
         <Title>{title}</Title>
         {badge && <Badge>{badge}</Badge>}
       </Header>
-      <Chart>
+      <Chart role="img" aria-label={`${title}. ${chartSummary}`}>
         {items.map((item) => (
           <Bar key={item.label} $height={item.heightPercent} $peak={item.peak}>
+            {item.peak ? <PeakTag>Peak</PeakTag> : null}
             <BarLabel $peak={item.peak}>{item.label}</BarLabel>
           </Bar>
         ))}

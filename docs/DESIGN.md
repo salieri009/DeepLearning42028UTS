@@ -240,7 +240,7 @@ Orchestrator-Workers 패턴 강제.
 
 **Scope:** Single-page dashboard monitoring UX — start/stop camera, 500 ms analyze loop, live overlays, stats sidebar.
 
-**Out of scope (this release):** Record/Export, Generate Report, session `session_id` UI on dashboard (FR-11 frontend), true pause/resume.
+**Out of scope (this release):** Record/Export, Generate Report, true pause/resume. Session `session_id` is auto-managed on Start/Stop (FR-11 — implemented).
 
 **In scope (2026-06-17+):** Multi-page routing — Analytics, Live Map (OpenFreeMap), Archive (session API), Settings.
 
@@ -297,7 +297,7 @@ stateDiagram-v2
 | `widgets` | `VideoStage.tsx` | Video + overlays within safe zones |
 | `widgets` | `StatsSidebar.tsx` | Live stats + alert list |
 | `features` | `useCrowdDetection.ts` | Camera, interval, API calls |
-| `features` | `useRiskAlerts.ts` | Speech/vibration on risk |
+| `features` | `useRiskAlerts.ts` | Text-only alert history tracking (PRD §9; no speech/vibration) |
 | `shared` | `tokens.ts` | Layout safe-zone constants |
 
 ### 9.5 Error handling
@@ -331,10 +331,10 @@ stateDiagram-v2
 | Route | Page | Key widgets / features |
 |-------|------|------------------------|
 | `/` | `DashboardPage` | `DashboardShell`, `useCrowdDetection` |
-| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map`, `weekly-safety-score`, `features/analytics-mock` |
-| `/live-map` | `LiveMapPage` | `live-map-stage` (MapLibre + OpenFreeMap) |
-| `/archive` | `ArchivePage` | `archive-filters`, `session-history-table`, `features/session-archive` → `GET /v1/sessions` |
-| `/settings` | `SettingsPage` | `sensor-sources-grid`, `detection-model-panel`, `features/sensor-settings` |
+| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map`, `weekly-safety-score`, `features/analytics-data` → FR-14 |
+| `/live-map` | `LiveMapPage` | `live-map-stage`, `features/live-map-markers`, `features/geolocation` → FR-17 |
+| `/archive` | `ArchivePage` | `archive-filters`, `session-history-table`, `features/session-archive` → FR-12, FR-16 |
+| `/settings` | `SettingsPage` | `sensor-sources-grid`, `detection-model-panel`, `features/sensor-settings` → FR-15 |
 
 Shared chrome for non-dashboard pages: `widgets/app-shell`, `widgets/top-nav` (NavLink), `widgets/side-nav`, `widgets/bottom-nav`.
 

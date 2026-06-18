@@ -1,3 +1,4 @@
+import { useId } from "react";
 import styled from "styled-components";
 
 type RangeSliderProps = {
@@ -57,7 +58,7 @@ const Input = styled.input`
 
 const Hint = styled.p`
   margin: 0;
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -70,17 +71,26 @@ export function RangeSlider({
   hint,
   onChange,
 }: RangeSliderProps) {
+  const inputId = useId();
+  const labelId = `${inputId}-label`;
+
   return (
     <Wrapper>
       <Header>
-        <span>{label}</span>
-        <Value>{displayValue}</Value>
+        <span id={labelId}>{label}</span>
+        <Value aria-hidden>{displayValue}</Value>
       </Header>
       <Input
+        id={inputId}
         type="range"
         min={min}
         max={max}
         value={value}
+        aria-labelledby={labelId}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={displayValue}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       {hint && <Hint>{hint}</Hint>}

@@ -9,6 +9,7 @@ import { SettingsActions } from "@/widgets/settings-actions";
 import { SideNav } from "@/widgets/side-nav";
 import { SystemNotificationsPanel } from "@/widgets/system-notifications-panel";
 import { TopNav } from "@/widgets/top-nav";
+import { ChromeText } from "@/shared/ui";
 
 const Content = styled.div`
   display: flex;
@@ -43,8 +44,20 @@ export function SettingsPage() {
       bottomNav={<BottomNav />}
     >
       <Content>
-        {settings.loading ? <Notice>Loading settings...</Notice> : null}
-        {settings.error ? <Notice>{settings.error}</Notice> : null}
+        <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
+          Sensor Settings
+        </ChromeText>
+
+        {settings.loading ? (
+          <Notice role="status" aria-live="polite">
+            Loading settings...
+          </Notice>
+        ) : null}
+        {settings.error ? (
+          <Notice role="status" aria-live="polite">
+            {settings.error}
+          </Notice>
+        ) : null}
 
         <SensorSourcesGrid sources={settings.sources} />
 
@@ -52,19 +65,15 @@ export function SettingsPage() {
           <DetectionModelPanel model={settings.draft.model} onChange={settings.setModel} />
           <AlertThresholdsPanel
             confidence={settings.draft.confidence}
-            densityLimit={settings.draft.densityLimit}
             onConfidenceChange={settings.setConfidence}
-            onDensityChange={settings.setDensityLimit}
           />
         </TwoCol>
 
         <SystemNotificationsPanel
           visualOverlays={settings.draft.visualOverlays}
-          audibleAlerts={settings.draft.audibleAlerts}
           logErrors={settings.draft.logErrors}
           webrtcAccess={settings.draft.webrtcAccess}
           onVisualOverlaysChange={settings.setVisualOverlays}
-          onAudibleAlertsChange={settings.setAudibleAlerts}
           onLogErrorsChange={settings.setLogErrors}
           onWebrtcAccessChange={settings.setWebrtcAccess}
         />

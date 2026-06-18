@@ -22,6 +22,8 @@ services:
     build: ./inference-service          # fallback: build locally
     environment:
       MODEL_PATH: /models/best.pt
+      MODEL_PRECISE_PATH: /models/best.pt
+      MODEL_NANO_PATH: yolov8n.pt
       CONF_THRESH: "0.35"
     volumes:
       - ./models:/models:ro             # place best.pt in application/models/

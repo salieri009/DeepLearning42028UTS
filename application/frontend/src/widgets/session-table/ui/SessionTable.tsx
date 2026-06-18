@@ -87,7 +87,7 @@ const columns: DataTableColumn<SessionDetailResponse>[] = [
     header: "Action",
     align: "right",
     render: () => (
-      <AquaPillButton type="button" $size="sm" disabled title="Coming soon">
+      <AquaPillButton type="button" $size="sm" disabled title="Coming soon" aria-label="View detail (coming soon)">
         VIEW DETAIL
       </AquaPillButton>
     ),

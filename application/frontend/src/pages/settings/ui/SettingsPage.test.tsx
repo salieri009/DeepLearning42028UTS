@@ -32,7 +32,7 @@ describe("SettingsPage UX", () => {
     expect(screen.getByRole("button", { name: /Discard Changes/i })).toBeDisabled();
   });
 
-  it("marks dirty and persists audible alerts opt-in on save", async () => {
+  it("marks dirty and persists visual overlay toggle on save", async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <MemoryRouter>
@@ -40,20 +40,18 @@ describe("SettingsPage UX", () => {
       </MemoryRouter>,
     );
 
-    const audibleToggle = screen.getByRole("checkbox", { name: /Audible Risk Alerts/i });
-    expect(audibleToggle).not.toBeChecked();
+    const overlayToggle = screen.getByRole("checkbox", { name: /Visual UI Overlays/i });
+    expect(overlayToggle).toBeChecked();
 
-    await user.click(audibleToggle);
+    await user.click(overlayToggle);
     expect(screen.getByRole("button", { name: /Save Changes/i })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {
       const stored = JSON.parse(localStorage.getItem("crowdnav.sensor-settings.v1") ?? "{}");
-      expect(stored.audibleAlerts).toBe(true);
+      expect(stored.visualOverlays).toBe(false);
     });
-    const stored = JSON.parse(localStorage.getItem("crowdnav.sensor-settings.v1") ?? "{}");
-    expect(stored.audibleAlerts).not.toBe(DEFAULT_SETTINGS.audibleAlerts);
   });
 
   it("keeps Add Source disabled as placeholder", () => {

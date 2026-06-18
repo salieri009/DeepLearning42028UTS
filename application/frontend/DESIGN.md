@@ -88,6 +88,7 @@ The frontend follows [Feature-Sliced Design](https://feature-sliced.design/) wit
 - `VideoStage` bbox overlays use `entities/detection` risk tokens (no hardcoded hex).
 - Placeholder controls (Record, Export, Generate Report) are disabled with `title="Coming soon"`.
 - Five routes: `/`, `/analytics`, `/live-map`, `/archive`, `/settings` via `AppRouter`.
+- Mobile `BottomNav` exposes all five routes (Home, Stats, Map, Logs, Sensors → `/settings`).
 - Interaction states: hover/focus/disabled are consistent and accessible.
 
 ### Component standards (minimum set)

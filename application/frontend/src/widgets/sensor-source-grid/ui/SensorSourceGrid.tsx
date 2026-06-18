@@ -16,7 +16,7 @@ const Header = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[4]};
 `;
 
-const Title = styled.h3`
+const Title = styled.h2`
   margin: 0;
   display: flex;
   align-items: center;
@@ -53,7 +53,7 @@ export function SensorSourceGrid({ sources }: SensorSourceGridProps) {
           <Icon name="videocam" size={22} />
           Sensor Sources
         </Title>
-        <AddLink type="button" disabled title="Coming soon">
+        <AddLink type="button" disabled title="Coming soon" aria-label="Add Source (coming soon)">
           Add Source
         </AddLink>
       </Header>

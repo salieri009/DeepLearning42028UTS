@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import styled from "styled-components";
+import { useEffect, useId, useState } from "react";
+import styled, { useTheme } from "styled-components";
 import { ChromeText } from "../ChromeText";
 import { GlassPanel } from "../GlassPanel";
 import { Icon } from "../Icon";
@@ -113,13 +113,22 @@ export function RadialGauge({
     requestAnimationFrame(tick);
   }, [score]);
 
+  const theme = useTheme();
+  const scoreId = useId();
+  const labelId = useId();
   const offset = CIRCUMFERENCE - (displayScore / 100) * CIRCUMFERENCE;
 
   return (
     <Card>
       <Title>{title}</Title>
       <GaugeArea>
-        <svg width={256} height={256} style={{ transform: "rotate(-90deg)" }}>
+        <svg
+          width={256}
+          height={256}
+          style={{ transform: "rotate(-90deg)" }}
+          role="img"
+          aria-labelledby={`${scoreId} ${labelId}`}
+        >
           <circle
             cx={128}
             cy={128}
@@ -127,7 +136,7 @@ export function RadialGauge({
             fill="transparent"
             stroke="currentColor"
             strokeWidth={12}
-            style={{ color: "rgba(255,255,255,0.05)" }}
+            style={{ color: theme.color.gaugeTrack }}
           />
           <circle
             cx={128}
@@ -142,8 +151,8 @@ export function RadialGauge({
           />
         </svg>
         <ScoreCenter>
-          <Score>{displayScore}</Score>
-          <ScoreLabel>{label}</ScoreLabel>
+          <Score id={scoreId}>{displayScore}</Score>
+          <ScoreLabel id={labelId}>{label}</ScoreLabel>
         </ScoreCenter>
       </GaugeArea>
       <Footer>

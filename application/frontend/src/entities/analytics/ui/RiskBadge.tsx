@@ -9,7 +9,7 @@ const Badge = styled.span<{ $risk: RiskLevel }>`
   display: inline-block;
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: 10px;
+  font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
   font-family: ${({ theme }) => theme.typography.family.mono};
   border: 1px solid

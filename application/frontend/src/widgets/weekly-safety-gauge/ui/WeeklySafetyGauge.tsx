@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import styled from "styled-components";
+import { useEffect, useId, useState } from "react";
+import styled, { useTheme } from "styled-components";
 import { ChromeText, GlassPanel, Icon } from "@/shared/ui";
 
 type WeeklySafetyGaugeProps = {
@@ -102,7 +102,10 @@ export function WeeklySafetyGauge({
   trendPercent,
   eventCount,
 }: WeeklySafetyGaugeProps) {
+  const theme = useTheme();
   const [displayScore, setDisplayScore] = useState(0);
+  const scoreId = useId();
+  const labelId = useId();
 
   useEffect(() => {
     const duration = 1500;
@@ -123,13 +126,19 @@ export function WeeklySafetyGauge({
     <Card>
       <Title>Weekly Safety Score</Title>
       <GaugeArea>
-        <svg width={256} height={256} style={{ transform: "rotate(-90deg)" }}>
+        <svg
+          width={256}
+          height={256}
+          style={{ transform: "rotate(-90deg)" }}
+          role="img"
+          aria-labelledby={`${scoreId} ${labelId}`}
+        >
           <circle
             cx={128}
             cy={128}
             r={RADIUS}
             fill="transparent"
-            stroke="rgba(255,255,255,0.05)"
+            stroke={theme.color.gaugeTrack}
             strokeWidth={12}
           />
           <ProgressRing
@@ -145,8 +154,8 @@ export function WeeklySafetyGauge({
           />
         </svg>
         <ScoreCenter>
-          <Score>{displayScore}</Score>
-          <ScoreLabel>{label}</ScoreLabel>
+          <Score id={scoreId}>{displayScore}</Score>
+          <ScoreLabel id={labelId}>{label}</ScoreLabel>
         </ScoreCenter>
       </GaugeArea>
       <Footer>

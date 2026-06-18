@@ -3,11 +3,9 @@ import { GlassPanel, Icon, Toggle } from "@/shared/ui";
 
 type NotificationTogglesProps = {
   visualOverlays: boolean;
-  audibleAlerts: boolean;
   logErrors: boolean;
   webrtcAccess: boolean;
   onVisualOverlaysChange: (v: boolean) => void;
-  onAudibleAlertsChange: (v: boolean) => void;
   onLogErrorsChange: (v: boolean) => void;
   onWebrtcAccessChange: (v: boolean) => void;
 };
@@ -17,7 +15,7 @@ const Panel = styled(GlassPanel)`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
-const Title = styled.h3`
+const Title = styled.h2`
   margin: 0 0 ${({ theme }) => theme.spacing[6]};
   display: flex;
   align-items: center;
@@ -39,11 +37,9 @@ const Grid = styled.div`
 
 export function NotificationToggles({
   visualOverlays,
-  audibleAlerts,
   logErrors,
   webrtcAccess,
   onVisualOverlaysChange,
-  onAudibleAlertsChange,
   onLogErrorsChange,
   onWebrtcAccessChange,
 }: NotificationTogglesProps) {
@@ -55,7 +51,6 @@ export function NotificationToggles({
       </Title>
       <Grid>
         <Toggle label="Visual UI Overlays" checked={visualOverlays} onChange={onVisualOverlaysChange} />
-        <Toggle label="Audible Risk Alerts" checked={audibleAlerts} onChange={onAudibleAlertsChange} />
         <Toggle label="Log Background Task Errors" checked={logErrors} onChange={onLogErrorsChange} />
         <Toggle label="WebRTC Remote Access" checked={webrtcAccess} onChange={onWebrtcAccessChange} />
       </Grid>

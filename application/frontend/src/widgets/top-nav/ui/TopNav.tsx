@@ -136,7 +136,7 @@ export function TopNav({ running = false }: TopNavProps) {
       </TabGroup>
 
       <Actions>
-        <IconButton type="button" disabled title="Coming soon" aria-label="Notifications">
+        <IconButton type="button" disabled title="Coming soon" aria-label="Notifications (coming soon)">
           <Icon name="notifications" size={22} />
         </IconButton>
         <IconLink to="/settings" aria-label="Settings">

@@ -58,7 +58,27 @@ class SettingsControllerTest {
 		mockMvc.perform(get("/api/v1/settings"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.model").value("yolov8-nano"))
-				.andExpect(jsonPath("$.audible_alerts").value(true));
+				.andExpect(jsonPath("$.confidence").value(70))
+				.andExpect(jsonPath("$.audible_alerts").value(false))
+				.andExpect(jsonPath("$.density_limit").value(64));
+	}
+
+	@Test
+	void updateSettings_rejectsCustomOnnx() throws Exception {
+		mockMvc.perform(put("/api/v1/settings")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "model": "custom-onnx",
+								  "confidence": 70,
+								  "density_limit": 40,
+								  "visual_overlays": false,
+								  "audible_alerts": false,
+								  "log_errors": true,
+								  "webrtc_access": false
+								}
+								"""))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -71,7 +91,7 @@ class SettingsControllerTest {
 								  "confidence": 70,
 								  "density_limit": 40,
 								  "visual_overlays": false,
-								  "audible_alerts": true,
+								  "audible_alerts": false,
 								  "log_errors": true,
 								  "webrtc_access": false
 								}

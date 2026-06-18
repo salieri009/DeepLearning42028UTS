@@ -49,11 +49,17 @@ export function useSensorSettings() {
           listSessions(20, 0, controller.signal),
         ]);
 
+        const normalized = {
+          ...remoteSettings,
+          audibleAlerts: false,
+          densityLimit: DEFAULT_SETTINGS.densityLimit,
+        };
+
         if (controller.signal.aborted) return;
 
-        setSettings(remoteSettings);
-        setDraft(remoteSettings);
-        saveSensorSettings(remoteSettings);
+        setSettings(normalized);
+        setDraft(normalized);
+        saveSensorSettings(normalized);
         setDirty(false);
         setSources(sessionsToSources(sessions.items));
       } catch (err) {
@@ -86,19 +92,23 @@ export function useSensorSettings() {
 
   const setModel = (model: DetectionModel) => updateDraft("model", model);
   const setConfidence = (confidence: number) => updateDraft("confidence", confidence);
-  const setDensityLimit = (densityLimit: number) => updateDraft("densityLimit", densityLimit);
   const setVisualOverlays = (visualOverlays: boolean) => updateDraft("visualOverlays", visualOverlays);
-  const setAudibleAlerts = (audibleAlerts: boolean) => updateDraft("audibleAlerts", audibleAlerts);
   const setLogErrors = (logErrors: boolean) => updateDraft("logErrors", logErrors);
   const setWebrtcAccess = (webrtcAccess: boolean) => updateDraft("webrtcAccess", webrtcAccess);
 
   const save = () => {
     void (async () => {
+      const payload = {
+        ...draft,
+        audibleAlerts: false,
+        densityLimit: DEFAULT_SETTINGS.densityLimit,
+      };
       try {
-        const saved = await updateSettings(draft);
-        setSettings(saved);
-        setDraft(saved);
-        saveSensorSettings(saved);
+        const saved = await updateSettings(payload);
+        const normalized = { ...saved, audibleAlerts: false, densityLimit: DEFAULT_SETTINGS.densityLimit };
+        setSettings(normalized);
+        setDraft(normalized);
+        saveSensorSettings(normalized);
         setDirty(false);
         setError(null);
       } catch (err) {
@@ -124,9 +134,7 @@ export function useSensorSettings() {
     error,
     setModel,
     setConfidence,
-    setDensityLimit,
     setVisualOverlays,
-    setAudibleAlerts,
     setLogErrors,
     setWebrtcAccess,
     save,

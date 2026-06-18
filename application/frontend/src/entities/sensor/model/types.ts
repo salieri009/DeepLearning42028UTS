@@ -6,7 +6,7 @@ export type SensorSource = {
   connected: boolean;
 };
 
-export type DetectionModel = "yolov8-precise" | "yolov8-nano" | "custom-onnx";
+export type DetectionModel = "yolov8-precise" | "yolov8-nano";
 
 export type SensorSettingsState = {
   model: DetectionModel;

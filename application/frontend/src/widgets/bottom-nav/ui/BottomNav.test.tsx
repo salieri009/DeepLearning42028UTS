@@ -13,12 +13,13 @@ function renderBottomNav(path = "/analytics") {
 }
 
 describe("BottomNav mobile routes", () => {
-  it("links to the four primary pages", () => {
+  it("links to all five primary pages", () => {
     renderBottomNav("/analytics");
 
     expect(screen.getByRole("link", { name: /Home/i, hidden: true })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: /Stats/i, hidden: true })).toHaveAttribute("href", "/analytics");
     expect(screen.getByRole("link", { name: /Map/i, hidden: true })).toHaveAttribute("href", "/live-map");
     expect(screen.getByRole("link", { name: /Logs/i, hidden: true })).toHaveAttribute("href", "/archive");
+    expect(screen.getByRole("link", { name: /Sensors/i, hidden: true })).toHaveAttribute("href", "/settings");
   });
 });

@@ -23,7 +23,7 @@ const GridTexture = styled.div`
   inset: 0;
   pointer-events: none;
   opacity: 0.2;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-image: radial-gradient(circle, ${({ theme }) => theme.color.texture.gridDot} 1px, transparent 1px);
   background-size: 24px 24px;
 `;
 
@@ -34,8 +34,8 @@ const Scanline = styled.div`
   z-index: 2;
   opacity: 0.15;
   background:
-    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    linear-gradient(${({ theme }) => theme.color.texture.scanlineFade} 50%, ${({ theme }) => theme.color.tint.scanlineBand} 50%),
+    ${({ theme }) => theme.color.texture.scanlineChroma};
   background-size: 100% 4px, 3px 100%;
 `;
 
@@ -95,7 +95,7 @@ const IconWrap = styled.div<{ $tone: "warning" | "danger" }>`
   padding: ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme, $tone }) =>
-    $tone === "danger" ? "rgba(218, 30, 40, 0.2)" : "rgba(241, 194, 27, 0.2)"};
+    $tone === "danger" ? theme.color.riskTint.danger : theme.color.riskTint.warning};
   color: ${({ theme, $tone }) => ($tone === "danger" ? theme.color.danger : theme.color.warning)};
 `;
 
@@ -105,10 +105,16 @@ export function VideoStage({ running, data, videoRef }: VideoStageProps) {
     running && recommendation && recommendation !== "PROCEED" && recommendation !== "SAFE";
 
   return (
-    <Stage>
+    <Stage id="dashboard-main">
       <GridTexture />
       <Scanline />
-      <VideoEl ref={videoRef} muted playsInline $visible={running} />
+      <VideoEl
+        ref={videoRef}
+        muted
+        playsInline
+        $visible={running}
+        aria-label={running ? "Live camera monitoring feed" : undefined}
+      />
       {!running && (
         <Placeholder>
           <Icon name="videocam_off" size={48} />
@@ -118,12 +124,18 @@ export function VideoStage({ running, data, videoRef }: VideoStageProps) {
 
       {running && (
         <OverlayLayer>
-          {(data?.persons ?? []).map((person, i) => (
-            <PersonBBox key={i} person={person} />
-          ))}
+          <div aria-hidden="true">
+            {(data?.persons ?? []).map((person, i) => (
+              <PersonBBox key={i} person={person} />
+            ))}
+          </div>
 
           {showChip && (
-            <AlertChip $tone={recommendation === "STOP" ? "danger" : "warning"}>
+            <AlertChip
+              $tone={recommendation === "STOP" ? "danger" : "warning"}
+              role="status"
+              aria-live={recommendation === "STOP" ? "assertive" : "polite"}
+            >
               <IconWrap $tone={recommendation === "STOP" ? "danger" : "warning"}>
                 <Icon
                   name="notification_important"

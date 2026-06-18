@@ -20,7 +20,7 @@ import com.crowdnav.api.persistence.repository.AppSettingsRepository;
 public class SettingsService {
 
 	private static final int SETTINGS_ID = 1;
-	private static final Set<String> VALID_MODELS = Set.of("yolov8-precise", "yolov8-nano", "custom-onnx");
+	private static final Set<String> VALID_MODELS = Set.of("yolov8-precise", "yolov8-nano");
 
 	private final AppSettingsRepository settingsRepository;
 	private final ObjectMapper objectMapper;
@@ -37,10 +37,23 @@ public class SettingsService {
 	@Transactional
 	public SensorSettingsRequest updateSettings(SensorSettingsRequest request) {
 		validate(request);
+		SensorSettingsRequest normalized = normalize(request);
 		AppSettings row = requireRow();
-		row.setPayload(writePayload(request));
+		row.setPayload(writePayload(normalized));
 		row.setUpdatedAt(Instant.now());
 		return readSettings(row);
+	}
+
+	/** Legacy JSON fields kept for API compat; PRD §9 / FR-2 norms enforced on write. */
+	private SensorSettingsRequest normalize(SensorSettingsRequest request) {
+		return new SensorSettingsRequest(
+				request.model(),
+				request.confidence(),
+				64,
+				request.visualOverlays(),
+				false,
+				request.logErrors(),
+				request.webrtcAccess());
 	}
 
 	private AppSettings requireRow() {
@@ -50,7 +63,7 @@ public class SettingsService {
 
 	private SensorSettingsRequest readSettings(AppSettings row) {
 		try {
-			return objectMapper.readValue(row.getPayload(), SensorSettingsRequest.class);
+			return normalize(objectMapper.readValue(row.getPayload(), SensorSettingsRequest.class));
 		} catch (JsonProcessingException ex) {
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid stored settings");
 		}
