@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { formatAlertMetaLine } from "@/features/alert-history/lib/formatAlertMeta";
 import type { AlertEntry } from "@/features/alert-history";
 
 const MAX_ALERTS = 10;
@@ -11,16 +12,6 @@ type AlertHistoryContextValue = {
 };
 
 const AlertHistoryContext = createContext<AlertHistoryContextValue | null>(null);
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-GB", { hour12: false });
-}
-
-function riskPercent(risk: string): string {
-  if (risk === "DANGER") return "88";
-  if (risk === "WARNING") return "45";
-  return "0";
-}
 
 export function AlertHistoryProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<AlertEntry[]>([]);
@@ -55,9 +46,7 @@ export function AlertHistoryProvider({ children }: { children: ReactNode }) {
     lastRiskRef.current = "SAFE";
   }, []);
 
-  const formatAlertMeta = useCallback((entry: AlertEntry) => {
-    return `${formatTime(entry.timestamp)} • Risk ${riskPercent(entry.risk)}%`;
-  }, []);
+  const formatAlertMeta = useCallback((entry: AlertEntry) => formatAlertMetaLine(entry), []);
 
   return (
     <AlertHistoryContext.Provider value={{ alerts, pushFromRisk, reset, formatAlertMeta }}>
@@ -81,7 +70,7 @@ export function useOptionalAlertHistory(): AlertHistoryContextValue {
       alerts: [],
       pushFromRisk: () => undefined,
       reset: () => undefined,
-      formatAlertMeta: (entry) => formatTime(entry.timestamp),
+      formatAlertMeta: (entry) => formatAlertMetaLine(entry),
     }
   );
 }

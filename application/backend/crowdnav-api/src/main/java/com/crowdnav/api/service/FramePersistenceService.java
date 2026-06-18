@@ -24,11 +24,11 @@ public class FramePersistenceService {
 		this.frameRepository = frameRepository;
 	}
 
-	@Async
+	@Async("framePersistenceExecutor")
 	@Transactional
 	public void persistFrame(Long sessionId, AnalyzeFrameResponse response, int latencyMs) {
 		AnalysisSession session = sessionRepository.findById(sessionId).orElse(null);
-		if (session == null) {
+		if (session == null || session.getEndedAt() != null) {
 			return;
 		}
 

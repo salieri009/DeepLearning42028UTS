@@ -1,0 +1,131 @@
+﻿{
+    "maxIterations":  10,
+    "index":  2,
+    "reportPath":  "docs/reports/technical_debt_review.md",
+    "queue":  [
+                  {
+                      "id":  "td-1",
+                      "section":  1,
+                      "label":  "Architecture",
+                      "status":  "done",
+                      "focus":  "anti-patterns, coupling, SPOF, SOLID, separation of concerns, circular deps",
+                      "paths":  [
+                                    "application/backend/crowdnav-api/src/main/java",
+                                    "application/frontend/src",
+                                    "application/inference-service",
+                                    "docs/architecture",
+                                    "docs/decisions"
+                                ]
+                  },
+                  {
+                      "id":  "td-2",
+                      "section":  2,
+                      "label":  "Code Quality",
+                      "status":  "done",
+                      "focus":  "duplication, dead code, god classes, complexity, magic numbers, error handling",
+                      "paths":  [
+                                    "application/backend/crowdnav-api/src",
+                                    "application/frontend/src",
+                                    "application/inference-service"
+                                ]
+                  },
+                  {
+                      "id":  "td-3",
+                      "section":  3,
+                      "label":  "Scalability",
+                      "status":  "pending",
+                      "focus":  "DB growth, API throughput, concurrency, caching, async, resource utilization",
+                      "paths":  [
+                                    "application/backend/crowdnav-api/src/main/java/com/crowdnav/api/persistence",
+                                    "application/backend/crowdnav-api/src/main/java/com/crowdnav/api/service",
+                                    "application/frontend/src/features/crowd-detection"
+                                ]
+                  },
+                  {
+                      "id":  "td-4",
+                      "section":  4,
+                      "label":  "Cloud \u0026 Infrastructure",
+                      "status":  "pending",
+                      "focus":  "availability, DR, monitoring, observability, logging, cost, cloud-native patterns",
+                      "paths":  [
+                                    "application/docker-compose.yml",
+                                    "infra/docker",
+                                    "application/backend/crowdnav-api/Dockerfile",
+                                    "application/frontend/Dockerfile",
+                                    "application/inference-service/Dockerfile",
+                                    "docs/runbooks/SageMaker_Migration_Plan.md"
+                                ]
+                  },
+                  {
+                      "id":  "td-5",
+                      "section":  5,
+                      "label":  "Security Debt",
+                      "status":  "pending",
+                      "focus":  "auth, authorization, secrets, encryption, dependency vulns, API security",
+                      "paths":  [
+                                    "application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller",
+                                    "application/backend/crowdnav-api/src/main/resources",
+                                    "docs/API_SPEC.md",
+                                    "docs/ADR_TRACKER_ISSUE.md",
+                                    "docs/decisions/ADR-0008-clearml-secret-hygiene.md"
+                                ]
+                  },
+                  {
+                      "id":  "td-6",
+                      "section":  6,
+                      "label":  "DevOps \u0026 Delivery",
+                      "status":  "pending",
+                      "focus":  "CI/CD, deployment, test coverage, release management, IaC",
+                      "paths":  [
+                                    ".github/workflows",
+                                    "application/backend/crowdnav-api/build.gradle",
+                                    "application/frontend/package.json"
+                                ]
+                  },
+                  {
+                      "id":  "td-7",
+                      "section":  7,
+                      "label":  "Knowledge Debt",
+                      "status":  "pending",
+                      "focus":  "documentation gaps, runbooks, diagrams, onboarding, bus factor",
+                      "paths":  [
+                                    "docs/REQUIREMENTS.md",
+                                    "docs/API_SPEC.md",
+                                    "docs/PRD.md",
+                                    "docs/architecture",
+                                    "docs/runbooks",
+                                    "docs/decisions"
+                                ]
+                  },
+                  {
+                      "id":  "td-8",
+                      "section":  8,
+                      "label":  "Prioritization Table",
+                      "status":  "pending",
+                      "focus":  "synthesize sections 1-7 into Debt Item table with P1/P2/P3",
+                      "paths":  [
+                                    "docs/reports/technical_debt_review.md"
+                                ]
+                  },
+                  {
+                      "id":  "td-9",
+                      "section":  9,
+                      "label":  "Technical Debt Heatmap",
+                      "status":  "pending",
+                      "focus":  "classify all findings into Critical/High/Medium/Low buckets",
+                      "paths":  [
+                                    "docs/reports/technical_debt_review.md"
+                                ]
+                  },
+                  {
+                      "id":  "td-10",
+                      "section":  10,
+                      "label":  "Executive Summary",
+                      "status":  "pending",
+                      "focus":  "top 5 risks, consequences if ignored, 30/90/180-day remediation roadmap",
+                      "paths":  [
+                                    "docs/reports/technical_debt_review.md"
+                                ]
+                  }
+              ]
+}

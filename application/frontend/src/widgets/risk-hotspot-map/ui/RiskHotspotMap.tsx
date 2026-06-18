@@ -146,9 +146,16 @@ const Hud = styled.div`
   z-index: 10;
 `;
 
+const SyntheticNote = styled.p`
+  margin: ${({ theme }) => theme.spacing[2]} 0 0;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [layersVisible, setLayersVisible] = useState(true);
+  const hasSynthetic = hotspots.some((spot) => spot.synthetic);
 
   const zoomIn = useCallback(() => {
     setZoom((current) => Math.min(MAX_ZOOM, current + ZOOM_STEP));
@@ -170,7 +177,12 @@ export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
 
         {layersVisible && (
           <Legend>
-            <LegendTitle>Risk Hotspot Map</LegendTitle>
+            <LegendTitle>Session Danger Hotspots</LegendTitle>
+            {hasSynthetic ? (
+              <SyntheticNote>
+                Layout is illustrative; rankings use real danger-frame counts per session.
+              </SyntheticNote>
+            ) : null}
             <LegendRow>
               <LegendItem>
                 <Dot $variant="danger" /> Critical

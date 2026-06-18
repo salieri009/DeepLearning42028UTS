@@ -334,7 +334,7 @@ stateDiagram-v2
 | Route | Page | Key widgets / features |
 |-------|------|------------------------|
 | `/` | `DashboardPage` | `DashboardShell`, `useCrowdDetection` |
-| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map`, `weekly-safety-score`, `features/analytics-data` → FR-14 |
+| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map` *(decorative session-ranking viz; not geo map — [gap report](reports/analytics_hotspot_gap_analysis.md))*, `weekly-safety-score`, `features/analytics-data` → FR-14 |
 | `/live-map` | `LiveMapPage` | `live-map-stage`, `features/live-map-markers`, `features/geolocation` → FR-17 |
 | `/archive` | `ArchivePage` | `archive-filters`, `session-history-table`, `features/session-archive` → FR-12, FR-16 |
 | `/settings` | `SettingsPage` | `sensor-sources-grid`, `detection-model-panel`, `features/sensor-settings` → FR-15 |

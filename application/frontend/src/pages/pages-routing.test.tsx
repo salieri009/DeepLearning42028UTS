@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -87,6 +87,8 @@ vi.mock("@/features/session-archive", async (importOriginal) => {
       loading: false,
       stats: null,
       error: null,
+      frames: [],
+      truncation: { detections: false, frames: false },
     }),
   };
 });
@@ -99,6 +101,10 @@ function renderApp(initialPath: string) {
   );
 }
 
+function mobileNav() {
+  return within(screen.getByRole("navigation", { name: /Mobile page navigation/i }));
+}
+
 describe("Four-page TopNav routing", () => {
   it("renders dashboard controls on /", () => {
     renderApp("/");
@@ -109,15 +115,15 @@ describe("Four-page TopNav routing", () => {
     const user = userEvent.setup();
     renderApp("/");
 
-    await user.click(screen.getByRole("link", { name: "Analytics", hidden: true }));
-    expect(screen.getByText(/Risk Hotspot Map/i)).toBeInTheDocument();
+    await user.click(mobileNav().getByRole("link", { name: "Analytics" }));
+    expect(screen.getByText(/Session Danger Hotspots/i)).toBeInTheDocument();
   });
 
   it("navigates to Live Map", async () => {
     const user = userEvent.setup();
     renderApp("/");
 
-    await user.click(screen.getByRole("link", { name: "Live Map", hidden: true }));
+    await user.click(mobileNav().getByRole("link", { name: "Live Map" }));
     expect(screen.getByText(/Live Risk Map/i)).toBeInTheDocument();
   });
 
@@ -125,7 +131,7 @@ describe("Four-page TopNav routing", () => {
     const user = userEvent.setup();
     renderApp("/");
 
-    await user.click(screen.getByRole("link", { name: "Archive", hidden: true }));
+    await user.click(mobileNav().getByRole("link", { name: "Archive" }));
     expect(screen.getByText(/Analysis Archive/i)).toBeInTheDocument();
   });
 });

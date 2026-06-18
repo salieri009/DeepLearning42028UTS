@@ -56,6 +56,7 @@ public AnalyzeFrameResponse analyzeFrame(String frameBase64) {
 	body.put("frame_base64", frameBase64 != null ? frameBase64 : "");
 	body.put("conf_thresh", settings.confidence() / 100.0);
 	body.put("model", settings.model());
+	body.put("density_limit", settings.densityLimit());
 
 	AnalyzeFrameResponse response = restClient.post()
 .uri("/internal/infer")

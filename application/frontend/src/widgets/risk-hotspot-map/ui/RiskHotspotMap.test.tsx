@@ -21,13 +21,13 @@ describe("RiskHotspotMap HUD buttons", () => {
     const user = userEvent.setup();
     renderWithProviders(<RiskHotspotMap hotspots={hotspots} />);
 
-    expect(screen.getByText("Risk Hotspot Map")).toBeInTheDocument();
+    expect(screen.getByText("Session Danger Hotspots")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Layers" }));
-    expect(screen.queryByText("Risk Hotspot Map")).not.toBeInTheDocument();
+    expect(screen.queryByText("Session Danger Hotspots")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Layers" }));
-    expect(screen.getByText("Risk Hotspot Map")).toBeInTheDocument();
+    expect(screen.getByText("Session Danger Hotspots")).toBeInTheDocument();
   });
 
   it("disables zoom in at max zoom", async () => {

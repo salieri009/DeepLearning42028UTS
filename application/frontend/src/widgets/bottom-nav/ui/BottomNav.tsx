@@ -3,11 +3,11 @@ import styled from "styled-components";
 import { Icon } from "@/shared/ui";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: "home", end: true },
-  { to: "/analytics", label: "Stats", icon: "analytics", end: false },
-  { to: "/live-map", label: "Map", icon: "map", end: false },
-  { to: "/archive", label: "Logs", icon: "history", end: false },
-  { to: "/settings", label: "Sensors", icon: "tune", end: false },
+  { to: "/", label: "Dashboard", icon: "home", end: true },
+  { to: "/analytics", label: "Analytics", icon: "analytics", end: false },
+  { to: "/live-map", label: "Live Map", icon: "map", end: false },
+  { to: "/archive", label: "Archive", icon: "history", end: false },
+  { to: "/settings", label: "Settings", icon: "tune", end: false },
 ] as const;
 
 const Nav = styled.nav`

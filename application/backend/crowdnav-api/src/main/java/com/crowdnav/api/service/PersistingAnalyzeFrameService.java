@@ -32,7 +32,7 @@ public class PersistingAnalyzeFrameService implements AnalyzeFrameService {
 	@Override
 	public AnalyzeFrameResponse analyzeFrame(String frameBase64, Long sessionId) {
 		if (sessionId != null) {
-			sessionService.requireSessionExists(sessionId);
+			sessionService.requireSessionOpen(sessionId);
 		}
 
 		long start = System.nanoTime();

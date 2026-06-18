@@ -71,7 +71,6 @@ export function useSensorSettings() {
         const normalized = {
           ...remoteSettings,
           audibleAlerts: false,
-          densityLimit: DEFAULT_SETTINGS.densityLimit,
         };
 
         if (controller.signal.aborted) return;
@@ -120,11 +119,10 @@ export function useSensorSettings() {
       const payload = {
         ...draft,
         audibleAlerts: false,
-        densityLimit: DEFAULT_SETTINGS.densityLimit,
       };
       try {
         const saved = await updateSettings(payload);
-        const normalized = { ...saved, audibleAlerts: false, densityLimit: DEFAULT_SETTINGS.densityLimit };
+        const normalized = { ...saved, audibleAlerts: false };
         setSettings(normalized);
         setDraft(normalized);
         saveSensorSettings(normalized);

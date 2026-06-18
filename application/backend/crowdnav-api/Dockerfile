@@ -27,7 +27,7 @@ FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /opt/app
 
 LABEL org.opencontainers.image.title="crowdnav-backend" \
-      org.opencontainers.image.version="2.5.0"
+      org.opencontainers.image.version="2.6.0"
 
 # Run as a non-root user
 RUN addgroup -S spring && adduser -S spring -G spring

@@ -44,12 +44,12 @@ public class SettingsService {
 		return readSettings(row);
 	}
 
-	/** Legacy JSON fields kept for API compat; PRD §9 / FR-2 norms enforced on write. */
+	/** PRD §9: audio alerts out of scope — forced off. Other fields persist as submitted. */
 	private SensorSettingsRequest normalize(SensorSettingsRequest request) {
 		return new SensorSettingsRequest(
 				request.model(),
 				request.confidence(),
-				64,
+				request.densityLimit(),
 				request.visualOverlays(),
 				false,
 				request.logErrors(),
@@ -63,10 +63,26 @@ public class SettingsService {
 
 	private SensorSettingsRequest readSettings(AppSettings row) {
 		try {
-			return normalize(objectMapper.readValue(row.getPayload(), SensorSettingsRequest.class));
+			return normalize(sanitizeStored(objectMapper.readValue(row.getPayload(), SensorSettingsRequest.class)));
 		} catch (JsonProcessingException ex) {
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid stored settings");
 		}
+	}
+
+	private SensorSettingsRequest sanitizeStored(SensorSettingsRequest request) {
+		String model = request.model() != null && VALID_MODELS.contains(request.model())
+				? request.model()
+				: "yolov8-precise";
+		int confidence = Math.clamp(request.confidence(), 0, 100);
+		int densityLimit = Math.clamp(request.densityLimit(), 1, 500);
+		return new SensorSettingsRequest(
+				model,
+				confidence,
+				densityLimit,
+				request.visualOverlays(),
+				request.audibleAlerts(),
+				request.logErrors(),
+				request.webrtcAccess());
 	}
 
 	private String writePayload(SensorSettingsRequest request) {

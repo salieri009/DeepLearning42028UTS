@@ -16,10 +16,10 @@ describe("BottomNav mobile routes", () => {
   it("links to all five primary pages", () => {
     renderBottomNav("/analytics");
 
-    expect(screen.getByRole("link", { name: /Home/i, hidden: true })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: /Stats/i, hidden: true })).toHaveAttribute("href", "/analytics");
-    expect(screen.getByRole("link", { name: /Map/i, hidden: true })).toHaveAttribute("href", "/live-map");
-    expect(screen.getByRole("link", { name: /Logs/i, hidden: true })).toHaveAttribute("href", "/archive");
-    expect(screen.getByRole("link", { name: /Sensors/i, hidden: true })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: /Dashboard/i, hidden: true })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /Analytics/i, hidden: true })).toHaveAttribute("href", "/analytics");
+    expect(screen.getByRole("link", { name: /Live Map/i, hidden: true })).toHaveAttribute("href", "/live-map");
+    expect(screen.getByRole("link", { name: /Archive/i, hidden: true })).toHaveAttribute("href", "/archive");
+    expect(screen.getByRole("link", { name: /Settings/i, hidden: true })).toHaveAttribute("href", "/settings");
   });
 });

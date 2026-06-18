@@ -17,7 +17,7 @@ export type SessionDetailResponse = SessionResponse & {
 };
 
 export type SessionListResponse = {
-  items: SessionResponse[];
+  items: SessionDetailResponse[];
   total: number;
 };
 

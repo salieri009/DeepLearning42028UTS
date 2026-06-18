@@ -1,9 +1,16 @@
-import { describe, expect, it } from "vitest";
-import type { DetectionItem, SessionDetailResponse } from "@/entities/session";
+import { describe, expect, it, vi } from "vitest";
+import type { DetectionItem, FrameItem, SessionDetailResponse } from "@/entities/session";
 import {
+  buildPreviewStats,
   computeMaxCrowdDensity,
+  computeMaxPersonCountFromFrames,
   computeThreatDistribution,
+  computeThreatDistributionFromFrames,
+  confirmTruncatedExport,
   countAnomalies,
+  countDangerFrames,
+  dateRangeToDays,
+  detectPreviewTruncation,
   filterSessions,
   withinDateRange,
 } from "./sessionArchiveUtils";
@@ -99,5 +106,138 @@ describe("detection stats", () => {
 
   it("counts danger anomalies", () => {
     expect(countAnomalies(detections)).toBe(1);
+  });
+});
+
+describe("frame stats (backend aggregates)", () => {
+  const frames: FrameItem[] = [
+    {
+      id: 1,
+      sequence_no: 0,
+      captured_at: "2026-06-17T00:00:00Z",
+      latency_ms: 120,
+      crowd_density: "LOW",
+      max_proximity_risk: "SAFE",
+      recommendation: "PROCEED",
+      person_count: 1,
+    },
+    {
+      id: 2,
+      sequence_no: 1,
+      captured_at: "2026-06-17T00:00:01Z",
+      latency_ms: 130,
+      crowd_density: "MEDIUM",
+      max_proximity_risk: "DANGER",
+      recommendation: "STOP",
+      person_count: 3,
+    },
+    {
+      id: 3,
+      sequence_no: 2,
+      captured_at: "2026-06-17T00:00:02Z",
+      latency_ms: 110,
+      crowd_density: "LOW",
+      max_proximity_risk: "WARNING",
+      recommendation: "CAUTION",
+      person_count: 2,
+    },
+  ];
+
+  it("computes threat distribution from frame max_proximity_risk", () => {
+    expect(computeThreatDistributionFromFrames(frames)).toEqual({
+      safe: 33,
+      warn: 33,
+      danger: 33,
+    });
+  });
+
+  it("computes max person count from frame aggregates", () => {
+    expect(computeMaxPersonCountFromFrames(frames)).toBe(3);
+  });
+
+  it("counts danger frames", () => {
+    expect(countDangerFrames(frames)).toBe(1);
+  });
+});
+
+describe("preview truncation", () => {
+  it("flags when limits are reached", () => {
+    expect(detectPreviewTruncation(500, 100, 150)).toEqual({
+      detections: true,
+      frames: true,
+    });
+    expect(detectPreviewTruncation(10, 5, 5)).toEqual({
+      detections: false,
+      frames: false,
+    });
+    expect(detectPreviewTruncation(10, 100, 50)).toEqual({
+      detections: false,
+      frames: false,
+    });
+  });
+});
+
+describe("buildPreviewStats", () => {
+  const frames: FrameItem[] = [
+    {
+      id: 1,
+      sequence_no: 0,
+      captured_at: "2026-06-17T00:00:00Z",
+      latency_ms: 120,
+      crowd_density: "LOW",
+      max_proximity_risk: "SAFE",
+      recommendation: "PROCEED",
+      person_count: 1,
+    },
+    {
+      id: 2,
+      sequence_no: 1,
+      captured_at: "2026-06-17T00:00:01Z",
+      latency_ms: 130,
+      crowd_density: "MEDIUM",
+      max_proximity_risk: "DANGER",
+      recommendation: "STOP",
+      person_count: 3,
+    },
+  ];
+
+  it("marks stats partial when loaded frames are fewer than session frame_count", () => {
+    const stats = buildPreviewStats(frames, baseSession({ frame_count: 50, worst_risk: "DANGER" }));
+    expect(stats.statsPartial).toBe(true);
+    expect(stats.sessionWorstRisk).toBe("DANGER");
+    expect(stats.anomalies).toBe(1);
+  });
+
+  it("marks stats complete when all frames are loaded", () => {
+    const stats = buildPreviewStats(frames, baseSession({ frame_count: 2, worst_risk: "DANGER" }));
+    expect(stats.statsPartial).toBe(false);
+    expect(stats.sessionWorstRisk).toBe("DANGER");
+  });
+});
+
+describe("dateRangeToDays", () => {
+  it("maps archive presets to API days", () => {
+    expect(dateRangeToDays("24h")).toBe(1);
+    expect(dateRangeToDays("7d")).toBe(7);
+    expect(dateRangeToDays("30d")).toBe(30);
+    expect(dateRangeToDays("custom")).toBeUndefined();
+  });
+});
+
+describe("confirmTruncatedExport", () => {
+  it("returns true without confirm when export is complete", () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
+    expect(confirmTruncatedExport(baseSession({ frame_count: 10 }), 10, 10)).toBe(true);
+    expect(confirmSpy).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it("prompts when frame export is truncated", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    expect(confirmTruncatedExport(baseSession({ frame_count: 200 }), 10, 100)).toBe(false);
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.stringContaining("frames capped at 100 of 200"),
+    );
+    confirmSpy.mockRestore();
   });
 });

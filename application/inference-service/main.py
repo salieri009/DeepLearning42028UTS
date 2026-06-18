@@ -24,6 +24,13 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from crowdnav_policy import (
+    crowd_density,
+    proximity_from_height,
+    recommendation,
+    worst_proximity_risk,
+)
+
 app = FastAPI(title="CrowdNav Inference", version="1.0.0")
 
 # ---------------------------------------------------------------------------
@@ -77,58 +84,13 @@ def _load_model(model_key: str | None = None):
 
 
 # ---------------------------------------------------------------------------
-# Collision-avoidance heuristics
-# (mirrors train/src/inference/collision_avoidance.py — height-based metric)
-# ---------------------------------------------------------------------------
-_SAFE_MAX = 0.25
-_WARN_MAX = 0.45
-
-
-def _alert_state(norm_height: float) -> str:
-    h = max(0.0, min(1.0, norm_height))
-    if h < _SAFE_MAX:
-        return "SAFE"
-    if h < _WARN_MAX:
-        return "WARNING"
-    return "DANGER"
-
-
-def _worst_state(states: list[str]) -> str:
-    if "DANGER" in states:
-        return "DANGER"
-    if "WARNING" in states:
-        return "WARNING"
-    return "SAFE"
-
-
-def _crowd_density(n: int, worst: str) -> str:
-    """PRD §8: n≤2 LOW, n≤5 MEDIUM, else HIGH. FR-2 allows risk elevation."""
-    if n == 0:
-        return "LOW"
-    if n <= 2:
-        base = "LOW"
-    elif n <= 5:
-        base = "MEDIUM"
-    else:
-        base = "HIGH"
-    if worst == "DANGER":
-        return "HIGH"
-    if worst == "WARNING" and base == "LOW":
-        return "MEDIUM"
-    return base
-
-
-def _recommendation(worst: str) -> str:
-    return {"SAFE": "PROCEED", "WARNING": "CAUTION", "DANGER": "STOP"}.get(worst, "PROCEED")
-
-
-# ---------------------------------------------------------------------------
 # Request / Response
 # ---------------------------------------------------------------------------
 class InferRequest(BaseModel):
     frame_base64: str | None = None
     conf_thresh: float | None = None
     model: str | None = None
+    density_limit: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +146,7 @@ def infer(payload: InferRequest) -> dict[str, Any]:
             width = (x2 - x1) / frame_w
             height = (y2 - y1) / frame_h
 
-            state = _alert_state(height)
+            state = proximity_from_height(height)
             alert_states.append(state)
 
             persons.append(
@@ -201,11 +163,12 @@ def infer(payload: InferRequest) -> dict[str, Any]:
                 }
             )
 
-    worst = _worst_state(alert_states)
+    worst = worst_proximity_risk(alert_states)
+    density_limit = payload.density_limit if payload.density_limit is not None else 64
 
     return {
         "persons": persons,
-        "crowd_density": _crowd_density(len(persons), worst),
+        "crowd_density": crowd_density(len(persons), worst, density_limit),
         "max_proximity_risk": worst,
-        "recommendation": _recommendation(worst),
+        "recommendation": recommendation(worst),
     }

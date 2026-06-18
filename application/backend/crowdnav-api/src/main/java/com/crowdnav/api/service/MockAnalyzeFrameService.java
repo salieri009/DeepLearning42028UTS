@@ -10,6 +10,8 @@ import com.crowdnav.api.dto.AnalyzeFrameResponse;
 import com.crowdnav.api.dto.BBox;
 import com.crowdnav.api.dto.PersonDetection;
 import com.crowdnav.api.dto.settings.SensorSettingsRequest;
+import com.crowdnav.api.policy.CrowdNavPolicy;
+import com.crowdnav.api.policy.CrowdNavPolicy.MockPerson;
 
 @Service
 @ConditionalOnProperty(name = "app.inference.mode", havingValue = "mock")
@@ -31,58 +33,21 @@ public class MockAnalyzeFrameService implements AnalyzeFrameService {
 		SensorSettingsRequest settings = settingsService.getSettings();
 		double minConfidence = settings.confidence() / 100.0;
 
-		List<PersonDetection> raw = List.of(
-				new PersonDetection("person", 0.92, new BBox(0.52, 0.56, 0.14, 0.34), "WARNING"),
-				new PersonDetection("person", 0.88, new BBox(0.28, 0.49, 0.09, 0.29), "SAFE"));
-
 		List<PersonDetection> persons = new ArrayList<>();
-		for (PersonDetection person : raw) {
-			if (person.confidence() >= minConfidence) {
-				persons.add(person);
+		for (MockPerson mock : CrowdNavPolicy.mockPersons()) {
+			if (mock.confidence() >= minConfidence) {
+				persons.add(new PersonDetection(
+						"person",
+						mock.confidence(),
+						new BBox(0.5, 0.5, 0.1, mock.bboxHeight()),
+						mock.proximityRisk()));
 			}
 		}
 
-		String worst = worstRisk(persons);
-		String density = crowdDensity(persons.size(), worst);
+		List<String> risks = persons.stream().map(PersonDetection::proximityRisk).toList();
+		String worst = CrowdNavPolicy.worstProximityRisk(risks);
+		String density = CrowdNavPolicy.crowdDensity(persons.size(), worst, settings.densityLimit());
 
-		return new AnalyzeFrameResponse(persons, density, worst, recommendation(worst));
-	}
-
-	private String worstRisk(List<PersonDetection> persons) {
-		boolean danger = persons.stream().anyMatch(p -> "DANGER".equals(p.proximityRisk()));
-		if (danger) {
-			return "DANGER";
-		}
-		boolean warning = persons.stream().anyMatch(p -> "WARNING".equals(p.proximityRisk()));
-		return warning ? "WARNING" : "SAFE";
-	}
-
-	private String crowdDensity(int count, String worst) {
-		if (count == 0) {
-			return "LOW";
-		}
-		String base;
-		if (count <= 2) {
-			base = "LOW";
-		} else if (count <= 5) {
-			base = "MEDIUM";
-		} else {
-			base = "HIGH";
-		}
-		if ("DANGER".equals(worst)) {
-			return "HIGH";
-		}
-		if ("WARNING".equals(worst) && "LOW".equals(base)) {
-			return "MEDIUM";
-		}
-		return base;
-	}
-
-	private String recommendation(String worst) {
-		return switch (worst) {
-			case "DANGER" -> "STOP";
-			case "WARNING" -> "CAUTION";
-			default -> "PROCEED";
-		};
+		return new AnalyzeFrameResponse(persons, density, worst, CrowdNavPolicy.recommendation(worst));
 	}
 }

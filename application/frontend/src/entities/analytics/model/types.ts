@@ -4,6 +4,7 @@ export type ZoneRisk = {
   name: string;
   level: "HIGH RISK" | "MODERATE" | "LOW RISK";
   percent: number;
+  synthetic?: boolean;
 };
 
 export type PeakHour = {
@@ -19,4 +20,5 @@ export type HotspotMarker = {
   risk: "DANGER" | "WARNING";
   top: string;
   left: string;
+  synthetic?: boolean;
 };

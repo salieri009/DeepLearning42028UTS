@@ -3,6 +3,7 @@ import type { AnalyzeFrameResponse } from "@/entities/detection";
 import {
   StatCard,
   formatDensityLabel,
+  formatLatencyBadge,
   formatRecommendation,
   formatRiskLabel,
   getDensityBadgeVariant,
@@ -160,6 +161,7 @@ export function StatsSidebar({
   const density = formatDensityLabel(data?.crowd_density);
   const risk = formatRiskLabel(data?.max_proximity_risk);
   const recommendation = formatRecommendation(data?.recommendation);
+  const latencyBadge = formatLatencyBadge(latencyMs);
 
   return (
     <Aside aria-label="Crowd statistics and alerts">
@@ -199,8 +201,8 @@ export function StatsSidebar({
               label="Session Latency"
               value={latencyMs !== null ? String(latencyMs) : "—"}
               unit="ms"
-              badge="OPTIMAL"
-              badgeVariant="safe"
+              badge={latencyBadge?.label}
+              badgeVariant={latencyBadge?.variant ?? "neutral"}
             />
             <StatCard
               icon="summarize"

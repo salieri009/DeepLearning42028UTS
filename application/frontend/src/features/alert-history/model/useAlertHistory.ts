@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { formatAlertMetaLine } from "../lib/formatAlertMeta";
 
 export type AlertEntry = {
   id: string;
@@ -8,16 +9,6 @@ export type AlertEntry = {
 };
 
 const MAX_ALERTS = 10;
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-GB", { hour12: false });
-}
-
-function riskPercent(risk: string): string {
-  if (risk === "DANGER") return "88";
-  if (risk === "WARNING") return "45";
-  return "0";
-}
 
 export function useAlertHistory() {
   const [alerts, setAlerts] = useState<AlertEntry[]>([]);
@@ -52,9 +43,7 @@ export function useAlertHistory() {
     lastRiskRef.current = "SAFE";
   }, []);
 
-  const formatAlertMeta = useCallback((entry: AlertEntry) => {
-    return `${formatTime(entry.timestamp)} • Risk ${riskPercent(entry.risk)}%`;
-  }, []);
+  const formatAlertMeta = useCallback((entry: AlertEntry) => formatAlertMetaLine(entry), []);
 
   return { alerts, pushFromRisk, reset, formatAlertMeta };
 }

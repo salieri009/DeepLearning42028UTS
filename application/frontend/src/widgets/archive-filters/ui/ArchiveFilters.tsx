@@ -138,7 +138,6 @@ export function ArchiveFilters({
           <option value="24h">Last 24 Hours</option>
           <option value="7d">Last 7 Days</option>
           <option value="30d">Last 30 Days</option>
-          <option value="custom">Custom Range</option>
         </Select>
       </Field>
 

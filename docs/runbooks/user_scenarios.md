@@ -65,7 +65,7 @@ flowchart TB
 | S1 | Real-time crowd & proximity avoidance | `/` | Live camera + YOLO API | FR-1…5, FR-UI-1…6 | **Done** |
 | S2 | Session recording & archive review | `/archive` | PostgreSQL sessions API | FR-11, FR-12, FR-16 | **Done** |
 | S3 | Map-based congestion avoidance | `/live-map` | GPS + session aggregates (24h poll) | FR-17 | **Done** — GPS marker + zone risk from session DB (fixed UTS anchors) |
-| S4 | Weekly density & risk analytics | `/analytics` | `GET /v1/analytics/summary` + `useAnalyticsData` | FR-14 | **Done** |
+| S4 | Weekly density & risk analytics | `/analytics` | `GET /v1/analytics/summary` + `useAnalyticsData` | FR-14 | **Done (API wired)** — RiskHotspotMap semantic gaps; see [`analytics_hotspot_gap_analysis.md`](../reports/analytics_hotspot_gap_analysis.md) |
 | S5 | Alert & threshold settings | `/settings` | `GET/PUT /v1/settings` + inference thresholds | FR-15 | **Done** |
 
 ---
@@ -220,8 +220,12 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 ### User journey
 
 1. Open `/analytics`
-2. Review RiskHotspotMap, WeeklySafetyScore, PeakDensityChart, ZoneRiskDistribution
-3. Adjust travel plans using busiest window and zone risk data
+2. Review dashboard widgets:
+   - **PeakDensityChart** + **busiest_window** — when crowds peak (primary for travel timing)
+   - **ZoneRiskDistribution** — risk by source type (`WEBCAM` / `UPLOAD` / `MOCK`)
+   - **WeeklySafetyScore** — overall trend and event count
+   - **RiskHotspotMap** — *decorative session ranking* (top 3 sessions by DANGER frame count); **not** a geographic hotspot map — see gap report
+3. Adjust travel plans using peak hours, zone risk, and safety score. Do not rely on hotspot map alone for place-based decisions (no drill-down, no geo coordinates).
 
 ### Code flow
 
@@ -230,11 +234,14 @@ Implemented (FR-11, FR-12). NFR-9: raw frames not stored.
 | Page | `pages/analytics/ui/AnalyticsPage.tsx` |
 | Data | `features/analytics-data/model/useAnalyticsData.ts` → `GET /v1/analytics/summary` |
 | API | `AnalyticsService` aggregates `frame` rows (peak hours, zone risks, hotspots) |
+| Hotspots | `buildHotspots()` — `GROUP BY session_id`, top 3 DANGER frames; marker `top`/`left` are rank-index CSS % (not lat/lng) |
 | Widgets | `risk-hotspot-map`, `weekly-safety-score`, `peak-density-chart`, `zone-risk-distribution` |
 
 ### Status
 
-**Done (2026-06-18)** — charts and scores derive from PostgreSQL `frame` / session data for the selected window (`days=7` default).
+**Done (API wired, 2026-06-18)** — charts and scores derive from PostgreSQL `frame` / session data for the selected window (`days=7` default).
+
+**Open (semantic gaps):** `RiskHotspotMap` name and behavior diverge — session ranking vs geographic hotspot; misleading `capacity` field. Tracked as G-7/G-8 in [`REQUIREMENTS.md`](../REQUIREMENTS.md) §6.1; remediation fork in [ADR-0011](../decisions/ADR-0011-risk-hotspot-widget-redesign.md).
 
 ### Legacy candidates (removed)
 
@@ -314,6 +321,7 @@ S2 [ ] After S1 run → Archive shows session row
 S2 [ ] Select session → preview stats + frame trail load
 S3 [ ] /live-map → GPS marker + zone markers from session telemetry
 S4 [ ] /analytics → charts render from DB summary API
+S4 [ ] RiskHotspotMap gaps — ADR-0011 Option A or B (see analytics_hotspot_gap_analysis.md)
 S5 [ ] /settings → save persists via API; confidence affects analyze-frame
 ```
 

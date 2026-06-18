@@ -132,7 +132,19 @@ class SessionControllerTest {
 		mockMvc.perform(get("/api/v1/sessions").param("limit", "1").param("offset", "1"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].frame_count").exists())
 				.andExpect(jsonPath("$.total").value((int) total));
+	}
+
+	@Test
+	void listSessions_filtersBySourceType() throws Exception {
+		createSessionId("webcam-only", "WEBCAM");
+		createSessionId("mock-only", "MOCK");
+
+		mockMvc.perform(get("/api/v1/sessions").param("source_type", "MOCK"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].source_type").value("MOCK"));
 	}
 
 	@Test

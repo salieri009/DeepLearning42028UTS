@@ -82,7 +82,7 @@ from `FRAME.max_proximity_risk` transitions and may be deferred to a later itera
 | id | BIGSERIAL PK | no | PK | |
 | started_at | TIMESTAMPTZ | no | | Set on `POST /sessions`. |
 | ended_at | TIMESTAMPTZ | yes | | Null while active. |
-| client_label | VARCHAR(120) | yes | | e.g. "demo-laptop". |
+| client_label | VARCHAR(120) | yes | | Display label (e.g. `"demo-laptop"`, `"Building A Lobby"`). **Free text — not normalized place or zone.** No `lat`/`lng`/`zone_id` on session; geo hotspot maps require schema extension (ADR-0011 Option B). |
 | source_type | VARCHAR(16) | no | | enum: `WEBCAM \| UPLOAD \| MOCK`. |
 
 ### `frame`
@@ -202,7 +202,20 @@ the response is sent to the client:
 
 Schemas defined in [`API_SPEC.md`](API_SPEC.md) §5.
 
-## 7. Implementation Checklist
+## 7. Analytics limitations (FR-14)
+
+`GET /v1/analytics/summary` `hotspots` are built from `frame` + `analysis_session` only:
+
+| Capability | Supported | Notes |
+|------------|-----------|-------|
+| Session-level DANGER frame ranking | Yes | `AnalyticsService.buildHotspots()` — top 3 sessions |
+| Place/zone aggregation | No | Same `client_label` across sessions not merged |
+| Geographic coordinates | No | `top`/`left` in API are rank-index CSS % for UI, not stored in DB |
+| Per-detection proximity intensity | No | Only `frame.max_proximity_risk` enum used |
+
+Geo hotspot maps need normalized zones or lat/lng on sessions and FR-17 anchor integration — see [ADR-0011](decisions/ADR-0011-risk-hotspot-widget-redesign.md) and [`analytics_hotspot_gap_analysis.md`](reports/analytics_hotspot_gap_analysis.md).
+
+## 8. Implementation Checklist
 
 - [x] Add JPA/Flyway/Postgres deps (§4.1); add datasource + flyway config (§4.2).
 - [x] `V1__init.sql` Flyway migration creating the 3 tables (+ FKs, indexes, CHECKs); `alert_event` deferred.

@@ -10,4 +10,6 @@ export type MapMarker = {
   risk: ProximityRisk;
   capacity?: string;
   kind: MapMarkerKind;
+  /** True when position or capacity is illustrative, not measured GPS/occupancy. */
+  synthetic?: boolean;
 };

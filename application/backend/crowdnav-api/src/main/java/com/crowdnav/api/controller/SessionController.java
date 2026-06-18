@@ -41,8 +41,11 @@ public class SessionController {
 	@GetMapping
 	public SessionListResponse listSessions(
 			@RequestParam(defaultValue = "20") int limit,
-			@RequestParam(defaultValue = "0") int offset) {
-		return sessionService.listSessions(limit, offset);
+			@RequestParam(defaultValue = "0") int offset,
+			@RequestParam(required = false) Integer days,
+			@RequestParam(name = "source_type", required = false) String sourceType,
+			@RequestParam(name = "worst_risk", required = false) String worstRisk) {
+		return sessionService.listSessions(limit, offset, days, sourceType, worstRisk);
 	}
 
 	@GetMapping("/{id}")

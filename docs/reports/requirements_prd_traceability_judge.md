@@ -138,6 +138,8 @@ All FR verification columns name a method and an observable pass condition.
 | G-4 | Low | FR-2 Verification tests PRD rule, not shipped `density_limit` rule | Add parallel verification row or note that integration tests must cover both until code aligned |
 | G-5 | Low | SageMaker training path has no dedicated FR (only NFR-4 portability) | Optional — add FR-TRAIN-1 or accept NFR-4 as sufficient for a shipped model |
 | G-6 | Advisory | FR-15 Extension includes `audible_alerts` setting field | Already in Known drift; consider scoping FR-15 text to "settings except audio/haptic" or mark field as drift-only |
+| G-7 | Advisory | FR-14 `RiskHotspotMap` — session ranking disguised as geographic hotspot map | Documented 2026-06-18 — [`analytics_hotspot_gap_analysis.md`](analytics_hotspot_gap_analysis.md); resolve via [ADR-0011](../decisions/ADR-0011-risk-hotspot-widget-redesign.md) |
+| G-8 | Advisory | FR-14 `hotspots[].capacity` mislabels danger-frame-derived score | Same as G-7; rename metric when ADR-0011 implemented |
 
 ---
 

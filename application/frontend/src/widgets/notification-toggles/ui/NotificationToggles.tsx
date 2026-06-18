@@ -35,6 +35,19 @@ const Grid = styled.div`
   }
 `;
 
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[1]};
+`;
+
+const Hint = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
+  line-height: 1.4;
+`;
+
 export function NotificationToggles({
   visualOverlays,
   logErrors,
@@ -50,7 +63,10 @@ export function NotificationToggles({
         System Notifications
       </Title>
       <Grid>
-        <Toggle label="Visual UI Overlays" checked={visualOverlays} onChange={onVisualOverlaysChange} />
+        <Field>
+          <Toggle label="Visual UI Overlays" checked={visualOverlays} onChange={onVisualOverlaysChange} />
+          <Hint>Saved to settings; bbox overlays stay on during live monitoring.</Hint>
+        </Field>
         <Toggle label="Log Background Task Errors" checked={logErrors} onChange={onLogErrorsChange} />
         <Toggle label="WebRTC Remote Access" checked={webrtcAccess} onChange={onWebrtcAccessChange} />
       </Grid>

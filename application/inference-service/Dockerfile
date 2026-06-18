@@ -9,7 +9,7 @@
 FROM python:3.11-slim AS runtime
 
 LABEL org.opencontainers.image.title="crowdnav-inference" \
-      org.opencontainers.image.version="2.5.0"
+      org.opencontainers.image.version="2.6.0"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

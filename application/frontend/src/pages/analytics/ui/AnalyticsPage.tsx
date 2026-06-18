@@ -51,6 +51,17 @@ const EmptyState = styled.div`
   font-family: ${({ theme }) => theme.typography.family.mono};
 `;
 
+const Disclaimer = styled.p`
+  margin: 0 0 ${({ theme }) => theme.spacing[4]};
+  padding: ${({ theme }) => theme.spacing[3]} ${({ theme }) => theme.spacing[4]};
+  border: 1px solid ${({ theme }) => theme.color.glass.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.glass.scrim};
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  line-height: 1.5;
+`;
+
 export function AnalyticsPage() {
   const { data, loading, error } = useAnalyticsData();
 
@@ -76,6 +87,12 @@ export function AnalyticsPage() {
       <AnalyticsHeader />
 
       {error ? <EmptyState>{error}</EmptyState> : null}
+
+      <Disclaimer>
+        Hotspot map layout and zone labels use session-source breakdowns, not geographic GPS
+        zones. Use peak hours and safety score for timing decisions; see widget notes for
+        synthetic rankings.
+      </Disclaimer>
 
       <Grid>
         <Span8>

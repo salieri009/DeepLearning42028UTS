@@ -30,3 +30,23 @@ export function getDensityBadgeVariant(
   if (d === "LOW") return "safe";
   return "neutral";
 }
+
+/** NFR-1 target: inference latency under 500ms per frame. */
+const LATENCY_OPTIMAL_MS = 500;
+const LATENCY_SLOW_MS = 800;
+
+export function formatLatencyBadge(latencyMs: number | null): {
+  label: string;
+  variant: "safe" | "warning" | "danger";
+} | null {
+  if (latencyMs === null) {
+    return null;
+  }
+  if (latencyMs <= LATENCY_OPTIMAL_MS) {
+    return { label: "OPTIMAL", variant: "safe" };
+  }
+  if (latencyMs <= LATENCY_SLOW_MS) {
+    return { label: "SLOW", variant: "warning" };
+  }
+  return { label: "HIGH", variant: "danger" };
+}

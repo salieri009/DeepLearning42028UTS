@@ -11,8 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +20,9 @@ import com.crowdnav.api.dto.analytics.AnalyticsSummaryResponse;
 import com.crowdnav.api.dto.analytics.HotspotItem;
 import com.crowdnav.api.dto.analytics.PeakHourItem;
 import com.crowdnav.api.dto.analytics.ZoneRiskItem;
-import com.crowdnav.api.persistence.entity.AnalysisSession;
-import com.crowdnav.api.persistence.entity.Frame;
-import com.crowdnav.api.persistence.repository.AnalysisSessionRepository;
+import com.crowdnav.api.persistence.projection.FrameRiskAggregateRow;
+import com.crowdnav.api.persistence.projection.HotspotAggregateRow;
+import com.crowdnav.api.persistence.projection.PeakHourAggregateRow;
 import com.crowdnav.api.persistence.repository.FrameRepository;
 
 @Service
@@ -30,14 +30,11 @@ import com.crowdnav.api.persistence.repository.FrameRepository;
 public class AnalyticsService {
 
 	private static final int[] PEAK_HOUR_BUCKETS = { 8, 10, 12, 14, 16, 18, 20 };
-	private static final DateTimeFormatter HOUR_LABEL = DateTimeFormatter.ofPattern("HH:mm");
 
 	private final FrameRepository frameRepository;
-	private final AnalysisSessionRepository sessionRepository;
 
-	public AnalyticsService(FrameRepository frameRepository, AnalysisSessionRepository sessionRepository) {
+	public AnalyticsService(FrameRepository frameRepository) {
 		this.frameRepository = frameRepository;
-		this.sessionRepository = sessionRepository;
 	}
 
 	public AnalyticsSummaryResponse buildSummary(int days) {
@@ -45,34 +42,29 @@ public class AnalyticsService {
 		Instant since = Instant.now().minus(safeDays, ChronoUnit.DAYS);
 		Instant priorSince = Instant.now().minus(safeDays * 2L, ChronoUnit.DAYS);
 
-		List<Frame> frames = frameRepository.findRecentWithSession(since);
-		long sessionCount = frames.stream()
-				.map(Frame::getSession)
-				.map(AnalysisSession::getId)
-				.distinct()
-				.count();
+		long frameCount = frameRepository.countByCapturedAtGreaterThanEqual(since);
+		long sessionCount = frameRepository.countDistinctSessionsSince(since);
 
-		if (frames.isEmpty()) {
+		if (frameCount == 0) {
 			return emptySummary();
 		}
 
-		long dangerCount = countRisk(frames, "DANGER");
-		long warningCount = countRisk(frames, "WARNING");
-		int safetyScore = computeSafetyScore(frames.size(), dangerCount, warningCount);
+		long dangerCount = frameRepository.countByCapturedAtGreaterThanEqualAndMaxProximityRisk(since, "DANGER");
+		long warningCount = frameRepository.countByCapturedAtGreaterThanEqualAndMaxProximityRisk(since, "WARNING");
+		int safetyScore = computeSafetyScore((int) frameCount, dangerCount, warningCount);
 		String safetyLabel = labelForScore(safetyScore);
 
-		long priorDanger = frameRepository.findRecentWithSession(priorSince).stream()
-				.filter(frame -> frame.getCapturedAt().isBefore(since))
-				.filter(frame -> "DANGER".equals(frame.getMaxProximityRisk()))
-				.count();
+		long priorDanger = frameRepository.countByCapturedAtGreaterThanEqualAndCapturedAtLessThanAndMaxProximityRisk(
+				priorSince, since, "DANGER");
 		double trendPercent = priorDanger == 0
 				? (dangerCount > 0 ? 100.0 : 0.0)
 				: ((dangerCount - priorDanger) * 100.0) / priorDanger;
 
-		List<PeakHourItem> peakHours = buildPeakHours(frames);
+		List<PeakHourItem> peakHours = buildPeakHours(frameRepository.aggregatePeakHoursSince(since));
 		String busiestWindow = busiestWindow(peakHours);
-		List<ZoneRiskItem> zoneRisks = buildZoneRisks(frames);
-		List<HotspotItem> hotspots = buildHotspots(frames);
+		List<ZoneRiskItem> zoneRisks = buildZoneRisks(frameRepository.aggregateRiskBySourceSince(since));
+		List<HotspotItem> hotspots = buildHotspots(
+				frameRepository.findTopDangerHotspotsSince(since, PageRequest.of(0, 3)));
 
 		return new AnalyticsSummaryResponse(
 				safetyScore,
@@ -83,7 +75,7 @@ public class AnalyticsService {
 				peakHours,
 				zoneRisks,
 				hotspots,
-				frames.size(),
+				frameCount,
 				sessionCount);
 	}
 
@@ -105,10 +97,6 @@ public class AnalyticsService {
 				0);
 	}
 
-	private long countRisk(List<Frame> frames, String risk) {
-		return frames.stream().filter(frame -> risk.equals(frame.getMaxProximityRisk())).count();
-	}
-
 	private int computeSafetyScore(int total, long danger, long warning) {
 		if (total == 0) {
 			return 0;
@@ -127,17 +115,15 @@ public class AnalyticsService {
 		return "Elevated risk";
 	}
 
-	private List<PeakHourItem> buildPeakHours(List<Frame> frames) {
+	private List<PeakHourItem> buildPeakHours(List<PeakHourAggregateRow> rows) {
 		Map<Integer, Long> counts = new HashMap<>();
 		for (int hour : PEAK_HOUR_BUCKETS) {
 			counts.put(hour, 0L);
 		}
 
-		ZoneId zone = ZoneId.systemDefault();
-		for (Frame frame : frames) {
-			int hour = frame.getCapturedAt().atZone(zone).getHour();
-			int bucket = nearestBucket(hour);
-			counts.merge(bucket, (long) frame.getPersonCount(), Long::sum);
+		for (PeakHourAggregateRow row : rows) {
+			int bucket = nearestBucket(row.getHourOfDay());
+			counts.merge(bucket, row.getPersonSum(), Long::sum);
 		}
 
 		long max = counts.values().stream().mapToLong(Long::longValue).max().orElse(0L);
@@ -174,66 +160,61 @@ public class AnalyticsService {
 						.orElse("—"));
 	}
 
-	private List<ZoneRiskItem> buildZoneRisks(List<Frame> frames) {
-		Map<String, List<Frame>> bySource = frames.stream()
-				.collect(Collectors.groupingBy(frame -> frame.getSession().getSourceType().name()));
+	private List<ZoneRiskItem> buildZoneRisks(List<FrameRiskAggregateRow> rows) {
+		Map<String, long[]> bySource = new LinkedHashMap<>();
+		for (FrameRiskAggregateRow row : rows) {
+			long[] counts = bySource.computeIfAbsent(row.getSourceType(), key -> new long[3]);
+			long frameCount = row.getFrameCount();
+			if ("DANGER".equals(row.getMaxProximityRisk())) {
+				counts[0] += frameCount;
+			} else if ("WARNING".equals(row.getMaxProximityRisk())) {
+				counts[1] += frameCount;
+			}
+			counts[2] += frameCount;
+		}
 
 		return bySource.entrySet().stream()
 				.sorted(Map.Entry.comparingByKey())
 				.map(entry -> {
-					List<Frame> group = entry.getValue();
-					long danger = countRisk(group, "DANGER");
-					long warning = countRisk(group, "WARNING");
-					int percent = (int) Math.round(((danger * 2.0 + warning) / group.size()) * 100.0);
+					long danger = entry.getValue()[0];
+					long warning = entry.getValue()[1];
+					long total = entry.getValue()[2];
+					int percent = total == 0
+							? 0
+							: (int) Math.round(((danger * 2.0 + warning) / total) * 100.0);
 					percent = Math.min(100, percent);
 					String level = percent >= 70 ? "HIGH RISK" : percent >= 35 ? "MODERATE" : "LOW RISK";
-					return new ZoneRiskItem(formatSourceLabel(entry.getKey()), level, percent);
+					return new ZoneRiskItem(formatSourceLabel(entry.getKey()), level, percent, true);
 				})
 				.toList();
 	}
 
 	private String formatSourceLabel(String sourceType) {
 		return switch (sourceType) {
-			case "WEBCAM" -> "Webcam sessions";
-			case "UPLOAD" -> "Upload sessions";
-			case "MOCK" -> "Mock sessions";
-			default -> sourceType;
+			case "WEBCAM" -> "Webcam sessions (source type)";
+			case "UPLOAD" -> "Upload sessions (source type)";
+			case "MOCK" -> "Mock sessions (source type)";
+			default -> sourceType + " (source type)";
 		};
 	}
 
-	private List<HotspotItem> buildHotspots(List<Frame> frames) {
-		Map<Long, Long> dangerBySession = new LinkedHashMap<>();
-		Map<Long, String> labelBySession = new HashMap<>();
-
-		for (Frame frame : frames) {
-			AnalysisSession session = frame.getSession();
-			labelBySession.putIfAbsent(session.getId(), session.getClientLabel());
-			if ("DANGER".equals(frame.getMaxProximityRisk())) {
-				dangerBySession.merge(session.getId(), 1L, Long::sum);
-			}
-		}
-
-		List<Map.Entry<Long, Long>> ranked = dangerBySession.entrySet().stream()
-				.sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
-				.limit(3)
-				.toList();
-
+	private List<HotspotItem> buildHotspots(List<HotspotAggregateRow> ranked) {
 		List<HotspotItem> hotspots = new ArrayList<>();
 		int index = 0;
-		for (Map.Entry<Long, Long> entry : ranked) {
-			long dangerFrames = entry.getValue();
-			if (dangerFrames == 0) {
+		for (HotspotAggregateRow row : ranked) {
+			if (row.getDangerCount() == 0) {
 				continue;
 			}
 			String top = (20 + index * 18) + "%";
 			String left = (25 + index * 22) + "%";
 			hotspots.add(new HotspotItem(
-					"session-" + entry.getKey(),
-					labelBySession.getOrDefault(entry.getKey(), "Session " + entry.getKey()),
-					Math.min(99, (int) dangerFrames * 8) + "% CAPACITY",
+					"session-" + row.getSessionId(),
+					row.getClientLabel() + " (illustrative layout)",
+					row.getDangerCount() + " danger frames",
 					"DANGER",
 					top,
-					left));
+					left,
+					true));
 			index++;
 		}
 		return hotspots;

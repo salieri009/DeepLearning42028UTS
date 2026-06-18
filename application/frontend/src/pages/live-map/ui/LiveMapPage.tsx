@@ -79,8 +79,8 @@ export function LiveMapPage() {
           </Subtitle>
           {mapData.nearCampus === false && (
             <Disclaimer>
-              Zone markers show a demo aggregate for UTS Sydney — not calibrated to your
-              current area.
+              Zone anchors are illustrative for UTS Sydney. Capacity reflects the share of
+              sessions with elevated risk from stored telemetry — not measured occupancy.
             </Disclaimer>
           )}
         </div>

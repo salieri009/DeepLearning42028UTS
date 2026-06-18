@@ -1,4 +1,4 @@
-# CrowdNav v2.5.1 — full stack (PostgreSQL + inference + Spring + React/Nginx)
+# CrowdNav v2.6.0 — full stack (PostgreSQL + inference + Spring + React/Nginx)
 # Run: docker compose up --build
 
 services:
@@ -20,7 +20,7 @@ services:
 
   # ── Python YOLO inference (best.pt) ──────────────────────────────────────
   inference:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:2.6.0
     build: ./inference-service
     environment:
       MODEL_PATH: /models/best.pt
@@ -40,7 +40,7 @@ services:
 
   # ── Spring Boot REST API ──────────────────────────────────────────────────
   backend:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:2.6.0
     build: ./backend/crowdnav-api
     environment:
       DB_URL: jdbc:postgresql://db:5432/crowdnav
@@ -66,7 +66,7 @@ services:
 
   # ── React (Nginx) ─────────────────────────────────────────────────────────
   frontend:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:2.6.0
     build: ./frontend
     ports:
       - "80:80"

@@ -85,7 +85,7 @@ export function aggregateSessionMetrics(
   if (withFrames.length === 0) {
     return {
       worstRisk: "SAFE",
-      capacityPct: 18,
+      capacityPct: 0,
       activeCount: 0,
       sessionCount: sessions.length,
     };
@@ -93,12 +93,10 @@ export function aggregateSessionMetrics(
 
   const activeCount = withFrames.filter((session) => session.ended_at == null).length;
   const worstRisk = maxProximityRisk(withFrames.map((session) => session.worst_risk));
-  const avgFrames =
-    withFrames.reduce((sum, session) => sum + session.frame_count, 0) / withFrames.length;
-  const capacityPct = Math.min(
-    99,
-    Math.round(avgFrames * 1.4 + activeCount * 18 + (worstRisk === "DANGER" ? 12 : 0)),
-  );
+  const elevatedCount = withFrames.filter(
+    (session) => session.worst_risk === "DANGER" || session.worst_risk === "WARNING",
+  ).length;
+  const capacityPct = Math.round((elevatedCount / withFrames.length) * 100);
 
   return {
     worstRisk,
@@ -108,9 +106,9 @@ export function aggregateSessionMetrics(
   };
 }
 
-function riskFromCapacity(capacity: number, floor: ProximityRisk): ProximityRisk {
-  if (capacity >= 82) return "DANGER";
-  if (capacity >= 55) return maxProximityRisk([floor, "WARNING"]);
+function riskFromElevatedRatio(capacityPct: number, floor: ProximityRisk): ProximityRisk {
+  if (capacityPct >= 70) return "DANGER";
+  if (capacityPct >= 35) return maxProximityRisk([floor, "WARNING"]);
   return floor;
 }
 
@@ -119,19 +117,17 @@ export function buildZoneMarkers(
   anchors: ZoneAnchor[] = ZONE_ANCHORS,
 ): MapMarker[] {
   return anchors.map((anchor) => {
-    const capacity = Math.min(
-      99,
-      Math.round(metrics.capacityPct * anchor.congestionFactor),
-    );
+    const capacity = `${metrics.capacityPct}% elevated sessions`;
 
     return {
       id: anchor.id,
-      label: anchor.label,
+      label: `${anchor.label} (illustrative anchor)`,
       lat: anchor.lat,
       lng: anchor.lng,
-      risk: riskFromCapacity(capacity, metrics.worstRisk),
-      capacity: `${capacity}% CAPACITY`,
+      risk: riskFromElevatedRatio(metrics.capacityPct, metrics.worstRisk),
+      capacity,
       kind: "zone",
+      synthetic: true,
     };
   });
 }

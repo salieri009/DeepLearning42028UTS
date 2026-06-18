@@ -6,13 +6,19 @@ const Shell = styled.div`
   position: relative;
   min-height: 100vh;
   overflow: hidden;
+
+  @media (max-width: 1024px) {
+    padding-bottom: calc(${({ theme }) => theme.spacing[7]} * 2 + env(safe-area-inset-bottom, 0px));
+  }
 `;
 
 type DashboardShellProps = {
   topNav: ReactNode;
   videoStage: ReactNode;
   statsSidebar: ReactNode;
+  mobileStatsBar?: ReactNode;
   controlBar: ReactNode;
+  bottomNav?: ReactNode;
   liveRegion?: ReactNode;
 };
 
@@ -20,7 +26,9 @@ export function DashboardShell({
   topNav,
   videoStage,
   statsSidebar,
+  mobileStatsBar,
   controlBar,
+  bottomNav,
   liveRegion,
 }: DashboardShellProps) {
   return (
@@ -29,8 +37,10 @@ export function DashboardShell({
       {liveRegion}
       {videoStage}
       {topNav}
+      {mobileStatsBar}
       {statsSidebar}
       {controlBar}
+      {bottomNav}
     </Shell>
   );
 }

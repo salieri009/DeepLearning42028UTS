@@ -65,7 +65,7 @@ Cross-artifact coverage check (spec-kit `/speckit.analyze` equivalent). PRD is r
 | **FR-11** | Persist analysis sessions, frames, detections for history and analytics (opt-in via `session_id`). | S | — | `com.crowdnav.api.persistence.*`, `PersistingAnalyzeFrameService`, `FramePersistenceService` | Integration: session row + N frame/detection rows after a run with `session_id`. |
 | **FR-12** | Expose session-history read APIs (`GET /api/v1/sessions`, `GET /api/v1/sessions/{id}/detections`). | S | — | `SessionController.java`, `SessionService.java` | Integration: stored session retrievable by id. |
 | **FR-13** | *(Research extension — not PRD §6 shipped scope)* Detect and label `wheelchair` and `luggage` in addition to `person`, with class shown in overlay + stats. | S | §6 (out of scope) | New — see [`DETECTION_3CLASS_PLAN.md`](DETECTION_3CLASS_PLAN.md) | Per-class mAP gate; demo shows 3 distinct labels. |
-| **FR-14** | *(Extension)* Expose `GET /api/v1/analytics/summary?days=N` aggregating frame-level density and risk over persisted sessions for the Analytics page. | C | §3 Vision | `AnalyticsController.java`, `AnalyticsService.java`, `features/analytics-data/` | Integration: `AnalyticsControllerTest`; manual `/analytics` charts populate. |
+| **FR-14** | *(Extension)* Expose `GET /api/v1/analytics/summary?days=N` aggregating frame-level density and risk over persisted sessions for the Analytics page. | C | §3 Vision | `AnalyticsController.java`, `AnalyticsService.java`, `features/analytics-data/` | Integration: `AnalyticsControllerTest`; manual `/analytics` charts populate. **Hotspot semantic accuracy:** not met — see §6.1 G-7/G-8 and [`analytics_hotspot_gap_analysis.md`](reports/analytics_hotspot_gap_analysis.md). |
 | **FR-15** | *(Extension)* Expose `GET/PUT /api/v1/settings` to persist sensor/detection preferences (`confidence`, `model`, etc.) in PostgreSQL; `confidence` and `model` flow into inference on `/internal/infer`. | S | §3 Vision | `SettingsController.java`, `SettingsService.java`, `features/sensor-settings/` | Integration: `SettingsControllerTest`, `AnalyzeFrameSettingsIntegrationTest`. |
 | **FR-16** | *(Extension of FR-11)* Expose `GET /api/v1/sessions/{id}/frames` returning frame-trail metadata (sequence, density, risk, person count) without raw images. Archive **EXPORT DATA** downloads session + frames + detections as JSON. | S | — | `SessionController.java`, `SessionService.listFrames()`, `features/session-archive/lib/exportSessionJson.ts` | Integration: `SessionControllerTest.listFrames_*`; unit: `exportSessionJson.test.ts`. |
 | **FR-17** | *(Extension)* Live Map page: show browser GPS position and zone markers derived from recent session telemetry (24 h poll). | C | §3 Vision | `pages/live-map/`, `features/live-map-markers/`, `features/geolocation/` | Manual + Vitest: `/live-map` GPS legend; user + zone markers. |
@@ -134,7 +134,7 @@ From [`docs/PRD.md`](PRD.md) §9 — explicitly **Won't (W)**:
 | FR-11, FR-12, FR-16, NFR-8, NFR-9 | — | [`BACKEND_ERD.md`](BACKEND_ERD.md), `com.crowdnav.api.persistence.*`, `SessionController.java` |
 | FR-12, FR-16 | — | [`API_SPEC.md`](API_SPEC.md) §5 |
 | FR-13, NFR-3b | §6 (out of scope) | [`DETECTION_3CLASS_PLAN.md`](DETECTION_3CLASS_PLAN.md) |
-| FR-14 | §3 Vision | `AnalyticsController.java`, `features/analytics-data/` |
+| FR-14 | §3 Vision | `AnalyticsController.java`, `features/analytics-data/` — gaps: [`analytics_hotspot_gap_analysis.md`](reports/analytics_hotspot_gap_analysis.md) |
 | FR-15 | §3 Vision | `SettingsController.java`, `features/sensor-settings/`, `V2__app_settings.sql` |
 | FR-17 | §3 Vision | `features/live-map-markers/`, `features/geolocation/`, `widgets/live-map-stage/` |
 | NFR-1, NFR-2, NFR-3 | §5.3, §8 | `docs/reports/evaluation_metrics.md`, `Final_Training_Report.md` |
@@ -147,6 +147,16 @@ From [`docs/PRD.md`](PRD.md) §9 — explicitly **Won't (W)**:
 - **Integration:** FR-6–FR-9, FR-12, FR-14–FR-16 (Spring `@SpringBootTest`, run in mock mode per repo convention).
 - **System:** FR-4, FR-5, FR-10, FR-13, FR-17 via the Docker demo + webcam.
 - **Benchmark:** NFR-1, NFR-2, NFR-3/3b recorded in `docs/reports/`.
+
+### 6.1 Known implementation gaps
+
+| ID | Req | Severity | Gap | Recommended action |
+|----|-----|----------|-----|-------------------|
+| G-7 | FR-14 | High | `RiskHotspotMap` presents session ranking (top 3 by DANGER frame count) as a geographic hotspot map; marker positions are rank-index CSS %, not place coordinates | **Partial (2026-06-18):** Option A copy — widget titled "Session Danger Hotspots", analytics disclaimer; full ADR-0011 still open |
+| G-8 | FR-14 | High | `hotspots[].capacity` mislabels `danger_frame_count × 8` as occupancy/capacity | Rename field or widget copy when ADR-0011 is implemented |
+| G-9 | FR-11 | Medium | Closed session could accept analyze-frame after Stop | **Resolved (2026-06-18):** `requireSessionOpen` → 409; `FramePersistenceService` skips closed sessions |
+| G-10 | FR-12 | Medium | Archive fetched all sessions client-side | **Resolved (2026-06-18):** `GET /sessions` server filters + aggregates; `useSessionArchive` paginates |
+| G-11 | FR-15 | Medium | `density_limit` persisted but unused in inference | **Resolved (2026-06-18):** wired via settings → `/internal/infer` + `CrowdNavPolicy` scaling |
 
 > **Change control:** new requirements get the next free ID; never renumber. Mark superseded
 > requirements `~~FR-x~~ (superseded by FR-y)` rather than deleting.

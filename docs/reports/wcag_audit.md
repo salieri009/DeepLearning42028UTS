@@ -64,7 +64,7 @@ Computed from [`tokens.ts`](../../application/frontend/src/shared/config/theme/t
 | **WCAG-M5** | 1.3.1, 4.1.2 | `RadioGroup` missing radiogroup name | `RadioGroup.tsx`, `DetectionModelPanel.tsx` | `role="radiogroup" aria-labelledby` |
 | **WCAG-M6** | 4.1.2 | `Icon` exposes ligature name (`play_arrow`) to AT | `shared/ui/Icon/Icon.tsx` | Default `aria-hidden` when decorative |
 | **WCAG-M7** | 1.1.1, 1.4.1, 4.1.2 | Live map markers color-only + `title` hover | `widgets/live-map-stage/LiveMapStage.tsx` | Focusable markers or off-screen list with names |
-| **WCAG-M8** | 1.1.1, 4.1.2 | Risk hotspot map markers unnamed | `widgets/risk-hotspot-map/RiskHotspotMap.tsx` | `aria-label` per hotspot from data |
+| **WCAG-M8** | 1.1.1, 4.1.2 | Risk hotspot map markers unnamed | `widgets/risk-hotspot-map/RiskHotspotMap.tsx` | `aria-label` per hotspot from data. Empty map when no hotspots — functional gap (no explanatory copy); see [`analytics_hotspot_gap_analysis.md`](analytics_hotspot_gap_analysis.md) §6 |
 | **WCAG-M9** | 1.1.1 | SVG gauge rings lack accessible name | `RadialGauge.tsx`, `WeeklySafetyGauge.tsx` | `role="img" aria-labelledby` → score + label |
 | **WCAG-M10** | 3.3.2, 4.1.2 | `disabled title="Coming soon"` not in accessible name | ControlBar, SideNav, TopNav, etc. | `aria-label="Record (coming soon)"` |
 | **WCAG-M11** | 2.4.1 | No skip link to main content | `AppShell`, `DashboardShell`, `index.html` | Visually hidden skip link → `#main` |

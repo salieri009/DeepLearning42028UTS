@@ -2,6 +2,7 @@ import styled from "styled-components";
 import type { FrameItem, SessionDetailResponse } from "@/entities/session";
 import { formatSessionDuration } from "@/entities/session";
 import type { SessionPreviewStats } from "@/features/session-archive/model/useSessionPreview";
+import type { PreviewTruncation } from "@/features/session-archive/lib/sessionArchiveUtils";
 import { Button, GlassPanel, Icon } from "@/shared/ui";
 
 type SessionPreviewProps = {
@@ -10,6 +11,7 @@ type SessionPreviewProps = {
   stats: SessionPreviewStats | null;
   frames?: FrameItem[];
   statsError?: string | null;
+  truncation?: PreviewTruncation;
   onGenerateReport?: () => void;
   reportDisabled?: boolean;
 };
@@ -211,8 +213,18 @@ const RiskTag = styled.span<{ $risk: string }>`
   }};
 `;
 
-function formatDensityLabel(maxCrowdDensity: number, frameCount: number): string {
-  if (maxCrowdDensity > 0) return `${maxCrowdDensity} persons`;
+const TruncationNotice = styled.p`
+  margin: 0 ${({ theme }) => theme.spacing[4]} ${({ theme }) => theme.spacing[2]};
+  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.color.warning};
+  color: ${({ theme }) => theme.color.warning};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+`;
+
+function formatDensityLabel(maxPersonCount: number, frameCount: number): string {
+  if (maxPersonCount > 0) return `${maxPersonCount} persons (peak frame)`;
   if (frameCount > 0) return `${frameCount} frames`;
   return "—";
 }
@@ -223,6 +235,7 @@ export function SessionPreview({
   stats,
   frames = [],
   statsError,
+  truncation,
   onGenerateReport,
   reportDisabled = true,
 }: SessionPreviewProps) {
@@ -256,6 +269,19 @@ export function SessionPreview({
 
       {statsError ? <EmptyState>{statsError}</EmptyState> : null}
 
+      {truncation?.frames ? (
+        <TruncationNotice>
+          Preview limited to first {frames.length} of {session.frame_count} frames. Export may
+          omit older data.
+        </TruncationNotice>
+      ) : null}
+
+      {stats?.statsPartial && stats.sessionWorstRisk ? (
+        <TruncationNotice>
+          Stats from loaded frame slice; session worst risk: {stats.sessionWorstRisk}.
+        </TruncationNotice>
+      ) : null}
+
       <PreviewArea>
         <Thumbnail>
           <PlayButton>
@@ -272,7 +298,7 @@ export function SessionPreview({
             <StatValue>{densityLabel}</StatValue>
           </StatCard>
           <StatCard>
-            <StatLabel>Anomalies</StatLabel>
+            <StatLabel>Danger Frames</StatLabel>
             <StatValue $warning={anomalies > 0}>
               {String(anomalies).padStart(2, "0")}
             </StatValue>
@@ -321,7 +347,7 @@ export function SessionPreview({
           aria-label="Generate full session report"
           title={reportDisabled ? "Select a session first" : "Open printable HTML report"}
         >
-          Generate Full PDF Report
+          Generate Full HTML Report
         </Button>
       </Stats>
     </Panel>

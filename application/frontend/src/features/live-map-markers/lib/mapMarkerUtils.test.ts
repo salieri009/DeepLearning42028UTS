@@ -32,22 +32,23 @@ describe("mapMarkerUtils", () => {
   it("aggregateSessionMetrics returns safe defaults without frame data", () => {
     const metrics = aggregateSessionMetrics([session({ frame_count: 0 })]);
     expect(metrics.worstRisk).toBe("SAFE");
-    expect(metrics.capacityPct).toBe(18);
+    expect(metrics.capacityPct).toBe(0);
     expect(metrics.activeCount).toBe(0);
   });
 
-  it("aggregateSessionMetrics elevates risk from active sessions", () => {
+  it("aggregateSessionMetrics uses elevated-session ratio from API summaries", () => {
     const metrics = aggregateSessionMetrics([
       session({ id: 1, frame_count: 40, worst_risk: "DANGER", ended_at: null }),
       session({ id: 2, frame_count: 20, worst_risk: "WARNING", ended_at: "2026-06-18T00:00:00Z" }),
+      session({ id: 3, frame_count: 10, worst_risk: "SAFE", ended_at: null }),
     ]);
 
     expect(metrics.worstRisk).toBe("DANGER");
-    expect(metrics.activeCount).toBe(1);
-    expect(metrics.capacityPct).toBeGreaterThan(50);
+    expect(metrics.activeCount).toBe(2);
+    expect(metrics.capacityPct).toBe(67);
   });
 
-  it("buildZoneMarkers scales congestion by anchor factor", () => {
+  it("buildZoneMarkers marks illustrative anchors as synthetic", () => {
     const metrics = aggregateSessionMetrics([
       session({ frame_count: 30, worst_risk: "WARNING", ended_at: null }),
     ]);
@@ -55,8 +56,9 @@ describe("mapMarkerUtils", () => {
     const zoneA4 = markers.find((marker) => marker.id === "zone-a4");
 
     expect(markers).toHaveLength(3);
-    expect(zoneA4?.risk).not.toBe("SAFE");
-    expect(zoneA4?.capacity).toMatch(/% CAPACITY$/);
+    expect(zoneA4?.synthetic).toBe(true);
+    expect(zoneA4?.label).toContain("illustrative anchor");
+    expect(zoneA4?.capacity).toMatch(/elevated sessions/);
   });
 
   it("isNearCampus is true at campus center and false far away", () => {

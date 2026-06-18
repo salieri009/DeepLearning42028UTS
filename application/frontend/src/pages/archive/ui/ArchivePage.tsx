@@ -5,6 +5,11 @@ import {
   buildSessionExportBundle,
   downloadSessionJson,
 } from "@/features/session-archive/lib/exportSessionJson";
+import {
+  confirmTruncatedExport,
+  DETECTION_PREVIEW_LIMIT,
+  FRAME_PREVIEW_LIMIT,
+} from "@/features/session-archive/lib/sessionArchiveUtils";
 import { useSessionPreview } from "@/features/session-archive/model/useSessionPreview";
 import { buildHtmlReport, printHtmlReport } from "@/features/report-generation";
 import { ArchiveFilters } from "@/widgets/archive-filters";
@@ -61,7 +66,7 @@ const FiltersCol = styled.div`
 
 export function ArchivePage() {
   const archive = useSessionArchive();
-  const preview = useSessionPreview(archive.selectedId);
+  const preview = useSessionPreview(archive.selectedId, archive.selectedDetail);
   const [exporting, setExporting] = useState(false);
 
   const handleExport = useCallback(async () => {
@@ -71,9 +76,16 @@ export function ArchivePage() {
     setExporting(true);
     try {
       const [detectionData, frameData] = await Promise.all([
-        listDetections(session.id, { limit: 500 }),
-        listSessionFrames(session.id, 100),
+        listDetections(session.id, { limit: DETECTION_PREVIEW_LIMIT }),
+        listSessionFrames(session.id, FRAME_PREVIEW_LIMIT),
       ]);
+
+      if (
+        !confirmTruncatedExport(session, detectionData.items.length, frameData.items.length)
+      ) {
+        return;
+      }
+
       downloadSessionJson(
         buildSessionExportBundle(session, frameData.items, detectionData.items),
       );
@@ -156,6 +168,7 @@ export function ArchivePage() {
             stats={archive.selectedDetail ? preview.stats : null}
             frames={archive.selectedDetail ? preview.frames : []}
             statsError={preview.error}
+            truncation={archive.selectedDetail ? preview.truncation : undefined}
             onGenerateReport={handleGenerateReport}
             reportDisabled={archive.selectedDetail == null}
           />

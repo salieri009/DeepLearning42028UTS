@@ -1,5 +1,5 @@
 # =============================================================================
-# CrowdNav v2.5.1 — thin wrapper (no PostgreSQL; session APIs need application stack)
+# CrowdNav v2.6.0 — thin wrapper (no PostgreSQL; session APIs need application stack)
 # For full persistence use application/docker-compose.yml
 #
 # Run from infra/docker/:
@@ -8,7 +8,7 @@
 
 services:
   frontend:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-frontend:2.6.0
     build:
       context: ../../application/frontend
       dockerfile: Dockerfile
@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-backend:2.6.0
     build:
       context: ../../application/backend/crowdnav-api
       dockerfile: Dockerfile
@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
 
   inference:
-    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:2.5.1
+    image: ghcr.io/salieri009/deeplearning42028uts/crowdnav-inference:2.6.0
     build:
       context: ../../application/inference-service
       dockerfile: Dockerfile

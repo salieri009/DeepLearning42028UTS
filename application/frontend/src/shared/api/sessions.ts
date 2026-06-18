@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import type {
   DetectionListResponse,
   FrameListResponse,
+  ProximityRisk,
   SessionDetailResponse,
   SessionListResponse,
   SessionResponse,
@@ -24,14 +25,31 @@ export async function closeSession(id: number): Promise<SessionResponse> {
   return data;
 }
 
+export type ListSessionsParams = {
+  limit?: number;
+  offset?: number;
+  days?: number;
+  sourceType?: SourceType;
+  worstRisk?: ProximityRisk;
+};
+
 export async function listSessions(
-  limit = 20,
+  limitOrParams: number | ListSessionsParams = 20,
   offset = 0,
   signal?: AbortSignal,
 ): Promise<SessionListResponse> {
+  const params: ListSessionsParams =
+    typeof limitOrParams === "number" ? { limit: limitOrParams, offset } : limitOrParams;
+
   const { data } = await apiClient.get<SessionListResponse>("/v1/sessions", {
-    params: { limit, offset },
-    signal,
+    params: {
+      limit: params.limit ?? 20,
+      offset: params.offset ?? 0,
+      days: params.days,
+      source_type: params.sourceType,
+      worst_risk: params.worstRisk,
+    },
+    signal: typeof limitOrParams === "number" ? signal : undefined,
   });
   return data;
 }

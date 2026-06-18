@@ -134,8 +134,39 @@ Response `201`: `{ "id": 42, "started_at": "2026-06-17T03:21:00Z", "client_label
 
 `source_type` enum: `WEBCAM | UPLOAD | MOCK`.
 
-### `GET /sessions` — list sessions
-Query: `?limit=20&offset=0`. Response `200`: `{ "items": [Session...], "total": 137 }`.
+### `GET /sessions` — list sessions (with aggregates)
+
+Query:
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `limit` | `20` | Page size (1–100) |
+| `offset` | `0` | Skip rows |
+| `days` | — | Only sessions with `started_at` within last N days (1–365) |
+| `source_type` | — | `WEBCAM \| UPLOAD \| MOCK` |
+| `worst_risk` | — | `SAFE \| WARNING \| DANGER` (session worst from frame aggregates) |
+
+Response `200`:
+
+```json
+{
+  "items": [
+    {
+      "id": 42,
+      "started_at": "2026-06-17T03:21:00Z",
+      "ended_at": null,
+      "client_label": "demo",
+      "source_type": "WEBCAM",
+      "frame_count": 310,
+      "avg_latency_ms": 280,
+      "worst_risk": "DANGER"
+    }
+  ],
+  "total": 137
+}
+```
+
+Each list item includes the same aggregate fields as `GET /sessions/{id}`. Invalid `source_type` or `worst_risk` → **400**.
 
 ### `GET /sessions/{id}` — session summary
 Response `200`: Session + aggregates `{ "frame_count": 310, "avg_latency_ms": 280, "worst_risk": "DANGER" }`.
@@ -192,14 +223,37 @@ Query: `?days=7` (default, positive integer). Response `200`:
   "event_count": 14,
   "busiest_window": "Mon 08:00–10:00",
   "peak_hours": [{ "label": "08:00", "height_percent": 80, "peak": true }],
-  "zone_risks": [{ "name": "Building 1", "level": "HIGH", "percent": 42 }],
-  "hotspots": [{ "name": "Central walkway", "risk": "DANGER", "count": 5 }],
+  "zone_risks": [{ "name": "Webcam sessions", "level": "HIGH RISK", "percent": 42 }],
+  "hotspots": [
+    {
+      "id": "session-42",
+      "label": "Building A Lobby",
+      "capacity": "96% CAPACITY",
+      "risk": "DANGER",
+      "top": "20%",
+      "left": "25%"
+    }
+  ],
   "frame_count": 1240,
   "session_count": 18
 }
 ```
 
-Empty database → `200` with zeroed summary fields.
+Empty database → `200` with zeroed summary fields and `hotspots: []`.
+
+#### `hotspots` semantics
+
+> Full gap analysis: [`reports/analytics_hotspot_gap_analysis.md`](reports/analytics_hotspot_gap_analysis.md). Remediation: [ADR-0011](decisions/ADR-0011-risk-hotspot-widget-redesign.md).
+
+| Field | Meaning |
+|-------|---------|
+| `id` | `"session-"` + numeric session PK |
+| `label` | `analysis_session.client_label` (free text; not normalized place) |
+| `risk` | Always `"DANGER"` for ranked items (only DANGER frames counted) |
+| `capacity` | **Not occupancy.** `min(99, danger_frame_count × 8) + "% CAPACITY"` — misleading label; see G-8 |
+| `top`, `left` | CSS placement on decorative map — **rank index**, not geographic coordinates (`20+index×18%`, `25+index×22%`) |
+
+Aggregation: count frames where `max_proximity_risk = DANGER`, group by `session_id`, sort descending, **limit 3**. Not grouped by place/zone.
 
 ## 5.2 Settings API (FR-15)
 
@@ -227,9 +281,9 @@ Request body: same shape as `GET` response. Response `200`: persisted settings.
 Invalid values (e.g. `confidence` outside 0–100) → **400**.
 
 Settings are read by `RemoteAnalyzeFrameService` / `MockAnalyzeFrameService` and forwarded to
-inference as `conf_thresh` on `POST /internal/infer`. Legacy JSON fields `density_limit` and
-`audible_alerts` remain in the API schema for backward compatibility but are not used for
-crowd-density classification or alerts (PRD §8 / §9).
+inference as `conf_thresh` and `density_limit` on `POST /internal/infer`. `density_limit`
+(1–500, default 64) scales crowd-density person-count bands in `crowdnav_policy` (64 ≈ PRD §8
+thresholds n≤2 LOW, n≤5 MEDIUM). `audible_alerts` remains in the API schema but is unused (PRD §9).
 
 ## 6. Error Model
 
@@ -256,8 +310,8 @@ Spring returns `ResponseStatusException` → standard error body
 
 Called only by the Spring backend. Source: `application/inference-service/main.py`.
 
-**Request:** `{ "frame_base64": "<base64 image>", "conf_thresh": 0.75, "model": "yolov8-precise" }`
-(`frame_base64` required; 400 if empty. `conf_thresh` and `model` optional — FR-15 settings.)
+**Request:** `{ "frame_base64": "<base64 image>", "conf_thresh": 0.75, "model": "yolov8-precise", "density_limit": 64 }`
+(`frame_base64` required; 400 if empty. `conf_thresh`, `model`, and `density_limit` optional — FR-15 settings.)
 **Response `200`:** identical shape to `AnalyzeFrameResponse` (§2.3). The backend deserializes it
 directly into `AnalyzeFrameResponse.class`.
 

@@ -99,4 +99,51 @@ class AnalyzeFrameControllerTest {
                         .param("session_id", "999999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void analyzeFrame_json_closedSession_returns409() throws Exception {
+        MvcResult session = mockMvc.perform(post("/api/v1/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"client_label\":\"closed-json\",\"source_type\":\"WEBCAM\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long sessionId = Long.parseLong(
+                session.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                        "/api/v1/sessions/" + sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/analyze-frame")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"frame_base64\": \"" + VALID_B64 + "\", \"session_id\": " + sessionId + "}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void analyzeFrame_multipart_closedSession_returns409() throws Exception {
+        MvcResult session = mockMvc.perform(post("/api/v1/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"client_label\":\"closed-test\",\"source_type\":\"WEBCAM\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long sessionId = Long.parseLong(
+                session.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch(
+                        "/api/v1/sessions/" + sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[] { 0, 0 });
+        mockMvc.perform(multipart("/api/v1/analyze-frame")
+                        .file(file)
+                        .param("session_id", String.valueOf(sessionId)))
+                .andExpect(status().isConflict());
+    }
 }

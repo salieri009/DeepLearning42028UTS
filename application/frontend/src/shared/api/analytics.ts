@@ -16,6 +16,7 @@ export type AnalyticsSummaryResponse = {
     name: string;
     level: ZoneRisk["level"];
     percent: number;
+    synthetic?: boolean;
   }>;
   hotspots: Array<{
     id: string;
@@ -24,6 +25,7 @@ export type AnalyticsSummaryResponse = {
     risk: HotspotMarker["risk"];
     top: string;
     left: string;
+    synthetic?: boolean;
   }>;
   frame_count: number;
   session_count: number;
@@ -58,6 +60,7 @@ export function mapAnalyticsSummary(response: AnalyticsSummaryResponse): Analyti
       name: zone.name,
       level: zone.level,
       percent: zone.percent,
+      synthetic: zone.synthetic,
     })),
     hotspots: response.hotspots.map((hotspot) => ({
       id: hotspot.id,
@@ -66,6 +69,7 @@ export function mapAnalyticsSummary(response: AnalyticsSummaryResponse): Analyti
       risk: hotspot.risk,
       top: hotspot.top,
       left: hotspot.left,
+      synthetic: hotspot.synthetic,
     })),
     frameCount: response.frame_count,
     sessionCount: response.session_count,

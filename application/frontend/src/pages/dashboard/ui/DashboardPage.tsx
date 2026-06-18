@@ -8,6 +8,8 @@ import { useSessionRecording } from "@/features/session-recording";
 import { useRiskAlerts } from "@/features/risk-alerts";
 import { ControlBar } from "@/widgets/control-bar";
 import { DashboardShell } from "@/widgets/dashboard-shell";
+import { BottomNav } from "@/widgets/bottom-nav";
+import { MobileStatsBar } from "@/widgets/stats-sidebar/ui/MobileStatsBar";
 import { StatsSidebar } from "@/widgets/stats-sidebar";
 import { TopNav } from "@/widgets/top-nav";
 import { VideoStage } from "@/widgets/video-stage";
@@ -99,6 +101,7 @@ export function DashboardPage() {
     <DashboardShell
       topNav={<TopNav running={running} />}
       videoStage={<VideoStage running={running} data={data} videoRef={videoRef} />}
+      mobileStatsBar={<MobileStatsBar data={data} />}
       statsSidebar={
         <StatsSidebar
           data={data}
@@ -123,6 +126,7 @@ export function DashboardPage() {
       liveRegion={
         <LiveRegion message={liveMessage} politeness={alertPoliteness as "polite" | "assertive"} />
       }
+      bottomNav={<BottomNav />}
     />
   );
 }

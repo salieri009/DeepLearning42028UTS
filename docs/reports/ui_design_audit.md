@@ -61,7 +61,7 @@ Excluded from scoring: `DESIGN.md` §1–8 `<TBD>` placeholders.
 | Route | Scenario | Chrome | Status |
 |-------|----------|--------|--------|
 | `/` | S1 Dashboard | `DashboardShell`, `TopNav`, `StatsSidebar`, `ControlBar` | **PASS** |
-| `/analytics` | S4 | `AppShell`, `SideNav`, charts | **PASS** |
+| `/analytics` | S4 | `AppShell`, `SideNav`, charts | **PASS** (visual) / **PARTIAL** (RiskHotspotMap semantics — AH-1) |
 | `/live-map` | S3 | `LiveMapStage`, GPS legend | **PASS** |
 | `/archive` | S2 | Export JSON enabled | **PASS** |
 | `/settings` | S5 | Threshold panels | **PASS** (mobile via BottomNav post-fix) |
@@ -96,6 +96,7 @@ Excluded from scoring: `DESIGN.md` §1–8 `<TBD>` placeholders.
 
 - ~~Full WCAG contrast audit~~ → see [`wcag_audit.md`](wcag_audit.md) (2026-06-18)
 - WCAG remediation: 2 Critical, 14 Major (keyboard table, live regions, headings, forms)
+- **AH-1** — `RiskHotspotMap`: name/behavior mismatch (session ranking vs geo map), misleading `capacity`, no empty state, no drill-down → [`analytics_hotspot_gap_analysis.md`](analytics_hotspot_gap_analysis.md), [ADR-0011](../decisions/ADR-0011-risk-hotspot-widget-redesign.md)
 
 ---
 

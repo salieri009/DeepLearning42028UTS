@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getSession, listSessions } from "@/shared/api";
+import { listSessions } from "@/shared/api";
 import type { SessionDetailResponse } from "@/entities/session";
 import { reportError } from "@/shared/lib/reportError";
 import {
-  ENRICH_CONCURRENCY,
-  FETCH_BATCH_SIZE,
-  filterSessions,
+  dateRangeToDays,
   isDefaultFilters,
-  mapWithConcurrency,
   PAGE_SIZE,
-  sessionToDetailFallback,
   type DateRangeFilter,
   type RiskFilter,
   type SourceFilter,
@@ -17,33 +13,9 @@ import {
 
 export type { DateRangeFilter, RiskFilter, SourceFilter } from "../lib/sessionArchiveUtils";
 
-async function fetchAllSessionDetails(signal: AbortSignal): Promise<SessionDetailResponse[]> {
-  const listItems = [];
-  let listOffset = 0;
-  let total = Number.POSITIVE_INFINITY;
-
-  while (listOffset < total) {
-    const page = await listSessions(FETCH_BATCH_SIZE, listOffset, signal);
-    if (signal.aborted) return [];
-
-    listItems.push(...page.items);
-    total = page.total;
-    listOffset += page.items.length;
-
-    if (page.items.length === 0) break;
-  }
-
-  return mapWithConcurrency(listItems, ENRICH_CONCURRENCY, async (item) => {
-    try {
-      return await getSession(item.id, signal);
-    } catch {
-      return sessionToDetailFallback(item);
-    }
-  });
-}
-
 export function useSessionArchive() {
   const [sessions, setSessions] = useState<SessionDetailResponse[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -55,74 +27,73 @@ export function useSessionArchive() {
 
   const loadVersionRef = useRef(0);
 
-  const runLoad = useCallback(async (signal: AbortSignal) => {
-    await Promise.resolve();
-    if (signal.aborted) return;
+  const runLoad = useCallback(
+    async (signal: AbortSignal) => {
+      await Promise.resolve();
+      if (signal.aborted) return;
 
-    const loadVersion = loadVersionRef.current + 1;
-    loadVersionRef.current = loadVersion;
+      const loadVersion = loadVersionRef.current + 1;
+      loadVersionRef.current = loadVersion;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const enriched = await fetchAllSessionDetails(signal);
-      if (signal.aborted || loadVersionRef.current !== loadVersion) return;
+      try {
+        const page = await listSessions({
+          limit: PAGE_SIZE,
+          offset,
+          days: dateRangeToDays(dateRange),
+          sourceType: sourceFilter === "ALL" ? undefined : sourceFilter,
+          worstRisk: riskFilter === "ALL" ? undefined : riskFilter,
+        });
 
-      setSessions(enriched);
-      setSelectedId((prev) => {
-        if (prev != null && enriched.some((session) => session.id === prev)) {
-          return prev;
+        if (signal.aborted || loadVersionRef.current !== loadVersion) return;
+
+        setSessions(page.items);
+        setTotal(page.total);
+        setSelectedId((prev) => {
+          if (prev != null && page.items.some((session) => session.id === prev)) {
+            return prev;
+          }
+          return page.items[0]?.id ?? null;
+        });
+      } catch (err) {
+        if (signal.aborted || loadVersionRef.current !== loadVersion) return;
+        reportError(err);
+        setSessions([]);
+        setTotal(0);
+        setSelectedId(null);
+        setError("Failed to load sessions.");
+      } finally {
+        if (!signal.aborted && loadVersionRef.current === loadVersion) {
+          setLoading(false);
         }
-        return enriched[0]?.id ?? null;
-      });
-    } catch (err) {
-      if (signal.aborted || loadVersionRef.current !== loadVersion) return;
-      reportError(err);
-      setSessions([]);
-      setSelectedId(null);
-      setError("Failed to load sessions.");
-    } finally {
-      if (!signal.aborted && loadVersionRef.current === loadVersion) {
-        setLoading(false);
       }
-    }
-  }, []);
+    },
+    [dateRange, riskFilter, sourceFilter, offset],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
-    // Async fetch defers setState until after the first microtask.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount/refetch session list from API
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when filters/page change
     void runLoad(controller.signal);
     return () => controller.abort();
   }, [runLoad]);
 
-  const filteredSessions = useMemo(
-    () => filterSessions(sessions, dateRange, riskFilter, sourceFilter),
-    [sessions, dateRange, riskFilter, sourceFilter],
-  );
-
   const filterActive = !isDefaultFilters(dateRange, riskFilter, sourceFilter);
-  const filteredTotal = filteredSessions.length;
-  const pageCount = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
-  const safeOffset = Math.min(offset, Math.max(0, (pageCount - 1) * PAGE_SIZE));
-  const currentPage = Math.floor(safeOffset / PAGE_SIZE) + 1;
-
-  const pagedSessions = useMemo(
-    () => filteredSessions.slice(safeOffset, safeOffset + PAGE_SIZE),
-    [filteredSessions, safeOffset],
-  );
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
   const resolvedSelectedId = useMemo(() => {
-    if (selectedId != null && filteredSessions.some((session) => session.id === selectedId)) {
+    if (selectedId != null && sessions.some((session) => session.id === selectedId)) {
       return selectedId;
     }
-    return pagedSessions[0]?.id ?? null;
-  }, [filteredSessions, pagedSessions, selectedId]);
+    return sessions[0]?.id ?? null;
+  }, [sessions, selectedId]);
 
   const selectedDetail = useMemo(
-    () => filteredSessions.find((session) => session.id === resolvedSelectedId) ?? null,
-    [filteredSessions, resolvedSelectedId],
+    () => sessions.find((session) => session.id === resolvedSelectedId) ?? null,
+    [sessions, resolvedSelectedId],
   );
 
   const setDateRangeAndReset = useCallback((value: DateRangeFilter) => {
@@ -148,23 +119,23 @@ export function useSessionArchive() {
   }, []);
 
   const goNext = useCallback(() => {
-    if (safeOffset + PAGE_SIZE < filteredTotal) {
+    if (offset + PAGE_SIZE < total) {
       setOffset((value) => value + PAGE_SIZE);
     }
-  }, [safeOffset, filteredTotal]);
+  }, [offset, total]);
 
   const goPrev = useCallback(() => {
-    if (safeOffset > 0) {
+    if (offset > 0) {
       setOffset((value) => Math.max(0, value - PAGE_SIZE));
     }
-  }, [safeOffset]);
+  }, [offset]);
 
   const emptyMessage =
-    sessions.length === 0
-      ? "No sessions found."
-      : filterActive
+    total === 0
+      ? filterActive
         ? "No sessions match the current filters."
-        : "No sessions found.";
+        : "No sessions found."
+      : "No sessions found.";
 
   const refetch = useCallback(() => {
     const controller = new AbortController();
@@ -173,8 +144,8 @@ export function useSessionArchive() {
   }, [runLoad]);
 
   return {
-    sessions: pagedSessions,
-    total: filteredTotal,
+    sessions,
+    total,
     loading,
     error,
     selectedId: resolvedSelectedId,

@@ -161,7 +161,7 @@ const ITEMS: { id: SideNavItem; icon: string; label: string }[] = [
   { id: "health", icon: "monitor_heart", label: "Health" },
   { id: "assets", icon: "inventory_2", label: "Assets" },
   { id: "sensors", icon: "settings_input_component", label: "Sensors" },
-  { id: "logs", icon: "history", label: "Logs" },
+  { id: "logs", icon: "history", label: "Archive" },
 ];
 
 export function SideNav({ activeItem }: SideNavProps) {

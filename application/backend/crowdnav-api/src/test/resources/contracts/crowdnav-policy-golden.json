@@ -1,0 +1,40 @@
+{
+  "proximity_from_height": [
+    { "height": 0.1, "expected": "SAFE" },
+    { "height": 0.24, "expected": "SAFE" },
+    { "height": 0.25, "expected": "WARNING" },
+    { "height": 0.44, "expected": "WARNING" },
+    { "height": 0.45, "expected": "DANGER" },
+    { "height": 0.9, "expected": "DANGER" }
+  ],
+  "crowd_density": [
+    { "count": 0, "worst": "SAFE", "expected": "LOW" },
+    { "count": 1, "worst": "SAFE", "expected": "LOW" },
+    { "count": 2, "worst": "SAFE", "expected": "LOW" },
+    { "count": 3, "worst": "SAFE", "expected": "MEDIUM" },
+    { "count": 5, "worst": "SAFE", "expected": "MEDIUM" },
+    { "count": 6, "worst": "SAFE", "expected": "HIGH" },
+    { "count": 2, "worst": "WARNING", "expected": "MEDIUM" },
+    { "count": 1, "worst": "DANGER", "expected": "HIGH" },
+    { "count": 3, "worst": "DANGER", "expected": "HIGH" }
+  ],
+  "recommendation": [
+    { "worst": "SAFE", "expected": "PROCEED" },
+    { "worst": "WARNING", "expected": "CAUTION" },
+    { "worst": "DANGER", "expected": "STOP" }
+  ],
+  "mock_fixture": {
+    "min_confidence": 0.85,
+    "expected": {
+      "persons_count": 2,
+      "crowd_density": "MEDIUM",
+      "max_proximity_risk": "WARNING",
+      "recommendation": "CAUTION"
+    }
+  },
+  "crowd_density_scaled": [
+    { "count": 2, "worst": "SAFE", "density_limit": 40, "expected": "MEDIUM" },
+    { "count": 4, "worst": "SAFE", "density_limit": 40, "expected": "HIGH" }
+  ]
+}
+

@@ -33,13 +33,13 @@ describe("SideNav", () => {
     expect(screen.getByRole("link", { name: /Security/i, hidden: true })).toHaveAttribute("href", "/");
   });
 
-  it("links Analytics, Traffic, Sensors, and Logs to their routes", () => {
+  it("links Analytics, Traffic, Sensors, and Archive to their routes", () => {
     renderSideNav("/analytics", "analytics");
 
     expect(screen.getByRole("link", { name: /Analytics/i, hidden: true })).toHaveAttribute("href", "/analytics");
     expect(screen.getByRole("link", { name: /Traffic/i, hidden: true })).toHaveAttribute("href", "/live-map");
     expect(screen.getByRole("link", { name: /Sensors/i, hidden: true })).toHaveAttribute("href", "/settings");
-    expect(screen.getByRole("link", { name: /Logs/i, hidden: true })).toHaveAttribute("href", "/archive");
+    expect(screen.getByRole("link", { name: /Archive/i, hidden: true })).toHaveAttribute("href", "/archive");
   });
 
   it("opens Health and Assets panels", async () => {

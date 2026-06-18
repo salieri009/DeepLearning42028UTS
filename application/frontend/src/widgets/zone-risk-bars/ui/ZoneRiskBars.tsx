@@ -82,13 +82,28 @@ function levelVariant(level: ZoneRisk["level"]) {
   return level;
 }
 
+const SyntheticNote = styled.p`
+  margin: 0 0 ${({ theme }) => theme.spacing[4]};
+  font-size: ${({ theme }) => theme.typography.size[1]};
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+`;
+
 export function ZoneRiskBars({ zones }: ZoneRiskBarsProps) {
+  const hasSynthetic = zones.some((zone) => zone.synthetic);
+
   return (
     <Card>
       <Header>
-        <Title>Zone Risk Distribution</Title>
+        <Title>Session Source Breakdown</Title>
         <Icon name="info" size={20} />
       </Header>
+      {hasSynthetic ? (
+        <SyntheticNote>
+          Grouped by session source type — not geographic zones. Values are from stored frame
+          aggregates.
+        </SyntheticNote>
+      ) : null}
       <List>
         {zones.map((zone) => (
           <Row key={zone.name}>

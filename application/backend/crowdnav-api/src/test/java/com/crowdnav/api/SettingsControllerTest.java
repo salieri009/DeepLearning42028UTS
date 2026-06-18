@@ -60,7 +60,7 @@ class SettingsControllerTest {
 				.andExpect(jsonPath("$.model").value("yolov8-nano"))
 				.andExpect(jsonPath("$.confidence").value(70))
 				.andExpect(jsonPath("$.audible_alerts").value(false))
-				.andExpect(jsonPath("$.density_limit").value(64));
+				.andExpect(jsonPath("$.density_limit").value(40));
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 # =============================================================================
-# CrowdNav frontend v2.5.0 (React + Vite) — multi-stage build
+# CrowdNav frontend v2.6.0 (React + Vite) — multi-stage build
 #   Stage 1: build Vite static bundle
 #   Stage 2: serve via Nginx (nginx.conf: /api + /actuator proxy)
 # Build context: application/frontend/
@@ -23,7 +23,7 @@ RUN npm run build
 FROM nginx:1.27-alpine AS serve
 
 LABEL org.opencontainers.image.title="crowdnav-frontend" \
-      org.opencontainers.image.version="2.5.0"
+      org.opencontainers.image.version="2.6.0"
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/crowdnav.conf
