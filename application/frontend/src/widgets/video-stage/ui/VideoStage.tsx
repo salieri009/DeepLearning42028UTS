@@ -8,6 +8,7 @@ type VideoStageProps = {
   running: boolean;
   data: AnalyzeFrameResponse | null;
   videoRef: RefObject<HTMLVideoElement | null>;
+  showOverlays?: boolean;
 };
 
 const Stage = styled.main`
@@ -24,7 +25,7 @@ const GridTexture = styled.div`
   pointer-events: none;
   opacity: 0.2;
   background-image: radial-gradient(circle, ${({ theme }) => theme.color.texture.gridDot} 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-size: ${({ theme }) => theme.layout.textureGridSize} ${({ theme }) => theme.layout.textureGridSize};
 `;
 
 const Scanline = styled.div`
@@ -67,7 +68,7 @@ const OverlayLayer = styled.div`
   padding-bottom: ${({ theme }) => theme.layout.videoSafeInsetBottom};
   padding-right: calc(${({ theme }) => theme.layout.sidebarWidth} + ${({ theme }) => theme.spacing[6]});
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     padding-right: ${({ theme }) => theme.spacing[6]};
   }
 `;
@@ -80,12 +81,12 @@ const AlertChip = styled(GlassPanel)<{ $tone: "warning" | "danger" }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing[3]};
   padding: ${({ theme }) => theme.spacing[3]} ${({ theme }) => theme.spacing[4]};
-  border-left: 4px solid
+  border-left: ${({ theme }) => theme.spacing[1]} solid
     ${({ theme, $tone }) => ($tone === "danger" ? theme.color.danger : theme.color.warning)};
   background: ${({ theme }) => theme.color.glass.scrim};
   box-shadow: ${({ theme }) => theme.shadow.glow};
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     top: calc(${({ theme }) => theme.layout.headerHeight} + ${({ theme }) => theme.spacing[4]});
     right: ${({ theme }) => theme.spacing[4]};
     position: fixed;
@@ -100,7 +101,7 @@ const IconWrap = styled.div<{ $tone: "warning" | "danger" }>`
   color: ${({ theme, $tone }) => ($tone === "danger" ? theme.color.danger : theme.color.warning)};
 `;
 
-export function VideoStage({ running, data, videoRef }: VideoStageProps) {
+export function VideoStage({ running, data, videoRef, showOverlays = true }: VideoStageProps) {
   const recommendation = data?.recommendation?.toUpperCase();
   const showChip =
     running && recommendation && recommendation !== "PROCEED" && recommendation !== "SAFE";
@@ -123,7 +124,7 @@ export function VideoStage({ running, data, videoRef }: VideoStageProps) {
         </Placeholder>
       )}
 
-      {running && (
+      {running && showOverlays && (
         <OverlayLayer>
           <div aria-hidden="true">
             {(data?.persons ?? []).map((person, i) => (

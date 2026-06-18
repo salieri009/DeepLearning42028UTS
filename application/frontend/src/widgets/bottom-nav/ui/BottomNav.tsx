@@ -22,14 +22,14 @@ const Nav = styled.nav`
   padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[6]}`};
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme }) => theme.color.glass.fill};
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   border: 1px solid ${({ theme }) => theme.color.glass.border};
   box-shadow: ${({ theme }) => theme.shadow.glow};
   justify-content: space-around;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[4]};
 
-  @media (min-width: 768px) {
+  @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     display: none;
   }
 `;
@@ -40,6 +40,8 @@ const NavLinkItem = styled(NavLink)`
   align-items: center;
   gap: ${({ theme }) => theme.spacing[1]};
   padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[4]}`};
+  min-height: ${({ theme }) => theme.spacing[7]};
+  min-width: ${({ theme }) => theme.spacing[7]};
   border: none;
   border-radius: ${({ theme }) => theme.radius.full};
   background: transparent;

@@ -1,5 +1,6 @@
 ---
 last_updated: 2026-06-18
+remediation_sets: 13
 review_type: Technical Debt Discovery (Due Diligence)
 scope: CrowdNav full stack (Spring API, React FE, FastAPI inference, train, CI, docs)
 ---
@@ -59,6 +60,14 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 | No inference HTTP read timeout | Hung YOLO blocks servlet threads | RestClient timeout + circuit breaker |
 | `useCrowdDetection` 500ms interval, no in-flight guard | Overlapping analyze requests, race on overlay | AbortController / mutex |
 
+**Remediated (set 1, 2026-06-18):**
+- `SettingsService` 5s in-memory cache on `getSettings()` — reduces per-inference DB reads
+- `app.upload.max-frame-bytes` + multipart 5MB cap — mitigates upload DoS (see gap set 1)
+
+**Remediated (cycle 2 sets 9–13, 2026-06-18):**
+- Session list frame aggregate scoped by `started_after` / `source_type` filter
+- `getSession` single aggregate query (replaces 4 round-trips)
+
 ---
 
 ## 4. Cloud & Infrastructure
@@ -75,6 +84,11 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 | Dockerfile `gradle bootJar -x test` | Broken builds ship to containers |
 | Version label drift (2.5.0 vs 2.5.1) | Release traceability confusion |
 
+**Remediated (set 2, 2026-06-18):**
+- Backend Dockerfile: `gradle build` replaces `bootJar -x test`
+- CI: `npm run lint` + inference `pytest` job in `build-check.yml`
+- **Remaining:** `tsc --noEmit` blocked by pre-existing type errors (FrameItem exports, test fixtures)
+
 **Positive:** Multi-stage Dockerfiles, non-root user, healthchecks, nginx API proxy, conditional mock inference for CI.
 
 ---
@@ -90,6 +104,10 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 | Default DB creds in VCS | Credential reuse attacks | **Medium** (if exposed) |
 | CORS on `/actuator/**` | Widened browser surface if more endpoints exposed | **Low** today |
 | Base64 validated for syntax only, not image bounds | Malformed payload to inference | **Low** |
+
+**Remediated (set 3, 2026-06-18):**
+- Upload size limits reduce unbounded payload risk (partial — auth/IDOR still open)
+- `reportError` call sites fixed; `logErrors` setting gates production console output
 
 ---
 
@@ -109,6 +127,11 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 
 **Positive:** Gradle test suite (14 classes), Vitest (37 files), Flyway versioned migrations, policy contract test Java↔Python.
 
+**Remediated (loop sets 4–5, 2026-06-18):**
+- `build-check.yml`: frontend lint + inference pytest
+- `python-lint.yml`: dedicated `inference-lint` job for `application/inference-service`
+- Backend Dockerfile runs `gradle build` (tests included)
+
 ---
 
 ## 7. Knowledge Debt
@@ -125,6 +148,10 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 
 **Positive:** ADR series (0002–0011), `user_scenarios.md`, `REQUIREMENTS.md` gap table, honest hotspot gap analysis.
 
+**Remediated (loop set 5, 2026-06-18):**
+- `API_SPEC.md` §1: IDOR risk note, upload limits (5 MB / 413), auth follow-up pointer
+- `entities/session/index.ts`: exports `FrameItem`, `FrameListResponse` (tsc prep)
+
 ---
 
 ## 8. Prioritization Table
@@ -135,7 +162,7 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 | IDOR on sessions | Security | High | Privacy violation | Medium | **P1** |
 | Unbounded upload size | Security | High | Outage via DoS | Low | **P1** |
 | Policy triplication (Py/Java) | Architecture | High | Wrong risk alerts | Medium | **P1** |
-| Session list full-table frame scan | Scalability | High | API degradation at scale | Medium | **P1** |
+| Session list full-table frame scan | Scalability | High | API degradation at scale | Medium | ~~P1~~ **Done** (filtered aggregate) |
 | CI missing lint/tsc/inference pytest | DevOps | High | Regressions to production | Low | **P1** |
 | Settings toggles not wired to runtime | Code Quality | High | User trust erosion | Medium | **P2** |
 | `reportError` wrong call signature | Code Quality | High | Broken error telemetry | Low | **P2** |
@@ -148,7 +175,7 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 | Duplicate session-gate queries | Architecture | Medium | Latency waste | Low | **P3** |
 | Inference delegate `findFirst` | Architecture | Medium | Bean wiring fragility | Low | **P3** |
 | Compose/registry hardcoding | Infrastructure | Medium | Fork portability | Low | **P3** |
-| `densityLimit` no UI | Code Quality | Medium | Hidden capability | Low | **P3** |
+| `densityLimit` no UI | Code Quality | Medium | Hidden capability | Low | ~~P3~~ **Done** |
 | ADR-0005 OpenAPI codegen | Knowledge | Medium | Manual type drift | Medium | **P3** |
 | Widget alias layer | Code Quality | Low | Navigation friction | Low | **P3** |
 | Dockerfile version label drift | DevOps | Low | Metadata confusion | Trivial | **P3** |
@@ -165,19 +192,13 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 
 ### High Debt
 - IDOR on session resources
-- Unbounded frame upload (DoS)
 - Policy logic triplicated across 3 runtimes
 - Session list query scans entire frame table
-- CI quality gates incomplete (lint, tsc, inference pytest)
-- FE settings stored but not applied (`visualOverlays`, `logErrors`, `webrtcAccess`)
-- `reportError` mis-invocation pattern
+- CI `tsc --noEmit` gate enabled in `build-check.yml`
+- FE settings partially wired (`webrtcAccess` disabled with honest label)
 - FE API + localStorage dual persistence
-- Docker image build skips tests
-- Settings DB hit on every inference call
 
 ### Medium Debt
-- Duplicate `requireSessionOpen` (2× DB read)
-- Fragile `AnalyzeFrameService` delegate selection
 - `getSession` 4-query pattern
 - Analytics 8-query summary
 - Async persistence race on `sequence_no`
@@ -185,7 +206,6 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 - GHCR owner hardcoded
 - `API_SPEC` draft + no codegen
 - Architecture docs train-centric
-- `useCrowdDetection` no in-flight guard
 - H2 vs PostgreSQL test gap
 - Flaky async `Thread.sleep` tests
 
@@ -207,7 +227,7 @@ Brutally objective due-diligence review. Assumes current design is **not** autom
 1. **Zero authentication** — Any client can read all sessions, detections, and rewrite global inference settings. In a public deployment this is an immediate security incident.
 2. **Policy triplication** — Proximity/risk logic lives in `train/`, `inference-service/`, and Java independently. Contract tests help but do not eliminate divergence under change.
 3. **Scalability cliffs** — Session list aggregates all frames; settings fetched per inference frame. Both degrade predictably with usage.
-4. **CI false confidence** — Build passes while lint, typecheck, remote inference, and Python inference tests are skipped. Regressions reach main undetected.
+4. **CI false confidence** — `tsc --noEmit` still blocked by legacy type errors; remote inference path untested in CI.
 5. **UI/runtime honesty gap** — Settings toggles and Risk Hotspot widget imply capabilities that are not implemented. Erodes trust in a safety-oriented product narrative.
 
 ### Consequences if Ignored (12–18 months)

@@ -13,7 +13,7 @@ const ZOOM_STEP = 0.25;
 
 const Card = styled(GlassPanel)`
   position: relative;
-  height: 520px;
+  height: ${({ theme }) => theme.layout.analyticsPanelHeight};
   overflow: hidden;
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
@@ -60,7 +60,7 @@ const Legend = styled.div`
   border-radius: ${({ theme }) => theme.radius.lg};
   background: ${({ theme }) => theme.color.glass.fill};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
 `;
 
 const LegendTitle = styled.h3`

@@ -116,6 +116,7 @@ export const tokens = {
       4: "20px",
       5: "24px",
       6: "32px",
+      display: "64px",
     },
     weight: {
       regular: 400,
@@ -128,6 +129,12 @@ export const tokens = {
       normal: 1.45,
     },
   },
+  effects: {
+    glassBlur: "12px",
+    glassSaturation: "120%",
+    glowBlurLg: "150px",
+    glowBlurMd: "120px",
+  },
   layout: {
     sidebarWidth: "320px",
     leftSidebarWidth: "256px",
@@ -137,6 +144,17 @@ export const tokens = {
     videoSafeInsetBottom: "96px",
     maxWidth: "1120px",
     mediaMaxWidth: "760px",
+    gridBreakpointLg: "1024px",
+    tabletBreakpoint: "768px",
+    analyticsPanelHeight: "520px",
+    textureGridSize: "24px",
+    dropdownWidth: "320px",
+    dropdownMaxHeight: "360px",
+    modalWideWidth: "640px",
+    mapMarkerUser: "24px",
+    mapMarkerZone: "20px",
+    glowOrbLg: "800px",
+    glowOrbMd: "600px",
     zIndex: {
       stage: 0,
       sidebar: 40,

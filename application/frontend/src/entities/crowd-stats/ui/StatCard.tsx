@@ -12,6 +12,7 @@ type StatCardProps = {
   badge?: string;
   badgeVariant?: StatBadgeVariant;
   accent?: boolean;
+  valueTone?: StatBadgeVariant;
 };
 
 const badgeStyles = {
@@ -21,7 +22,7 @@ const badgeStyles = {
   `,
   warning: css`
     background: ${({ theme }) => theme.color.warning};
-    color: ${({ theme }) => theme.color.neutral[90]};
+    color: ${({ theme }) => theme.color.onWarning};
   `,
   danger: css`
     background: ${({ theme }) => theme.color.danger};
@@ -40,7 +41,7 @@ const Card = styled(GlassPanel)<{ $accent?: boolean }>`
   ${({ $accent, theme }) =>
     $accent &&
     css`
-      border-left: 3px solid ${theme.color.warning};
+      border-left: ${theme.spacing[1]} solid ${theme.color.warning};
       background: ${theme.color.glass.fillStrong};
     `}
 
@@ -65,7 +66,8 @@ const Badge = styled.span<{ $variant: StatBadgeVariant }>`
   font-family: ${({ theme }) => theme.typography.family.mono};
   font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
-  padding: 2px ${({ theme }) => theme.spacing[2]};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
   ${({ $variant }) => badgeStyles[$variant]}
 `;
@@ -76,11 +78,19 @@ const Label = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const Value = styled.p`
+const Value = styled.p<{ $tone?: StatBadgeVariant }>`
   font-size: ${({ theme }) => theme.typography.size[5]};
   font-weight: ${({ theme }) => theme.typography.weight.semibold};
-  color: ${({ theme }) => theme.color.textPrimary};
+  color: ${({ theme, $tone = "neutral" }) =>
+    $tone === "safe"
+      ? theme.color.success
+      : $tone === "warning"
+        ? theme.color.warning
+        : $tone === "danger"
+          ? theme.color.danger
+          : theme.color.textPrimary};
   margin-top: ${({ theme }) => theme.spacing[1]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
 
   span {
     font-size: ${({ theme }) => theme.typography.size[1]};
@@ -97,6 +107,7 @@ export function StatCard({
   badge,
   badgeVariant = "neutral",
   accent,
+  valueTone,
 }: StatCardProps) {
   return (
     <Card $accent={accent}>
@@ -105,7 +116,7 @@ export function StatCard({
         {badge && <Badge $variant={badgeVariant}>{badge}</Badge>}
       </Header>
       <Label>{label}</Label>
-      <Value>
+      <Value $tone={valueTone ?? badgeVariant}>
         {value} {unit && <span>{unit}</span>}
       </Value>
     </Card>

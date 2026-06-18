@@ -35,6 +35,8 @@ public class SessionService {
 
 	private static final Set<String> VALID_RISKS = Set.of("SAFE", "WARNING", "DANGER");
 	private static final Set<String> VALID_CLASSES = Set.of("person", "wheelchair", "luggage");
+	private static final Instant ALL_TIME_START = Instant.EPOCH;
+	private static final String NO_FILTER = "";
 
 	private final AnalysisSessionRepository sessionRepository;
 	private final FrameRepository frameRepository;
@@ -87,22 +89,11 @@ public class SessionService {
 	}
 
 	public SessionDetailResponse getSession(Long id) {
-		AnalysisSession session = sessionRepository.findById(id)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
-
-		long frameCount = frameRepository.countBySessionId(id);
-		Double avgLatency = frameRepository.findAvgLatencyMsBySessionId(id);
-		String worstRisk = PersistenceMapper.worstRisk(frameRepository.findMaxProximityRisksBySessionId(id));
-
-		return new SessionDetailResponse(
-				session.getId(),
-				session.getStartedAt(),
-				session.getEndedAt(),
-				session.getClientLabel(),
-				session.getSourceType().name(),
-				frameCount,
-				avgLatency != null ? (int) Math.round(avgLatency) : null,
-				worstRisk);
+		List<Object[]> rows = sessionRepository.findSessionSummaryRowsById(id);
+		if (rows.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
+		}
+		return toSessionDetail(rows.get(0));
 	}
 
 	public DetectionListResponse listDetections(Long sessionId, String risk, String classLabel, int limit) {
@@ -178,7 +169,7 @@ public class SessionService {
 
 	private Instant daysToStartedAfter(Integer days) {
 		if (days == null) {
-			return null;
+			return ALL_TIME_START;
 		}
 		int safeDays = Math.clamp(days, 1, 365);
 		return Instant.now().minus(safeDays, ChronoUnit.DAYS);
@@ -186,7 +177,7 @@ public class SessionService {
 
 	private String normalizeSourceFilter(String sourceType) {
 		if (sourceType == null || sourceType.isBlank() || "ALL".equalsIgnoreCase(sourceType)) {
-			return null;
+			return NO_FILTER;
 		}
 		try {
 			return PersistenceMapper.parseSourceType(sourceType).name();
@@ -197,7 +188,7 @@ public class SessionService {
 
 	private String normalizeWorstRiskFilter(String worstRisk) {
 		if (worstRisk == null || worstRisk.isBlank() || "ALL".equalsIgnoreCase(worstRisk)) {
-			return null;
+			return NO_FILTER;
 		}
 		validateRiskFilter(worstRisk);
 		return worstRisk;

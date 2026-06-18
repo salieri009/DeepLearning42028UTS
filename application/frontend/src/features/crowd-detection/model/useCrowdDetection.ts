@@ -23,6 +23,7 @@ export function useCrowdDetection({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const analyzingRef = useRef(false);
   const startingRef = useRef(false);
   const sessionIdRef = useRef<number | null>(null);
 
@@ -84,8 +85,10 @@ export function useCrowdDetection({
       }
 
       intervalRef.current = window.setInterval(async () => {
+        if (analyzingRef.current) return;
         const frame = captureFrame();
         if (!frame) return;
+        analyzingRef.current = true;
         const started = performance.now();
         try {
           const res = await analyzeFrame(frame, sessionIdRef.current);
@@ -94,6 +97,8 @@ export function useCrowdDetection({
           onAnalyzed?.(res.data);
         } catch (e) {
           reportError("Analyze error", e);
+        } finally {
+          analyzingRef.current = false;
         }
       }, intervalMs);
     } catch (e) {

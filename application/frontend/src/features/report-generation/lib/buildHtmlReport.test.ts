@@ -33,6 +33,7 @@ describe("buildHtmlReport", () => {
         started_at: "2026-06-18T00:00:00Z",
         ended_at: "2026-06-18T00:05:00Z",
         frame_count: 1,
+        avg_latency_ms: null,
         worst_risk: "WARNING",
       },
       frames: [
@@ -43,6 +44,8 @@ describe("buildHtmlReport", () => {
           crowd_density: "LOW",
           max_proximity_risk: "WARNING",
           captured_at: "2026-06-18T00:01:00Z",
+          latency_ms: 95,
+          recommendation: "CAUTION",
         },
       ],
       stats: { threat: { safe: 80, warn: 20, danger: 0 } },

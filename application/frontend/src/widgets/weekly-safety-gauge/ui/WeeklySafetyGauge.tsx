@@ -10,7 +10,7 @@ type WeeklySafetyGaugeProps = {
 };
 
 const Card = styled(GlassPanel)`
-  height: 520px;
+  height: ${({ theme }) => theme.layout.analyticsPanelHeight};
   padding: ${({ theme }) => theme.spacing[6]};
   display: flex;
   flex-direction: column;
@@ -23,7 +23,7 @@ const Title = styled(ChromeText)`
   font-size: ${({ theme }) => theme.typography.size[4]};
   text-transform: uppercase;
   font-style: italic;
-  border-top: 2px solid ${({ theme }) => theme.color.glass.highlight};
+  border-top: ${({ theme }) => theme.spacing[1]} solid ${({ theme }) => theme.color.glass.highlight};
   padding-top: ${({ theme }) => theme.spacing[4]};
 `;
 
@@ -36,7 +36,7 @@ const GaugeArea = styled.div`
 `;
 
 const Score = styled.span`
-  font-size: 64px;
+  font-size: ${({ theme }) => theme.typography.size.display};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
   color: ${({ theme }) => theme.color.textPrimary};
   line-height: 1;

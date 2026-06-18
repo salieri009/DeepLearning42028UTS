@@ -1,5 +1,6 @@
 package com.crowdnav.api.service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
@@ -21,9 +22,12 @@ public class SettingsService {
 
 	private static final int SETTINGS_ID = 1;
 	private static final Set<String> VALID_MODELS = Set.of("yolov8-precise", "yolov8-nano");
+	private static final Duration SETTINGS_CACHE_TTL = Duration.ofSeconds(5);
 
 	private final AppSettingsRepository settingsRepository;
 	private final ObjectMapper objectMapper;
+	private volatile SensorSettingsRequest cachedSettings;
+	private volatile Instant cachedAt;
 
 	public SettingsService(AppSettingsRepository settingsRepository, ObjectMapper objectMapper) {
 		this.settingsRepository = settingsRepository;
@@ -31,7 +35,15 @@ public class SettingsService {
 	}
 
 	public SensorSettingsRequest getSettings() {
-		return readSettings(requireRow());
+		SensorSettingsRequest hit = cachedSettings;
+		Instant at = cachedAt;
+		if (hit != null && at != null && at.plus(SETTINGS_CACHE_TTL).isAfter(Instant.now())) {
+			return hit;
+		}
+		SensorSettingsRequest fresh = readSettings(requireRow());
+		cachedSettings = fresh;
+		cachedAt = Instant.now();
+		return fresh;
 	}
 
 	@Transactional
@@ -41,7 +53,13 @@ public class SettingsService {
 		AppSettings row = requireRow();
 		row.setPayload(writePayload(normalized));
 		row.setUpdatedAt(Instant.now());
+		invalidateCache();
 		return readSettings(row);
+	}
+
+	private void invalidateCache() {
+		cachedSettings = null;
+		cachedAt = null;
 	}
 
 	/** PRD §9: audio alerts out of scope — forced off. Other fields persist as submitted. */

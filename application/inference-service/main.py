@@ -110,7 +110,9 @@ def infer(payload: InferRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="frame_base64 is required")
 
     if payload.model == "custom-onnx":
-        raise HTTPException(status_code=400, detail="custom-onnx inference is not supported")
+        raise HTTPException(
+            status_code=400, detail="custom-onnx inference is not supported"
+        )
 
     # 1. Decode base64 → numpy BGR image
     try:
@@ -123,7 +125,9 @@ def infer(payload: InferRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
 
     # 2. YOLO inference (class 0 = person)
-    conf_thresh = payload.conf_thresh if payload.conf_thresh is not None else CONF_THRESH
+    conf_thresh = (
+        payload.conf_thresh if payload.conf_thresh is not None else CONF_THRESH
+    )
     try:
         model = _load_model(payload.model)
         results = model.predict(img, conf=conf_thresh, classes=[0], verbose=False)

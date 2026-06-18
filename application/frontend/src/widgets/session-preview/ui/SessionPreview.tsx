@@ -83,7 +83,8 @@ const SegmentBadge = styled.span`
   position: absolute;
   bottom: ${({ theme }) => theme.spacing[2]};
   left: ${({ theme }) => theme.spacing[2]};
-  padding: 2px ${({ theme }) => theme.spacing[2]};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.color.danger};
   color: ${({ theme }) => theme.color.textInverse};
@@ -175,6 +176,10 @@ const EmptyState = styled.div`
   text-align: center;
   color: ${({ theme }) => theme.color.textSecondary};
   font-family: ${({ theme }) => theme.typography.family.mono};
+`;
+
+const CompactEmpty = styled(EmptyState)`
+  padding: ${({ theme }) => theme.spacing[3]};
 `;
 
 const FrameTrail = styled.div`
@@ -322,7 +327,7 @@ export function SessionPreview({
         <FrameTrail>
           <StatLabel>Frame Trail ({frames.length})</StatLabel>
           {frames.length === 0 ? (
-            <EmptyState style={{ padding: "12px" }}>No persisted frames yet.</EmptyState>
+            <CompactEmpty>No persisted frames yet.</CompactEmpty>
           ) : (
             <FrameList>
               {frames.map((frame) => (

@@ -30,6 +30,7 @@ const Bar = styled(GlassPanel)`
   padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
   border-radius: ${({ theme }) => theme.radius.full};
   box-shadow: ${({ theme }) => theme.shadow.glow};
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   pointer-events: auto;
   max-width: 100%;
   overflow-x: auto;
@@ -41,7 +42,7 @@ const Bar = styled(GlassPanel)`
 
 const Divider = styled.span`
   width: 1px;
-  height: ${({ theme }) => theme.spacing[6]};
+  height: ${({ theme }) => theme.layout.controlBarHeight};
   margin: 0 ${({ theme }) => theme.spacing[1]};
   background: ${({ theme }) => theme.color.glass.border};
   flex-shrink: 0;

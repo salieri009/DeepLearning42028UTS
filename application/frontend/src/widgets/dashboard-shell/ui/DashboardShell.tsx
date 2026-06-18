@@ -7,7 +7,7 @@ const Shell = styled.div`
   min-height: 100vh;
   overflow: hidden;
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     padding-bottom: calc(${({ theme }) => theme.spacing[7]} * 2 + env(safe-area-inset-bottom, 0px));
   }
 `;

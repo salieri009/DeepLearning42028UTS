@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.crowdnav.api.config.FrameUploadProperties;
 import com.crowdnav.api.dto.AnalyzeFrameRequest;
 import com.crowdnav.api.dto.AnalyzeFrameResponse;
 import com.crowdnav.api.service.AnalyzeFrameService;
@@ -25,10 +26,15 @@ public class AnalyzeFrameController {
 
 	private final AnalyzeFrameService analyzeFrameService;
 	private final SessionService sessionService;
+	private final FrameUploadProperties uploadLimits;
 
-	public AnalyzeFrameController(AnalyzeFrameService analyzeFrameService, SessionService sessionService) {
+	public AnalyzeFrameController(
+			AnalyzeFrameService analyzeFrameService,
+			SessionService sessionService,
+			FrameUploadProperties uploadLimits) {
 		this.analyzeFrameService = analyzeFrameService;
 		this.sessionService = sessionService;
+		this.uploadLimits = uploadLimits;
 	}
 
 	/**
@@ -39,6 +45,7 @@ public class AnalyzeFrameController {
 		if (request == null || request.frameBase64() == null || request.frameBase64().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "frame_base64 is required");
 		}
+		validateBase64Payload(request.frameBase64());
 		try {
 			Base64.getDecoder().decode(request.frameBase64());
 		} catch (IllegalArgumentException e) {
@@ -60,6 +67,9 @@ public class AnalyzeFrameController {
 			@RequestParam(value = "session_id", required = false) Long sessionId) {
 		String frameBase64 = null;
 		if (image != null && !image.isEmpty()) {
+			if (image.getSize() > uploadLimits.maxFrameBytes()) {
+				throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded image exceeds maximum size");
+			}
 			try {
 				frameBase64 = Base64.getEncoder().encodeToString(image.getBytes());
 			} catch (IOException e) {
@@ -70,6 +80,12 @@ public class AnalyzeFrameController {
 			sessionService.requireSessionOpen(sessionId);
 		}
 		return analyzeFrameService.analyzeFrame(frameBase64, sessionId);
+	}
+
+	private void validateBase64Payload(String frameBase64) {
+		if (frameBase64.length() > uploadLimits.maxBase64Chars()) {
+			throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "frame_base64 exceeds maximum size");
+		}
 	}
 }
 

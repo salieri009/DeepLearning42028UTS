@@ -64,12 +64,28 @@ class AnalyzeFrameControllerTest {
     }
 
     @Test
+    void analyzeFrame_json_oversizedBase64_returns413() throws Exception {
+        String oversized = "A".repeat(89);
+        mockMvc.perform(post("/api/v1/analyze-frame")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"frame_base64\": \"" + oversized + "\"}"))
+                .andExpect(status().isPayloadTooLarge());
+    }
+
+    @Test
     void analyzeFrame_multipart_returnsSameMock() throws Exception {
         var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[] { 0, 0 });
         mockMvc.perform(multipart("/api/v1/analyze-frame").file(file))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.crowd_density").value("MEDIUM"))
                 .andExpect(jsonPath("$.recommendation").value("CAUTION"));
+    }
+
+    @Test
+    void analyzeFrame_multipart_oversizedImage_returns413() throws Exception {
+        var file = new MockMultipartFile("image", "frame.jpg", "image/jpeg", new byte[65]);
+        mockMvc.perform(multipart("/api/v1/analyze-frame").file(file))
+                .andExpect(status().isPayloadTooLarge());
     }
 
     @Test

@@ -16,7 +16,7 @@ type LiveMapStageProps = {
 
 const Wrapper = styled(GlassPanel)`
   position: relative;
-  height: 520px;
+  height: ${({ theme }) => theme.layout.analyticsPanelHeight};
   overflow: hidden;
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
@@ -30,7 +30,7 @@ const Legend = styled.div`
   border-radius: ${({ theme }) => theme.radius.lg};
   background: ${({ theme }) => theme.color.glass.scrim};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
 `;
 
 const LegendTitle = styled.h3`
@@ -55,7 +55,8 @@ const Attribution = styled.div`
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
   background: ${({ theme }) => theme.color.glass.scrim};
-  padding: 2px 6px;
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
@@ -74,17 +75,23 @@ const pulse = keyframes`
 `;
 
 const MarkerDot = styled.div<{ $color: string; $kind: MapMarker["kind"] }>`
-  width: ${({ $kind }) => ($kind === "user" ? "24px" : "20px")};
-  height: ${({ $kind }) => ($kind === "user" ? "24px" : "20px")};
+  width: ${({ theme, $kind }) =>
+    $kind === "user" ? theme.layout.mapMarkerUser : theme.layout.mapMarkerZone};
+  height: ${({ theme, $kind }) =>
+    $kind === "user" ? theme.layout.mapMarkerUser : theme.layout.mapMarkerZone};
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  border: 2px solid ${({ theme }) => theme.color.textInverse};
-  box-shadow: 0 0 12px ${({ $color }) => $color};
+  border: ${({ theme }) => theme.spacing[1]} solid ${({ theme }) => theme.color.textInverse};
+  box-shadow: 0 0 ${({ theme }) => theme.spacing[3]} ${({ $color }) => $color};
 
   ${({ $kind }) =>
     $kind === "user" &&
     css`
       animation: ${pulse} 2s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     `}
 `;
 
@@ -120,6 +127,15 @@ export function LiveMapStage({ center, zoom, markers }: LiveMapStageProps) {
     mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 800 });
   }, [lng, lat, zoom]);
 
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.on("styleimagemissing", (event) => {
+      const size = 1;
+      map.addImage(event.id, { width: size, height: size, data: new Uint8Array(size * size * 4) });
+    });
+  }, []);
+
   return (
     <Wrapper tabIndex={-1} aria-label="Live risk map with GPS and zone markers">
       <Legend>
@@ -141,6 +157,7 @@ export function LiveMapStage({ center, zoom, markers }: LiveMapStageProps) {
         style={{ width: "100%", height: "100%" }}
         mapStyle={OPENFREEMAP_STYLE}
         attributionControl={false}
+        onLoad={handleMapLoad}
       >
         {markers.map((marker) => (
           <Marker key={marker.id} longitude={marker.lng} latitude={marker.lat} anchor="center">

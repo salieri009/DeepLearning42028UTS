@@ -39,7 +39,7 @@ export function useSessionPreview(
         }
       } catch (err) {
         if (controller.signal.aborted) return;
-        reportError(err);
+        reportError("Load session preview error", err);
         setFrames([]);
         setError("Failed to load session trail.");
       } finally {

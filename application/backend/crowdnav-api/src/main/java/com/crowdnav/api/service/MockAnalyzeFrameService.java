@@ -3,6 +3,7 @@ package com.crowdnav.api.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,8 @@ import com.crowdnav.api.dto.settings.SensorSettingsRequest;
 import com.crowdnav.api.policy.CrowdNavPolicy;
 import com.crowdnav.api.policy.CrowdNavPolicy.MockPerson;
 
-@Service
+@Service("coreAnalyzeFrameService")
+@Qualifier("coreAnalyzeFrameService")
 @ConditionalOnProperty(name = "app.inference.mode", havingValue = "mock")
 public class MockAnalyzeFrameService implements AnalyzeFrameService {
 
@@ -32,6 +34,10 @@ public class MockAnalyzeFrameService implements AnalyzeFrameService {
 	public AnalyzeFrameResponse analyzeFrame(String frameBase64) {
 		SensorSettingsRequest settings = settingsService.getSettings();
 		double minConfidence = settings.confidence() / 100.0;
+
+		List<PersonDetection> raw = List.of(
+				new PersonDetection("person", 0.92, new BBox(0.52, 0.56, 0.14, 0.34), "WARNING"),
+				new PersonDetection("person", 0.88, new BBox(0.28, 0.49, 0.09, 0.29), "SAFE"));
 
 		List<PersonDetection> persons = new ArrayList<>();
 		for (MockPerson mock : CrowdNavPolicy.mockPersons()) {

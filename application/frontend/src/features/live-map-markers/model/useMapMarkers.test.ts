@@ -38,7 +38,7 @@ describe("useMapMarkers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     listSessionsMock.mockResolvedValue({
-      items: [{ id: 9, started_at: new Date().toISOString(), ended_at: null, client_label: "x", source_type: "WEBCAM" }],
+      items: [detail(9, "WARNING")],
       total: 1,
     } satisfies SessionListResponse);
     getSessionMock.mockResolvedValue(detail(9, "WARNING"));

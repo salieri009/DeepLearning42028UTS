@@ -9,7 +9,7 @@ import { SettingsActions } from "@/widgets/settings-actions";
 import { SideNav } from "@/widgets/side-nav";
 import { SystemNotificationsPanel } from "@/widgets/system-notifications-panel";
 import { TopNav } from "@/widgets/top-nav";
-import { ChromeText } from "@/shared/ui";
+import { PageChromeTitle } from "@/shared/ui";
 
 const Content = styled.div`
   display: flex;
@@ -44,9 +44,7 @@ export function SettingsPage() {
       bottomNav={<BottomNav />}
     >
       <Content>
-        <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
-          Sensor Settings
-        </ChromeText>
+        <PageChromeTitle as="h1">Sensor Settings</PageChromeTitle>
 
         {settings.loading ? (
           <Notice role="status" aria-live="polite">
@@ -69,7 +67,9 @@ export function SettingsPage() {
           <DetectionModelPanel model={settings.draft.model} onChange={settings.setModel} />
           <AlertThresholdsPanel
             confidence={settings.draft.confidence}
+            densityLimit={settings.draft.densityLimit}
             onConfidenceChange={settings.setConfidence}
+            onDensityLimitChange={settings.setDensityLimit}
           />
         </TwoCol>
 

@@ -10,7 +10,7 @@ import {
   getRiskBadgeVariant,
 } from "@/entities/crowd-stats";
 import type { AlertEntry } from "@/features/alert-history";
-import { Button, ChromeText, Icon, Label, Text } from "@/shared/ui";
+import { Button, ChromeText, Icon, Label, LiveStatusDot, Text } from "@/shared/ui";
 
 type StatsSidebarProps = {
   data: AnalyzeFrameResponse | null;
@@ -32,11 +32,11 @@ const Aside = styled.aside`
   flex-direction: column;
   padding: ${({ theme }) => theme.spacing[4]};
   background: ${({ theme }) => theme.color.glass.scrim};
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   border-left: 1px solid ${({ theme }) => theme.color.glass.border};
   box-shadow: ${({ theme }) => theme.shadow.glow};
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     display: none;
   }
 `;
@@ -52,28 +52,6 @@ const Subtitle = styled.div`
   margin-top: ${({ theme }) => theme.spacing[1]};
 `;
 
-const Dot = styled.span`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.color.primary};
-  animation: pulse 2s infinite;
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`;
-
 const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -83,7 +61,7 @@ const ScrollArea = styled.div`
   gap: ${({ theme }) => theme.spacing[4]};
 
   &::-webkit-scrollbar {
-    width: 4px;
+    width: ${({ theme }) => theme.spacing[1]};
   }
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.color.scrollbarThumb};
@@ -127,7 +105,8 @@ const AlertItem = styled.div`
 `;
 
 const AlertBar = styled.div<{ $risk: string }>`
-  width: 4px;
+  width: ${({ theme }) => theme.spacing[1]};
+  flex-shrink: 0;
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme, $risk }) =>
     $risk === "DANGER"
@@ -148,6 +127,8 @@ const EmptyText = styled.p`
 
 const SectionTitle = styled(ChromeText)`
   font-size: ${({ theme }) => theme.typography.size[4]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
+  text-transform: uppercase;
 `;
 
 export function StatsSidebar({
@@ -168,7 +149,7 @@ export function StatsSidebar({
       <Header>
         <SectionTitle as="h2">Crowd Tracking Statistics</SectionTitle>
         <Subtitle>
-          <Dot />
+          <LiveStatusDot $tone="primary" aria-hidden="true" />
           <Label $tone="secondary">Precision Mode Active</Label>
         </Subtitle>
       </Header>
@@ -187,6 +168,7 @@ export function StatsSidebar({
               value={density}
               badge={density !== "—" ? density : undefined}
               badgeVariant={getDensityBadgeVariant(data.crowd_density)}
+              valueTone={getDensityBadgeVariant(data.crowd_density)}
             />
             <StatCard
               icon="distance"
@@ -194,6 +176,7 @@ export function StatsSidebar({
               value={String(risk)}
               badge={risk !== "—" ? String(risk) : undefined}
               badgeVariant={getRiskBadgeVariant(data.max_proximity_risk)}
+              valueTone={getRiskBadgeVariant(data.max_proximity_risk)}
               accent={data.max_proximity_risk === "WARNING" || data.max_proximity_risk === "DANGER"}
             />
             <StatCard
@@ -210,6 +193,7 @@ export function StatsSidebar({
               value={recommendation}
               badge={recommendation !== "—" ? recommendation : undefined}
               badgeVariant={getRiskBadgeVariant(data.max_proximity_risk)}
+              valueTone={getRiskBadgeVariant(data.max_proximity_risk)}
             />
           </>
         ) : (

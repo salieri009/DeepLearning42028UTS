@@ -40,6 +40,7 @@ export const theme = {
     },
   },
   gradient: tokens.gradient,
+  effects: tokens.effects,
   spacing: tokens.spacing,
   radius: tokens.radius,
   shadow: tokens.shadow,

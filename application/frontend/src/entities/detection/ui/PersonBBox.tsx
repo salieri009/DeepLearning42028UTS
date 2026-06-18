@@ -11,7 +11,7 @@ const Box = styled.div<{ $color: string }>`
   position: absolute;
   box-sizing: border-box;
   border: 2px solid ${({ $color }) => $color};
-  box-shadow: 0 0 12px ${({ $color }) => $color};
+  box-shadow: 0 0 ${({ theme }) => theme.spacing[3]} ${({ $color }) => $color};
   border-radius: ${({ theme }) => theme.radius.sm};
   transition: box-shadow 120ms ease;
 
@@ -22,7 +22,7 @@ const Box = styled.div<{ $color: string }>`
 
 const LabelChip = styled.span<{ $color: string; $risk: string }>`
   position: absolute;
-  top: -28px;
+  top: calc(-1 * (${({ theme }) => theme.spacing[4]} + ${({ theme }) => theme.spacing[1]}));
   left: 0;
   display: inline-flex;
   align-items: center;
@@ -33,14 +33,15 @@ const LabelChip = styled.span<{ $color: string; $risk: string }>`
   color: ${({ theme, $risk }) =>
     $risk === "WARNING" ? theme.color.onWarning : theme.color.textInverse};
   background: ${({ $color }) => $color};
-  padding: 2px ${({ theme }) => theme.spacing[2]};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
   white-space: nowrap;
 
   &::before {
     content: "";
     position: absolute;
-    inset: -3px;
+    inset: calc(-1 * ${({ theme }) => theme.spacing[1]});
     border-radius: inherit;
     background: ${({ theme }) => theme.color.glass.scrim};
     z-index: -1;

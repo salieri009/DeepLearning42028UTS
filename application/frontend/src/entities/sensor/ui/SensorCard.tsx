@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import type { SensorSource } from "../model/types";
-import { Icon } from "@/shared/ui";
+import { Icon, LiveStatusDot } from "@/shared/ui";
 
 type SensorCardProps = {
   source: SensorSource;
@@ -54,8 +54,9 @@ const StatusBadge = styled.span`
   left: ${({ theme }) => theme.spacing[2]};
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px ${({ theme }) => theme.spacing[2]};
+  gap: ${({ theme }) => theme.spacing[1]};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.color.success};
   color: ${({ theme }) => theme.color.onSuccess};
@@ -63,22 +64,8 @@ const StatusBadge = styled.span`
   font-weight: ${({ theme }) => theme.typography.weight.bold};
 `;
 
-const Pulse = styled.span`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+const StatusPulse = styled(LiveStatusDot)`
   background: ${({ theme }) => theme.color.textInverse};
-  animation: pulse 2s ease-in-out infinite;
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.3;
-    }
-  }
 `;
 
 const FeedLabel = styled.span`
@@ -89,7 +76,8 @@ const FeedLabel = styled.span`
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textOnVideo};
   background: ${({ theme }) => theme.color.tint.labelBackdrop};
-  padding: 2px ${({ theme }) => theme.spacing[2]};
+  padding: 0 ${({ theme }) => theme.spacing[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
@@ -128,6 +116,12 @@ const SettingsButton = styled.button`
   &:hover:not(:disabled) {
     color: ${({ theme }) => theme.color.primary};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+    border-radius: ${({ theme }) => theme.radius.sm};
+  }
 `;
 
 export function SensorCard({ source, onOpenSettings }: SensorCardProps) {
@@ -137,7 +131,7 @@ export function SensorCard({ source, onOpenSettings }: SensorCardProps) {
         <FeedPlaceholder />
         {source.connected && (
           <StatusBadge>
-            <Pulse />
+            <StatusPulse $live aria-hidden="true" />
             CONNECTED
           </StatusBadge>
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SessionDetailResponse } from "@/entities/session";
+import type { DetectionItem, FrameItem, SessionDetailResponse } from "@/entities/session";
 import { buildSessionExportBundle } from "./exportSessionJson";
 
 const session: SessionDetailResponse = {
@@ -15,7 +15,7 @@ const session: SessionDetailResponse = {
 
 describe("buildSessionExportBundle", () => {
   it("includes session, frames, and detections for archive export", () => {
-    const frames = [
+    const frames: FrameItem[] = [
       {
         id: 1,
         sequence_no: 1,
@@ -27,7 +27,7 @@ describe("buildSessionExportBundle", () => {
         person_count: 1,
       },
     ];
-    const detections = [
+    const detections: DetectionItem[] = [
       {
         frame_id: 1,
         sequence_no: 1,

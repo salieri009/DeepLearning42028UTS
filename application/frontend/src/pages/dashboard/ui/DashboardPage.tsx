@@ -6,6 +6,7 @@ import { exportLiveSession } from "@/features/session-export";
 import { buildHtmlReport, downloadHtmlReport } from "@/features/report-generation";
 import { useSessionRecording } from "@/features/session-recording";
 import { useRiskAlerts } from "@/features/risk-alerts";
+import { loadSensorSettings } from "@/shared/lib/sensorSettingsStorage";
 import { ControlBar } from "@/widgets/control-bar";
 import { DashboardShell } from "@/widgets/dashboard-shell";
 import { BottomNav } from "@/widgets/bottom-nav";
@@ -20,6 +21,7 @@ export function DashboardPage() {
   const { alerts, pushFromRisk, reset: resetHistory, formatAlertMeta } = useAlertHistoryContext();
   const { recording, toggleRecording, stopRecording } = useSessionRecording();
   const [exporting, setExporting] = useState(false);
+  const [visualOverlays, setVisualOverlays] = useState(() => loadSensorSettings().visualOverlays);
 
   const handleAnalyzed = useCallback(
     (response: AnalyzeFrameResponse) => {
@@ -47,6 +49,7 @@ export function DashboardPage() {
   const exportSessionId = sessionId ?? lastSessionId;
 
   const handleStart = async () => {
+    setVisualOverlays(loadSensorSettings().visualOverlays);
     resetAlerts();
     resetHistory();
     await start();
@@ -100,7 +103,7 @@ export function DashboardPage() {
   return (
     <DashboardShell
       topNav={<TopNav running={running} />}
-      videoStage={<VideoStage running={running} data={data} videoRef={videoRef} />}
+      videoStage={<VideoStage running={running} data={data} videoRef={videoRef} showOverlays={visualOverlays} />}
       mobileStatsBar={<MobileStatsBar data={data} />}
       statsSidebar={
         <StatsSidebar

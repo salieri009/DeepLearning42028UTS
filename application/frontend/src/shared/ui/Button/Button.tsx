@@ -77,7 +77,7 @@ const variantStyles = {
   `,
   glass: css`
     background: ${({ theme }) => theme.color.glass.fill};
-    backdrop-filter: blur(12px) saturate(120%);
+    backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
     border-color: ${({ theme }) => theme.color.glass.border};
     color: ${({ theme }) => theme.color.textPrimary};
     box-shadow: ${({ theme }) => theme.shadow.glow};
@@ -105,6 +105,10 @@ export const Button = styled.button<ButtonProps>`
   font-weight: ${({ theme }) => theme.typography.weight.medium};
   line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease, filter 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   ${({ $size = "md" }) => sizeStyles[$size]}
   ${({ $variant = "primary" }) => variantStyles[$variant]}

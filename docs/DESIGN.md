@@ -1,11 +1,16 @@
 ---
-last_updated: 2026-06-17
-status: active — §9 dashboard UI design added
+last_updated: 2026-06-19
+status: active — aligned with REQUIREMENTS.md (2026-06-18) and v2.6 Docker stack
 related_code:
   - train/src/
   - application/
   - infra/
-  - PROJECTS/CrowdNav/
+related:
+  - docs/REQUIREMENTS.md
+  - docs/PRD.md
+  - docs/API_SPEC.md
+  - docs/BACKEND_ERD.md
+  - docs/runbooks/user_scenarios.md
 related_diagram:
   - docs/architecture/System_Architecture_Documentation.md
   - docs/architecture/data_pipeline_diagram.md
@@ -14,237 +19,376 @@ related_skill:
   - docs/skills/crowdnav-design/SKILL.md
 ---
 
-# CrowdNav 디자인 결정 문서 (DESIGN.md)
+# CrowdNav Design Document (DESIGN.md)
 
-> ⚠️ **이 파일은 placeholder 임.** 각 섹션 안의 `<TBD: ...>` 와 `<DECIDE: ...>` 부분을
-> 사용자가 채워야 함. 자동 생성된 텍스트는 출발점 일 뿐, 실제 디자인 결정은
-> 사람이 내려야 한다는 점 명시.
->
-> 작업 가이드는 [`docs/skills/crowdnav-design/SKILL.md`](skills/crowdnav-design/SKILL.md) 참조.
-
----
-
-## 0. 한 줄 요약
-
-CrowdNav 프로젝트 (UTS 42028 DL A3) 의 **현재 구조 / 레거시 / 미해결 디자인 이슈** 를
-한 곳에 모아두는 살아있는 문서. ADR 결정이 확정될 때마다 해당 ADR 로 링크 옮기고
-이 문서엔 결정 요약만 남김.
+> **Role:** Living design document for CrowdNav (UTS 42028 DL Assignment 3). Captures
+> architecture, component responsibilities, runtime flows, and open design debt. Normative
+> requirements live in [`REQUIREMENTS.md`](REQUIREMENTS.md); API contracts in [`API_SPEC.md`](API_SPEC.md).
+> Immutable product prose in [`PRD.md`](PRD.md).
 
 ---
 
-## 1. 시스템 컨텍스트
+## Overview
 
-### 1.1 무엇을 만드는가
-<TBD: PRD 기반 한 문단 요약 — 누가 / 어떤 환경에서 / 무엇을 / 어떤 메트릭으로 성공 판단>
+### Design goal and scope
 
-기존 `docs/PRD.md` 와 `docs/TechSpec.md` 에서 발췌해 채울 것.
+CrowdNav is a **3-tier computer-vision web application** that helps travellers with mobility
+disabilities navigate crowded transport hubs. A React client captures live webcam frames at **2 FPS**
+(500 ms interval), a Spring Boot API forwards them to a FastAPI/YOLO inference service, and the UI
+renders colour-coded bounding boxes plus text guidance (`PROCEED` / `CAUTION` / `STOP`).
 
-### 1.2 외부 의존성
-- **데이터셋**: JRDB → YOLO 변환 (`train/src/data/jrdb_to_yolo.py`)
-- **모델**: Ultralytics YOLOv8 (`yolov8n.pt` / `yolov8m.pt`)
-- **실험 추적**: ClearML (`train/src/utils/clearml_setup.py`)
-- **배포 후보**: <DECIDE: Docker 단독 vs SageMaker — 1.x ADR 작성 필요>
-- **API 런타임**: Spring Boot (`application/backend/crowdnav-api/`)
-- **클라이언트**: React + Vite (`application/frontend/`)
-- **추론 서비스**: Python FastAPI? 미확정 (`application/inference-service/main.py`)
+**In scope (shipped):** person detection (YOLOv8m on JRDB), crowd density (LOW/MEDIUM/HIGH),
+proximity risk (SAFE/WARNING/DANGER), dashboard monitoring UX (FR-UI-1…12), session persistence
+(FR-11/12/16), analytics/settings/live-map/archive extension pages (FR-14…17), 4-service Docker
+deployment (FR-10).
+
+**Out of scope (PRD §9 / REQUIREMENTS §4):** audio/haptic alerts, WCAG audit, turn-by-turn routing,
+pause/resume monitoring, 3-class detection in the shipped `best.pt` (FR-13 is a research extension).
+
+### Success criteria (design-relevant)
+
+| Metric | Target | Design implication |
+|--------|--------|-------------------|
+| Latency (NFR-1) | < 500 ms / frame | Async persistence must not block response (NFR-8) |
+| Throughput (NFR-2) | ≥ 2 FPS | Frontend interval fixed at 500 ms |
+| mAP@0.5 person (NFR-3) | val > 0.40, test > 0.50 | Person-only `classes=[0]` in inference |
+| Privacy (NFR-9) | No raw frames stored | DB stores bbox metadata only |
+
+### Traceability
+
+| Area | Primary requirements | User scenarios |
+|------|---------------------|----------------|
+| Dashboard / inference | FR-1…10, FR-UI-1…12, NFR-1…3, NFR-7, NFR-10 | S1 |
+| Persistence / archive | FR-11, FR-12, FR-16, NFR-8, NFR-9 | S2 |
+| Live map | FR-17 | S3 |
+| Analytics | FR-14 | S4 |
+| Settings | FR-15 | S5 |
 
 ---
 
-## 2. 현재 아키텍처 스냅샷 (as-of 2026-05-05)
+## Architecture Design
 
-### 2.1 4-layer 스캐폴드 (System_Architecture_Documentation.md 참조)
+### System architecture diagram
+
+```mermaid
+graph TB
+  subgraph client [Browser]
+    FE["React + Vite (FSD)"]
+  end
+
+  subgraph docker [Docker Compose v2.6]
+  subgraph fe_svc [frontend :80]
+    Nginx["Nginx static + /v1 proxy"]
+  end
+  subgraph be_svc [backend :8080]
+    API["Spring Boot crowdnav-api"]
+    Persist["PersistingAnalyzeFrameService"]
+  end
+  subgraph inf_svc [inference :9000]
+    FastAPI["FastAPI main.py"]
+    YOLO["YOLOv8 best.pt person-only"]
+  end
+  subgraph db_svc [db :5432]
+    PG[(PostgreSQL)]
+  end
+  end
+
+  subgraph train_offline [Offline — not in runtime stack]
+    Train["train/ YOLO pipeline"]
+    SM["SageMaker training"]
+  end
+
+  FE --> Nginx
+  Nginx --> API
+  API -->|POST /internal/infer HTTP/1.1| FastAPI
+  FastAPI --> YOLO
+  API --> Persist
+  Persist --> PG
+  SM -->|best.pt handoff| YOLO
+  Train --> SM
 ```
-Domain → Preprocessing → Inference → MLOps
+
+**Deployment split (ADR-0003):** Docker packages the demo stack; SageMaker is **training-only**.
+Canonical compose: [`application/docker-compose.yml`](../application/docker-compose.yml).
+
+### Data flow diagram
+
+```mermaid
+flowchart LR
+  subgraph capture [Capture]
+    Cam["getUserMedia"]
+    Canvas["canvas → base64 JPEG"]
+  end
+
+  subgraph api_path [API path]
+    AFR["POST /api/v1/analyze-frame"]
+    Settings["GET /settings → conf_thresh, density_limit"]
+    Infer["POST /internal/infer"]
+    Policy["crowd_density + proximity + recommendation"]
+  end
+
+  subgraph persist_path [Opt-in persistence]
+    Async["FramePersistenceService @Async"]
+    DB[(frame, detection rows)]
+  end
+
+  subgraph render [UI render]
+    Overlay["VideoStage + PersonBBox"]
+    Stats["StatsSidebar"]
+  end
+
+  Cam --> Canvas --> AFR
+  Settings --> Infer
+  AFR --> Infer --> Policy --> AFR
+  AFR --> Overlay
+  AFR --> Stats
+  AFR -.->|session_id present| Async --> DB
 ```
 
-자세한 BDD 다이어그램은 [`docs/architecture/System_Architecture_Documentation.md`](architecture/System_Architecture_Documentation.md) 의 Mermaid `classDiagram` 사용.
+### Runtime modes
 
-### 2.2 컴포넌트 — 한 눈에 (2026-05-05 병렬 분석 결과 반영)
+| `app.inference.mode` | When | Behaviour |
+|---------------------|------|-----------|
+| `remote` | **Default** — Docker, local dev, production demo | `RemoteAnalyzeFrameService` → FastAPI |
+| `mock` | CI / `@SpringBootTest` only (`application.properties`) | `MockAnalyzeFrameService` — static JSON; inference not called |
 
-| Layer | 모듈 / 패스 | 진입점 | 외부 의존성 | 비고 |
-|---|---|---|---|---|
-| Train | `train/src/training/train_pipeline.py` | `scripts/train_yolo.py` | ultralytics, clearml | `sys.path` 핵 잔존 |
-| Train | `train/src/data/` (preprocessing, pseudo_label, split) | `scripts/automate_preprocessing.py`, `jrdb_train_to_yolo.py`, `run_auto_labeling.py` | ultralytics, opencv, torch | `prepare/pseudo_label.py` 가 `pseudo_label_yolov8.main()` 위임 (중복) |
-| Train | `train/src/inference/` (alert_dispatcher, collision_avoidance, depth_estimator) | (라이브러리만) | numpy | **API 바인딩 없음** — train 내부에서만 사용 |
-| Train | `train/scripts/self_train_loop.py` | CLI | ultralytics | 멀티 사이클 self-training |
-| Backend | `application/backend/crowdnav-api/` (Spring Boot 3.5.6) | `@SpringBootApplication`, Gradle | spring-boot-starter-web/validation | 엔드포인트 1개: `POST /api/v1/analyze-frame` |
-| Backend | `RemoteAnalyzeFrameService` | (Spring 빈) | RestClient (HTTP/1.1) | **구현 완료** — FastAPI inference 호출, `remote` 기본 모드 |
-| Frontend | `application/frontend/src/App.tsx` | Vite 6 | React 19.2.5, axios 1.16, styled-components 6.4 | 컴포넌트 3개 (VideoFeed, Controls, StatPanel), 모두 stateless |
-| Inference svc | `application/inference-service/main.py` | FastAPI 0.115 | uvicorn + ultralytics | **구현 완료** — `/internal/infer` 가 YOLOv8 person detection + proximity heuristics 수행 |
-| Infra | `infra/docker/` | `include` → [`application/docker-compose.yml`](../../application/docker-compose.yml) | docker compose | Thin wrapper; `MODEL_DIR` override for SageMaker weights |
-| Infra | `infra/sagemaker/sagemaker_launch.py` → `sagemaker_train.py` | boto3 + SageMaker SDK + `TrainPipeline` | ultralytics, `crowdnav-train` | 학습 전용. repo root bundle + `.sagemakerignore`. ml.g5.xlarge 디폴트 |
-| Legacy | `PROJECTS/CrowdNav/` | (잔존) | — | [LEGACY_CATALOG.md](architecture/LEGACY_CATALOG.md) 참조 |
+> **Design decision:** Mock mode is retained for tests (workspace rule: do not remove
+> `MockAnalyzeFrameService`). Production path is always `remote`.
 
-### 2.3 호출 흐름 (sequence) — 현재 mock 모드 기준
+### Component inventory (as-of 2026-06-19)
 
-> ⚠️ 현재 `app.inference.mode=mock` 으로 동작. inference-service 는 **호출되지 않음**. 아래는 *intended* 흐름이고, 실제 구현은 §4.1 ADR 결정 후 완성됨.
+| Layer | Module | Entry / controllers | Responsibility |
+|-------|--------|---------------------|----------------|
+| **Frontend** | `application/frontend/` | Vite 6, React 19, FSD | 5 routes: `/`, `/analytics`, `/live-map`, `/archive`, `/settings` |
+| **Backend** | `crowdnav-api` | `AnalyzeFrameController`, `SessionController`, `AnalyticsController`, `SettingsController` | Public API, persistence orchestration, settings |
+| **Backend services** | | `RemoteAnalyzeFrameService`, `MockAnalyzeFrameService`, `PersistingAnalyzeFrameService`, `FramePersistenceService`, `SessionService`, `AnalyticsService`, `SettingsService` | Inference routing, async DB writes, aggregates |
+| **Inference** | `inference-service/main.py` | `POST /internal/infer`, `GET /health` | YOLO predict, heuristics (`_crowd_density`, `_alert_state`, `_recommendation`) |
+| **DB** | Flyway `V1__init.sql`, `V2__app_settings.sql` | PostgreSQL 16 | Sessions, frames, detections, `app_settings` |
+| **Train** | `train/src/` | `scripts/train_yolo.py` | Offline JRDB → YOLO, collision_avoidance heuristics origin |
+| **Infra** | `infra/docker/`, `infra/sagemaker/` | Thin wrapper + SageMaker launch | MODEL_DIR override; training jobs |
+
+### Sequence — live monitoring (S1, remote mode)
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant FE as Frontend (React)
+    participant FE as Frontend
     participant API as Spring API
-    participant MOCK as MockAnalyzeFrameService
-    participant INF as FastAPI inference-service
+    participant INF as FastAPI
     participant YOLO as YOLO Runtime
+    participant DB as PostgreSQL
 
-    Note over User,FE: Controls.onStart 누름 → 500ms 간격 폴링 시작
-    User->>FE: 카메라 시작
-    FE->>FE: getUserMedia + canvas.toDataURL (base64)
+    User->>FE: Start Monitoring
+    FE->>API: POST /api/v1/sessions (WEBCAM)
+    API-->>FE: session_id
+    FE->>FE: getUserMedia + 500ms interval
 
     loop every 500ms
-        FE->>API: POST /api/v1/analyze-frame {frame: base64}
-        alt mode=remote (현재 기본값)
-            API->>INF: POST /internal/infer
-            INF->>YOLO: model.predict(frame)
-            YOLO-->>INF: detections
-            INF-->>API: persons[], crowd_density, proximity_risk
-        else mode=mock (테스트 전용)
-            API->>MOCK: analyzeFrame(frame)
-            MOCK-->>API: 정적 mock JSON
-        end
-        API-->>FE: AnalyzeFrameResponse
-        FE->>FE: VideoFeed overlay + StatPanel 갱신
+        FE->>API: POST /analyze-frame {frame_base64, session_id}
+        API->>API: requireSessionOpen(session_id)
+        API->>INF: POST /internal/infer {frame, conf_thresh, density_limit}
+        INF->>YOLO: model.predict(classes=[0])
+        YOLO-->>INF: boxes
+        INF-->>API: AnalyzeFrameResponse
+        API-->>FE: 200 + persons, density, risk, recommendation
+        API->>DB: async persist frame + detections
+        FE->>FE: VideoStage overlay + StatsSidebar
     end
+
+    User->>FE: Stop Monitoring
+    FE->>API: PATCH /sessions/{id} (close)
+    FE->>FE: stop tracks, clear interval, reset UI
 ```
 
 ---
 
-## 3. 레거시 카탈로그
+## Component Design
 
-### 3.1 카탈로그 위치
+### Frontend (Feature-Sliced Design)
 
-병렬 분석으로 식별된 잔존물 전체 목록은
-[`docs/architecture/LEGACY_CATALOG.md`](architecture/LEGACY_CATALOG.md) 에 분리.
-요약만 여기에 남김:
+| Layer | Key modules | Interfaces / contracts |
+|-------|-------------|------------------------|
+| `pages` | `DashboardPage`, `AnalyticsPage`, `LiveMapPage`, `ArchivePage`, `SettingsPage` | React Router routes |
+| `widgets` | `DashboardShell`, `VideoStage`, `StatsSidebar`, `ControlBar`, `TopNav`, `SideNav`, `AppShell` | Presentation; layout tokens from `shared/config/theme/tokens.ts` |
+| `features` | `useCrowdDetection`, `useRiskAlerts`, `session-recording`, `session-export`, `report-generation`, `analytics-data`, `live-map-markers`, `geolocation`, `sensor-settings`, `session-archive` | Call `shared/api/client.ts` → `/api/v1/*` |
+| `entities` | `detection/PersonBBox` | Renders bbox + risk label (NFR-10) |
+| `shared` | `api/client.ts`, `api/health.ts`, `customSourcesStorage.ts` | Axios; snake_case DTOs |
 
-- 모델 가중치 4종 (~193MB) — provenance 불명
-- `auto_labels_08/` 446K 라벨 파일 — 중복 검증 필요
-- `.env` 파일에 ClearML 5개 키 평문 노출 ⚠️
-- ~~`infra/train_skeleton.py`, `train_keras_skeleton.py`~~ — **삭제됨** (ADR-0009)
-- ~~`train/scripts/*.py` 의 `sys.path.insert` 핵~~ — **제거됨** (ADR-0010)
+**Dependencies:** Browser APIs (`getUserMedia`, `MediaRecorder`, `navigator.geolocation`), MapLibre/OpenFreeMap on `/live-map`.
 
-### 3.2 처리 정책 (3택, 결정 필요)
+### Backend (Spring Boot)
 
-<DECIDE: 항목별로 다를 수 있음 — LEGACY_CATALOG.md §5 우선순위 참고>
-- (A) **Freeze & Move** — `archive/PROJECTS_CrowdNav_2026Q1/` 로 이동
-- (B) **Hard Delete** — working tree 에서 제거
-- (C) **Keep as-is** — gitignored 로 로컬에만
+| Component | Responsibilities | Key dependencies |
+|-----------|------------------|------------------|
+| `AnalyzeFrameController` | JSON + multipart frame upload; validation (FR-6, FR-8) | `AnalyzeFrameService` bean |
+| `RemoteAnalyzeFrameService` | RestClient HTTP/1.1 to inference; forwards settings | `SettingsService`, inference base URL |
+| `MockAnalyzeFrameService` | Static response for CI | — |
+| `PersistingAnalyzeFrameService` | Decorator: infer then schedule async persist | `FramePersistenceService` |
+| `FramePersistenceService` | Insert frame + detection rows; skip closed sessions | JPA repositories |
+| `SessionService` | CRUD sessions; `requireSessionOpen` → 409 on closed | `AnalysisSessionRepository` |
+| `AnalyticsService` | Aggregate frames for `/analytics/summary` | SQL aggregates |
+| `SettingsService` | Single-row `app_settings`; validate PUT | `AppSettingsRepository` |
 
-→ 항목별 ADR: `ADR-0006`(weights), `ADR-0007`(dataset), `ADR-0008`(secrets), `ADR-0009`(keras), `ADR-0010`(import paths)
+### Inference service (FastAPI)
 
-### 3.3 잔존 import / hardcoded path 검사
+| Function | Responsibility | Requirement |
+|----------|----------------|-------------|
+| `model.predict` | Person detection, `classes=[0]` | FR-1 |
+| `_crowd_density` | n≤2 LOW, n≤5 MEDIUM, else HIGH; scaled by `density_limit` | FR-2, FR-15 |
+| `_alert_state` | bbox height thresholds 0.25 / 0.45 | FR-3 |
+| `_recommendation` | PROCEED / CAUTION / STOP from density + max risk | FR-5 |
+| `/health` | 200 when `best.pt` loaded | FR-9 |
 
-- `train/src/repo_paths.py` 가 path resolver — OK
-- `pip install -e ./train` 로 `from src.*` import (ADR-0010) — OK
-- `train/src/data/prepare/pseudo_label.py` 가 `pseudo_label_yolov8.main()` 그대로 위임 — backward-compat 목적, 정리 후보
-
----
-
-## 4. 미해결 디자인 결정 (Open Questions)
-
-각 항목은 ADR 로 뽑아낼 후보. 결정 시 ADR 파일로 옮기고 여기엔 `→ ADR-NNNN` 링크만 남김.
-
-### 4.1 Inference 런타임 형태
-<DECIDE>: `application/inference-service/main.py` 가 (a) FastAPI 서버 (b) AWS Lambda 핸들러 (c) Spring Boot 안의 sidecar 중 무엇이 될지.
-- 영향: latency 목표, 배포 토폴로지, GPU 요구
-- 후보 ADR: `ADR-0002-inference-runtime-shape.md`
-
-### 4.2 배포 경로 — Docker vs SageMaker
-<DECIDE>: 둘 다 살아있을지, 하나로 단일화할지.
-- 영향: CI 매트릭스, 비용, 학생 데모 가능성
-- 후보 ADR: `ADR-0003-deployment-path.md`
-
-### 4.3 ClearML — required vs optional
-현재 `CLEARML_OFFLINE_MODE=1` 으로도 돌게 되어있음. 보고 평가용 실행은 어느 모드로?
-- 후보 ADR: `ADR-0004-experiment-tracking-policy.md`
-
-### 4.4 Frontend ↔ Backend API 계약
-<DECIDE>: OpenAPI 스펙 단일 소스 (Spring → openapi.yaml 자동생성?), TS 타입 동기화 전략
-- 후보 ADR: `ADR-0005-api-contract-source.md`
-
-### 4.5 Self-training 루프 안정성
-`train/scripts/self_train_loop.py` — 어떤 트리거 / 어떤 정지 조건?
-이미 `docs/runbooks/self_training_runbook.md` + `self_training_policy.md` 존재.
-- <TBD: 정책과 코드의 정합성 검사 결과>
-
-### 4.6 Docker stack 의 역할 (W4 발견)
-~~현재 `infra/docker/Dockerfile` 의 entry 가 **Jupyter Lab**~~ → **해소됨 (ADR-0003, ADR-0011 흡수)**. Canonical stack: `application/docker-compose.yml`; `infra/docker/` 는 thin wrapper.
-
-### 4.7 yolov8n.pt 중복
-repo root 에 `yolov8n.pt` (6.5MB) 가 있고, `PROJECTS/CrowdNav/yolov8n.pt` (6.3MB) 도 존재. 중복일 가능성 큼.
-- 후보 ADR: `ADR-0006` 에 합쳐서 처리
+Logic origin: `train/src/inference/collision_avoidance.py`.
 
 ---
 
-## 5. 결정된 항목 (Decided)
+## Data Model
 
-확정된 ADR 들이 여기에 한 줄 요약 + 링크로 누적됨.
+Core persistence schema is documented in [`BACKEND_ERD.md`](BACKEND_ERD.md). Summary:
 
-| # | 결정 | 날짜 | ADR |
-|---|---|---|---|
-| 0002 | Backend = Spring Boot 단일. inference-service 는 Spring 의 내부 추론 어댑터로 Docker 안에 번들 | 2026-05-05 | [ADR-0002](decisions/ADR-0002-backend-runtime-spring.md) |
-| 0003 | Docker = FE+BE+inference webapp 패키징, SageMaker = YOLO 학습 전용. `best.pt` 만 핸드오프 | 2026-05-05 | [ADR-0003](decisions/ADR-0003-deployment-split-docker-sagemaker.md) |
-| 0008 | ClearML 키 평문 disk 보관 금지. `~/.clearml.conf` + CI secret 만 사용. `.env.example` 만 repo 에 | 2026-05-05 | [ADR-0008](decisions/ADR-0008-clearml-secret-hygiene.md) |
-| 0009 | Keras skeleton 4파일 (`infra/train_skeleton.py`, `infra/train_keras_skeleton.py`, `train/src/data/keras/*`) 완전 삭제 | 2026-05-05 | [ADR-0009](decisions/ADR-0009-keras-skeleton-removal.md) |
-| 0010 | `train/` 을 `crowdnav-train` editable package 로 전환. 5개 sys.path 핵 제거, `from crowdnav_train.X` 일괄 import | 2026-05-05 | [ADR-0010](decisions/ADR-0010-train-packaging-remove-syspath-hacks.md) |
+```mermaid
+erDiagram
+    ANALYSIS_SESSION ||--o{ FRAME : has
+    FRAME ||--o{ DETECTION : contains
+    APP_SETTINGS ||--|| APP_SETTINGS : singleton
 
-### 5.1 Deferred (다음 라운드)
-- **0007** auto_labels_08 라벨 출처 식별 — 사용자: "분명 하나는 직접 JRDB 가 제공한 것" → hash/내용 비교 워커 별도 dispatch 필요 → 초안 [ADR-0007](decisions/ADR-0007-auto-labels-provenance-hash-worker.md)
-- **0004** ClearML required vs optional — 0008 이후 정책으로 분리
-- **0005** Frontend↔Backend API 계약 단일 소스 (OpenAPI) — 0002 통합 작업 중에 자연스럽게 결정 → 초안 [ADR-0005](decisions/ADR-0005-api-contract-openapi-single-source.md)
-- **0006** legacy weights (`yolo26n.pt` 등) 처리 — 0009 정리 후 함께 → 초안 [ADR-0006](decisions/ADR-0006-legacy-weights-handling.md)
-- **0011** Docker 의 역할 — **0003 에 흡수됨** (해소)
+    ANALYSIS_SESSION {
+        bigint id PK
+        timestamptz started_at
+        timestamptz ended_at
+        varchar client_label
+        varchar source_type
+    }
+    FRAME {
+        bigint id PK
+        bigint session_id FK
+        int sequence_no
+        varchar crowd_density
+        varchar max_proximity_risk
+        int person_count
+    }
+    DETECTION {
+        bigint id PK
+        bigint frame_id FK
+        varchar class_label
+        numeric confidence
+        numeric x_center y_center width height
+        varchar proximity_risk
+    }
+```
+
+**API DTOs (runtime, not persisted as entities):**
+
+```typescript
+interface BBox {
+  x_center: number; y_center: number; width: number; height: number;
+}
+interface Detection {
+  class: 'person'; // wheelchair|luggage after FR-13
+  confidence: number;
+  bbox: BBox;
+  proximity_risk: 'SAFE' | 'WARNING' | 'DANGER';
+}
+interface AnalyzeFrameResponse {
+  persons: Detection[];
+  crowd_density: 'LOW' | 'MEDIUM' | 'HIGH';
+  max_proximity_risk: 'SAFE' | 'WARNING' | 'DANGER';
+  recommendation: 'PROCEED' | 'CAUTION' | 'STOP';
+}
+```
+
+**Privacy:** NFR-9 — no image bytes in DB; only derived metadata.
 
 ---
 
-## 6. 다이어그램 인덱스
+## Business Process
 
-| 종류 | 파일 | 상태 |
-|---|---|---|
-| Architecture (BDD) | `docs/architecture/System_Architecture_Documentation.md` | ✅ exists |
-| Data pipeline | `docs/architecture/data_pipeline_diagram.md` | ✅ exists |
-| Repo layout | `docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md` | ✅ exists |
-| Sequence (런타임 — webapp) | `docs/DESIGN.md` §2.3 | ✅ 1차 작성 (mock+intended) |
-| Sequence (학습 파이프라인) | `docs/architecture/sequence_training_pipeline.md` | ✅ exists |
-| Legacy catalog | `docs/architecture/LEGACY_CATALOG.md` | ✅ exists |
-| State machine (alerts) | `docs/architecture/state_alerts.md` | ✅ exists |
+### Process 1 — Start / stop monitoring (FR-UI-1, FR-UI-2, FR-UI-6)
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Starting: clickStart
+  Starting --> Running: cameraGranted_and_sessionCreated
+  Starting --> Idle: cameraDenied
+  Running --> Idle: clickStop_closeSession
+```
+
+On **Start:** reset alerts → `POST /sessions` → `useCrowdDetection.start()` (500 ms loop with `session_id`).
+On **Stop:** clear interval → `MediaStream` tracks stopped → `PATCH /sessions/{id}` → UI cleared.
+Label is **Stop Monitoring** (not Pause) — pause/resume is Won't.
+
+### Process 2 — Analyze frame with persistence (FR-11, NFR-8)
+
+```mermaid
+flowchart TD
+  A[analyze-frame request] --> B{session_id?}
+  B -->|no| C[infer only — stateless]
+  B -->|yes| D{session open?}
+  D -->|closed| E[409 Conflict]
+  D -->|open| F[infer synchronously]
+  F --> G[return 200 to client]
+  F --> H[@Async persist frame + detections]
+  C --> F
+```
+
+### Process 3 — Settings → inference (FR-15)
+
+1. User updates confidence / density_limit on `/settings`.
+2. `PUT /api/v1/settings` persists to `app_settings`.
+3. Next `analyze-frame` → backend reads settings → forwards `conf_thresh`, `density_limit` to `/internal/infer`.
+4. `density_limit` scales crowd-density bands (64 ≈ PRD §8 thresholds).
+
+### Process 4 — Extension pages
+
+| Route | Data flow | Notes |
+|-------|-----------|-------|
+| `/analytics` | `GET /analytics/summary?days=N` | Hotspot widget is **decorative session ranking**, not geo map (G-7, G-8) |
+| `/live-map` | Browser GPS + 24 h session poll → zone markers | Fixed UTS anchor coordinates for demo zones |
+| `/archive` | `GET /sessions` (filtered, paginated) → detail frames/detections | Export JSON client-side (FR-16) |
+| `/settings` | `GET/PUT /settings` + `localStorage` custom sources (FR-UI-11) | `audible_alerts` field unused (PRD §9) |
 
 ---
 
-## 7. 작업 진행 시 참고
+## Error Handling Strategy
 
-이 문서를 채울 때는 [`docs/skills/crowdnav-design/SKILL.md`](skills/crowdnav-design/SKILL.md) 의
-Workflow Step A → B → C 따를 것. 특히 5개 이상 모듈 분석 시 단일 LLM call 금지,
-Orchestrator-Workers 패턴 강제.
+| Layer | Failure | Response / recovery |
+|-------|---------|---------------------|
+| Frontend | Camera denied | `reportError`; remain Idle; no loop |
+| Frontend | Analyze API error | Log; **keep loop running** (no crash) |
+| Frontend | Unmount | `useCrowdDetection` cleanup stops tracks |
+| Backend | Blank/invalid base64 | 400 |
+| Backend | Oversize frame (> 5 MB) | 413 |
+| Backend | Unknown `session_id` | 404 |
+| Backend | Closed session on analyze | 409 |
+| Backend | Inference 5xx | 502 |
+| Inference | Model not loaded | 503 |
+| Inference | Undecodable image | 400 |
+
+Full matrix: [`API_SPEC.md`](API_SPEC.md) §6.
 
 ---
 
-## 8. 변경 이력
+## Testing Strategy
 
-| 날짜 | 변경 | 작성자 |
-|---|---|---|
-| 2026-05-05 | placeholder 골격 생성 | Claude (Cowork mode) |
-| 2026-05-05 | Step A 병렬 분석(W1~W5) 결과 §2.2/§2.3/§3 반영, §4.6/§4.7 추가, LEGACY_CATALOG.md 분리 | Claude (Cowork mode) |
-| 2026-05-05 | ADR-0002/0003/0008/0009/0010 Accepted, §5 Decided 표 갱신 (브랜치 `docs/design-decisions`) | Claude + 사용자 결정 |
-| 2026-06-17 | §9 Dashboard UI / button interaction design + evaluate matrix (spec-design) | Agent |
+| Layer | Scope | Tooling |
+|-------|-------|---------|
+| Inference heuristics | `_crowd_density`, `_alert_state` tables | Python unit tests |
+| Backend integration | Controllers, persistence, settings wiring | Gradle `@SpringBootTest` (mock inference mode) |
+| Latency gate | NFR-1 mock path | `NfrLatencyMockTest` |
+| Frontend unit | ControlBar, Dashboard, export/report, settings | Vitest + RTL |
+| Frontend build | Token usage, routing | `npm run build`, `npm run lint` |
+| System | Docker + webcam demo | Manual S1–S5 per [`user_scenarios.md`](runbooks/user_scenarios.md) |
+| Accuracy | mAP benchmarks | `docs/reports/Final_Training_Report.md` |
 
 ---
 
-## 9. Dashboard UI — Button Interaction & Layout
+## Dashboard UI — Button Interaction & Layout
 
-> **Status:** Active (2026-06-17). Implements FR-UI-1 … FR-UI-6 from [`REQUIREMENTS.md`](REQUIREMENTS.md) §2.1.
-> Judge report: [`reports/ui_spec_judge_evaluation.md`](reports/ui_spec_judge_evaluation.md).
+> **Status:** Active. Implements FR-UI-1 … FR-UI-12 from [`REQUIREMENTS.md`](REQUIREMENTS.md) §2.1.
 
-### 9.1 Overview
-
-**Scope:** Single-page dashboard monitoring UX — start/stop camera, 500 ms analyze loop, live overlays, stats sidebar.
-
-**Out of scope (this release):** true pause/resume. Session `session_id` is auto-managed on Start/Stop (FR-11 — implemented). Record/Export/Report/notifications implemented per FR-UI-5–9 (2026-06-18).
-
-**In scope (2026-06-17+):** Multi-page routing — Analytics, Live Map (OpenFreeMap), Archive (session API), Settings.
-
-### 9.2 Layout architecture
+### Layout architecture
 
 ```mermaid
 graph TB
@@ -266,79 +410,117 @@ graph TB
 | Header | `layout.headerHeight` | 64px |
 | Sidebar | `layout.sidebarWidth` | 320px |
 | Control bar | `layout.controlBarHeight` | 72px |
-| Overlay bottom inset | `layout.videoSafeInsetBottom` | 96px (control bar + spacing) |
+| Overlay bottom inset | `layout.videoSafeInsetBottom` | 96px |
 
 Below 1024px the sidebar hides; alert chip repositions under the header.
 
-### 9.3 Button interaction design
+### Button interaction design
 
 | Control | Visible when | Handler | Side effects |
 |---------|--------------|---------|--------------|
-| Start Monitoring | `!running` | `handleStart` | Reset alerts/history → `useCrowdDetection.start()` |
+| Start Monitoring | `!running` | `handleStart` | Reset alerts → `useCrowdDetection.start()` |
 | Stop Monitoring | `running` | `handleStop` | `$variant="danger"` — full stop |
 | Stop icon | `running` | `handleStop` | Same as Stop Monitoring |
-| Record | `running` | `handleRecord` → `useSessionRecording` | WebM download on stop |
-| Export | `sessionId` or `lastSessionId` | `handleExport` → `exportLiveSession` | JSON bundle download |
-| Generate Report | `data` present | `handleGenerateReport` → `buildHtmlReport` | HTML file download |
+| Record | `running` | `useSessionRecording` | WebM download on stop (FR-UI-7) |
+| Export | `sessionId` or `lastSessionId` | `exportLiveSession` | JSON bundle (FR-UI-8) |
+| Generate Report | `data` present | `buildHtmlReport` | HTML download (FR-UI-9) |
 
-```mermaid
-stateDiagram-v2
-  [*] --> Idle
-  Idle --> Starting: clickStart
-  Starting --> Running: cameraGranted
-  Starting --> Idle: cameraDenied
-  Running --> Idle: clickStop
-```
+### Multi-page routing
 
-### 9.4 Component responsibilities (FSD)
+| Route | Page | Requirements |
+|-------|------|--------------|
+| `/` | `DashboardPage` | FR-1…5, FR-UI-1…10, FR-11 |
+| `/analytics` | `AnalyticsPage` | FR-14 — hotspot semantic gaps remain |
+| `/live-map` | `LiveMapPage` | FR-17 |
+| `/archive` | `ArchivePage` | FR-12, FR-16 |
+| `/settings` | `SettingsPage` | FR-15, FR-UI-11 |
 
-| Layer | Module | Responsibility |
-|-------|--------|----------------|
-| `pages` | `DashboardPage.tsx` | Wire features + widgets; alert orchestration |
-| `widgets` | `ControlBar.tsx` | Presentation-only controls |
-| `widgets` | `VideoStage.tsx` | Video + overlays within safe zones |
-| `widgets` | `StatsSidebar.tsx` | Live stats + alert list |
-| `features` | `useCrowdDetection.ts` | Camera, interval, API calls |
-| `features` | `useRiskAlerts.ts` | Text-only alert history tracking (PRD §9; no speech/vibration) |
-| `shared` | `tokens.ts` | Layout safe-zone constants |
+Shared chrome: `widgets/app-shell`, `top-nav`, `side-nav`, `bottom-nav`.
 
-### 9.5 Error handling
+### UI implementation matrix
 
-- **Camera denied:** `reportError("Start error", …)`; remain Idle; no interval started.
-- **Analyze API failure:** Log via `reportError`; keep loop running (no crash).
-- **Unmount:** `useCrowdDetection` cleanup stops tracks and clears interval.
+| Req ID | Status | Notes |
+|--------|--------|-------|
+| FR-UI-1 … FR-UI-6 | PASS | Core monitoring loop |
+| FR-UI-7 … FR-UI-12 | PASS | Record, export, report, notifications, SideNav, custom sources |
+| FR-5, FR-11, NFR-7, NFR-10 | PASS | Stats panel, session auto-create, tokens, text labels on boxes |
+| FR-14 (hotspot viz) | **PARTIAL** | API wired; `RiskHotspotMap` is rank-index decorative (G-7, G-8) |
 
-### 9.6 Testing strategy
+*Full matrix: [`reports/ui_implementation_evaluate_matrix.md`](reports/ui_implementation_evaluate_matrix.md).*
 
-- **Manual:** Docker stack + webcam — Start → bbox/stats update → Stop → cleared state.
-- **Automated (Could):** Vitest + RTL smoke for `ControlBar` enabled/disabled states.
-- **CI:** `npm run build && npm run lint` in `application/frontend/`.
+---
 
-### 9.7 Implementation evaluate matrix
+## Legacy & Open Design Debt
 
-| Req ID | Spec | Implementation | Status |
-|--------|------|----------------|--------|
-| FR-UI-1 | Start → camera + 500 ms loop | `useCrowdDetection.start()` | PASS |
-| FR-UI-2 | Stop releases resources | `stop()` + `handleStop` resets | PASS |
-| FR-UI-3 | Stop = danger variant | `ControlBar` danger styling | PASS |
-| FR-UI-4 | Overlay safe zones | `layout.videoSafeInsetBottom` on `OverlayLayer` | PASS |
-| FR-UI-5 | Record/Export/Report/notifications | `session-recording`, `session-export`, `report-generation`, `TopNav` | PASS |
-| FR-UI-6 | Label "Stop Monitoring" | `ControlBar` label | PASS |
-| FR-UI-7–12 | SideNav, Settings sources, archive detail | `SideNav`, `SensorSourceGrid`, `SessionTable` | PASS |
-| FR-5 | People count in panel | `StatsSidebar` StatCard | PASS |
-| FR-11 | `session_id` on analyze | `useCrowdDetection` creates session on Start, passes `session_id` on each `analyzeFrame` | PASS |
-| NFR-7 | Token-based styling | `theme.layout.*` for safe zones | PASS |
+### Legacy catalog
 
-### 9.8 Multi-page routing (FSD)
+Full list: [`architecture/LEGACY_CATALOG.md`](architecture/LEGACY_CATALOG.md). Summary:
 
-| Route | Page | Key widgets / features |
-|-------|------|------------------------|
-| `/` | `DashboardPage` | `DashboardShell`, `useCrowdDetection` |
-| `/analytics` | `AnalyticsPage` | `analytics-header`, `risk-hotspot-map` *(decorative session-ranking viz; not geo map — [gap report](reports/analytics_hotspot_gap_analysis.md))*, `weekly-safety-score`, `features/analytics-data` → FR-14 |
-| `/live-map` | `LiveMapPage` | `live-map-stage`, `features/live-map-markers`, `features/geolocation` → FR-17 |
-| `/archive` | `ArchivePage` | `archive-filters`, `session-history-table`, `features/session-archive` → FR-12, FR-16 |
-| `/settings` | `SettingsPage` | `sensor-sources-grid`, `detection-model-panel`, `features/sensor-settings` → FR-15 |
+- Legacy `PROJECTS/CrowdNav/` tree — see LEGACY_CATALOG
+- Superseded frontend components (`VideoFeed`, `Controls`, `StatPanel`) — remove after S1 validation
+- `yolov8n.pt` duplicate at repo root vs `PROJECTS/CrowdNav/` — ADR-0006 candidate
+- ClearML secrets — ADR-0008 enforced (no plaintext keys in repo)
 
-Shared chrome for non-dashboard pages: `widgets/app-shell`, `widgets/top-nav` (NavLink), `widgets/side-nav`, `widgets/bottom-nav`.
+### Resolved design decisions
 
-*See [`reports/ui_implementation_evaluate_matrix.md`](reports/ui_implementation_evaluate_matrix.md) for post-fix re-evaluation.*
+| # | Decision | ADR |
+|---|----------|-----|
+| 0002 | Spring Boot API + FastAPI inference sidecar in Docker | [ADR-0002](decisions/ADR-0002-backend-runtime-spring.md) |
+| 0003 | Docker = runtime demo; SageMaker = training only | [ADR-0003](decisions/ADR-0003-deployment-split-docker-sagemaker.md) |
+| 0008 | ClearML secret hygiene | [ADR-0008](decisions/ADR-0008-clearml-secret-hygiene.md) |
+| 0009 | Keras skeleton removal | [ADR-0009](decisions/ADR-0009-keras-skeleton-removal.md) |
+| 0010 | `crowdnav-train` editable package | [ADR-0010](decisions/ADR-0010-train-packaging-remove-syspath-hacks.md) |
+
+### Remaining open questions
+
+| ID | Topic | Status | Recommended action |
+|----|-------|--------|-------------------|
+| OQ-1 | Analytics hotspot semantics (G-7, G-8) | **Open** | ADR-0011 — rename widget or add geo schema |
+| OQ-2 | OpenAPI as single contract source (ADR-0005) | Draft ADR | Generate `openapi.yaml` from Spring when bandwidth allows |
+| OQ-3 | Legacy weights / auto_labels provenance (ADR-0006, ADR-0007) | Deferred | Hash worker per ADR-0007 |
+| OQ-4 | FR-13 3-class detection rollout | Extension | [`DETECTION_3CLASS_PLAN.md`](DETECTION_3CLASS_PLAN.md) |
+| OQ-5 | Session IDOR if port 8080 public | Security note in API_SPEC | Session-scoped token (ADR tracker) |
+| OQ-6 | Live inference latency benchmark (PRD §8 TBD) | Metrics | Record in `evaluation_metrics.md` §4.2 |
+
+### Known implementation gaps (from REQUIREMENTS §6.1)
+
+| ID | Severity | Gap | Design impact |
+|----|----------|-----|---------------|
+| G-7 | High | `RiskHotspotMap` uses rank-index CSS %, not coordinates | Documented as decorative; ADR-0011 pending |
+| G-8 | High | `capacity` field mislabels danger_frame_count × 8 | Copy fix or schema change with ADR-0011 |
+| G-9 | — | Closed session analyze-frame | **Resolved** — 409 + skip persist |
+| G-10 | — | Archive client-side fetch all | **Resolved** — server filters + pagination |
+| G-11 | — | `density_limit` unused | **Resolved** — wired to inference policy |
+
+---
+
+## Diagram index
+
+| Kind | File | Status |
+|------|------|--------|
+| Architecture (BDD) | `docs/architecture/System_Architecture_Documentation.md` | exists |
+| Data pipeline | `docs/architecture/data_pipeline_diagram.md` | exists |
+| Repo layout | `docs/architecture/REPO_LAYOUT_AND_FUTURE_DEVELOPMENT.md` | exists |
+| Runtime sequence (webapp) | `docs/DESIGN.md` § Architecture | **updated 2026-06-19** |
+| User scenarios | `docs/runbooks/user_scenarios.md` | exists |
+| Training sequence | `docs/architecture/sequence_training_pipeline.md` | exists |
+| Legacy catalog | `docs/architecture/LEGACY_CATALOG.md` | exists |
+| Alert state machine | `docs/architecture/state_alerts.md` | exists |
+
+---
+
+## Change history
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-05-05 | Placeholder skeleton + parallel W1–W5 analysis | Agent |
+| 2026-05-05 | ADR-0002/0003/0008/0009/0010 accepted | Agent + user |
+| 2026-06-17 | §9 Dashboard UI design + evaluate matrix | Agent |
+| 2026-06-19 | **Major alignment pass:** removed placeholder/TBD for decided items; added Overview, data model, business processes, error handling, testing; updated architecture to 4-service stack + PostgreSQL; fixed remote-default sequence; documented extension pages and remaining gaps G-7/G-8 | spec-design agent |
+
+---
+
+## Workflow reference
+
+When extending this document, follow [`docs/skills/crowdnav-design/SKILL.md`](skills/crowdnav-design/SKILL.md).
+For requirement changes, update [`REQUIREMENTS.md`](REQUIREMENTS.md) first, then reflect here.

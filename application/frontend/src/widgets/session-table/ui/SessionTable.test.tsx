@@ -12,6 +12,7 @@ const session: SessionDetailResponse = {
   started_at: "2026-06-18T08:00:00Z",
   ended_at: "2026-06-18T08:05:00Z",
   frame_count: 12,
+  avg_latency_ms: 42,
   worst_risk: "WARNING",
 };
 

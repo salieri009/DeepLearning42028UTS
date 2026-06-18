@@ -5,7 +5,7 @@ import {
   formatRecommendation,
   formatRiskLabel,
 } from "@/entities/crowd-stats";
-import { Label, Text } from "@/shared/ui";
+import { Label } from "@/shared/ui";
 
 type MobileStatsBarProps = {
   data: AnalyzeFrameResponse | null;
@@ -37,6 +37,12 @@ const Stat = styled.div`
   min-width: 72px;
 `;
 
+const StatValue = styled.span`
+  font-size: ${({ theme }) => theme.typography.size[3]};
+  font-weight: ${({ theme }) => theme.typography.weight.bold};
+  color: ${({ theme }) => theme.color.textPrimary};
+`;
+
 export function MobileStatsBar({ data }: MobileStatsBarProps) {
   if (!data) return null;
 
@@ -49,19 +55,19 @@ export function MobileStatsBar({ data }: MobileStatsBarProps) {
     <Bar aria-label="Live crowd statistics summary">
       <Stat>
         <Label $tone="secondary">People</Label>
-        <Text $weight="bold">{count}</Text>
+        <StatValue>{count}</StatValue>
       </Stat>
       <Stat>
         <Label $tone="secondary">Density</Label>
-        <Text $weight="bold">{density}</Text>
+        <StatValue>{density}</StatValue>
       </Stat>
       <Stat>
         <Label $tone="secondary">Risk</Label>
-        <Text $weight="bold">{risk}</Text>
+        <StatValue>{risk}</StatValue>
       </Stat>
       <Stat>
         <Label $tone="secondary">Action</Label>
-        <Text $weight="bold">{recommendation}</Text>
+        <StatValue>{recommendation}</StatValue>
       </Stat>
     </Bar>
   );

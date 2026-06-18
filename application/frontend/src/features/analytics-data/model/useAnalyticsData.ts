@@ -37,7 +37,7 @@ export function useAnalyticsData(days = 7) {
         }
       } catch (err) {
         if (controller.signal.aborted) return;
-        reportError(err);
+        reportError("Load analytics summary error", err);
         setData(EMPTY_ANALYTICS);
         setError("Failed to load analytics summary.");
       } finally {

@@ -20,7 +20,7 @@ const Header = styled.header`
   height: ${({ theme }) => theme.layout.headerHeight};
   padding: 0 ${({ theme }) => theme.spacing[5]};
   background: ${({ theme }) => theme.color.glass.scrim};
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
@@ -33,6 +33,8 @@ const BrandGroup = styled.div`
 
 const Brand = styled(ChromeText)`
   font-size: ${({ theme }) => theme.typography.size[5]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.tight};
+  text-transform: uppercase;
 `;
 
 const TabGroup = styled.nav`
@@ -40,7 +42,7 @@ const TabGroup = styled.nav`
   align-items: center;
   gap: ${({ theme }) => theme.spacing[6]};
 
-  @media (min-width: 768px) {
+  @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     display: flex;
   }
 `;
@@ -53,6 +55,10 @@ const Tab = styled(NavLink)`
   padding-bottom: ${({ theme }) => theme.spacing[1]};
   border-bottom: 2px solid transparent;
   transition: color 120ms ease, border-color 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: ${({ theme }) => theme.color.primary};
@@ -146,13 +152,13 @@ const Dropdown = styled.div`
   position: absolute;
   top: calc(100% + ${({ theme }) => theme.spacing[2]});
   right: 0;
-  width: 320px;
-  max-height: 360px;
+  width: ${({ theme }) => theme.layout.dropdownWidth};
+  max-height: ${({ theme }) => theme.layout.dropdownMaxHeight};
   overflow-y: auto;
   border-radius: ${({ theme }) => theme.radius.lg};
   border: 1px solid ${({ theme }) => theme.color.glass.border};
   background: ${({ theme }) => theme.color.glass.scrim};
-  backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   box-shadow: ${({ theme }) => theme.shadow.glow};
   padding: ${({ theme }) => theme.spacing[3]};
 `;
@@ -168,7 +174,7 @@ const DropdownTitle = styled.p`
 const AlertRow = styled.div<{ $risk: string }>`
   padding: ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.md};
-  border-left: 3px solid
+  border-left: ${({ theme }) => theme.spacing[1]} solid
     ${({ theme, $risk }) =>
       $risk === "DANGER"
         ? theme.color.danger
@@ -181,7 +187,6 @@ const AlertRow = styled.div<{ $risk: string }>`
 `;
 
 const AlertMeta = styled.div`
-  opacity: 0.7;
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
 `;

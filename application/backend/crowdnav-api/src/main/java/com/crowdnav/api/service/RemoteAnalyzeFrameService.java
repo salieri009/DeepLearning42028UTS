@@ -4,6 +4,7 @@ import java.net.http.HttpClient;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,8 @@ import com.crowdnav.api.dto.AnalyzeFrameResponse;
  * Calls the Python FastAPI inference service (port 9000) to run YOLOv8 + collision heuristics.
  * Activated when app.inference.mode=remote in application.yml.
  */
-@Service
+@Service("coreAnalyzeFrameService")
+@Qualifier("coreAnalyzeFrameService")
 @ConditionalOnProperty(name = "app.inference.mode", havingValue = "remote")
 public class RemoteAnalyzeFrameService implements AnalyzeFrameService {
 

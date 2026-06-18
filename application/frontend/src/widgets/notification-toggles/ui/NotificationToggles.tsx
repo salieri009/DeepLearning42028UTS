@@ -51,10 +51,8 @@ const Hint = styled.p`
 export function NotificationToggles({
   visualOverlays,
   logErrors,
-  webrtcAccess,
   onVisualOverlaysChange,
   onLogErrorsChange,
-  onWebrtcAccessChange,
 }: NotificationTogglesProps) {
   return (
     <Panel>
@@ -65,10 +63,18 @@ export function NotificationToggles({
       <Grid>
         <Field>
           <Toggle label="Visual UI Overlays" checked={visualOverlays} onChange={onVisualOverlaysChange} />
-          <Hint>Saved to settings; bbox overlays stay on during live monitoring.</Hint>
+          <Hint>When off, dashboard hides bbox overlays and alert chips during monitoring.</Hint>
         </Field>
         <Toggle label="Log Background Task Errors" checked={logErrors} onChange={onLogErrorsChange} />
-        <Toggle label="WebRTC Remote Access" checked={webrtcAccess} onChange={onWebrtcAccessChange} />
+        <Field>
+          <Toggle
+            label="WebRTC Remote Access"
+            checked={false}
+            onChange={() => undefined}
+            disabled
+          />
+          <Hint>Not available in v2.6 — stored preference is ignored at runtime (PRD §9).</Hint>
+        </Field>
       </Grid>
     </Panel>
   );

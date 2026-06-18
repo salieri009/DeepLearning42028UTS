@@ -7,9 +7,16 @@ from pathlib import Path
 
 import pytest
 
-from crowdnav_policy import crowd_density, proximity_from_height, recommendation, worst_proximity_risk
+from crowdnav_policy import (
+    crowd_density,
+    proximity_from_height,
+    recommendation,
+    worst_proximity_risk,
+)
 
-GOLDEN_PATH = Path(__file__).resolve().parent.parent / "contracts" / "crowdnav-policy-golden.json"
+GOLDEN_PATH = (
+    Path(__file__).resolve().parent.parent / "contracts" / "crowdnav-policy-golden.json"
+)
 
 
 @pytest.fixture(scope="module")

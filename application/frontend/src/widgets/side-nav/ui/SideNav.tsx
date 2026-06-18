@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import styled, { css } from "styled-components";
+import styled, { css, useTheme } from "styled-components";
 import { getBackendHealth, getBackendReadiness, getSettingsModelLabel } from "@/shared/api";
 import { clearCustomSources } from "@/shared/lib/customSourcesStorage";
 import { clearSensorSettings } from "@/shared/lib/sensorSettingsStorage";
@@ -40,11 +40,11 @@ const Aside = styled.aside`
   flex-direction: column;
   padding: ${({ theme }) => theme.spacing[4]} 0;
   background: ${({ theme }) => theme.color.glass.fill};
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   border-right: 1px solid ${({ theme }) => theme.color.glass.border};
   box-shadow: ${({ theme }) => theme.shadow.glow};
 
-  @media (min-width: 1024px) {
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     display: flex;
   }
 `;
@@ -61,8 +61,8 @@ const NodeCard = styled.div`
 `;
 
 const NodeIcon = styled.div`
-  width: 40px;
-  height: 40px;
+  width: ${({ theme }) => theme.spacing[7]};
+  height: ${({ theme }) => theme.spacing[7]};
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.gradient.aqua};
   display: flex;
@@ -118,6 +118,11 @@ const navItemStyles = css`
     background: ${({ theme }) => theme.color.glass.border};
   }
 
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+  }
+
   &.active {
     color: ${({ theme }) => theme.color.textInverse};
     background: ${({ theme }) => theme.gradient.aqua};
@@ -150,6 +155,14 @@ const ModalBody = styled.div`
   gap: ${({ theme }) => theme.spacing[3]};
 `;
 
+const ModalPre = styled.pre`
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+`;
+
 const StatusLine = styled.p`
   margin: 0;
 `;
@@ -165,6 +178,7 @@ const ITEMS: { id: SideNavItem; icon: string; label: string }[] = [
 ];
 
 export function SideNav({ activeItem }: SideNavProps) {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [panel, setPanel] = useState<PanelKind>(null);
   const [healthText, setHealthText] = useState<string>("");
@@ -272,17 +286,22 @@ export function SideNav({ activeItem }: SideNavProps) {
 
       <Modal open={panel === "health"} title="System Health" onClose={() => setPanel(null)}>
         <ModalBody>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{healthText}</pre>
+          <ModalPre>{healthText}</ModalPre>
         </ModalBody>
       </Modal>
 
       <Modal open={panel === "assets"} title="Deployed Assets" onClose={() => setPanel(null)}>
         <ModalBody>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{assetsText}</pre>
+          <ModalPre>{assetsText}</ModalPre>
         </ModalBody>
       </Modal>
 
-      <Modal open={panel === "help"} title="CrowdNav Help" onClose={() => setPanel(null)} width="640px">
+      <Modal
+        open={panel === "help"}
+        title="CrowdNav Help"
+        onClose={() => setPanel(null)}
+        width={theme.layout.modalWideWidth}
+      >
         <ModalBody>
           <StatusLine>S1 — Dashboard: Start Monitoring for live crowd and proximity guidance.</StatusLine>
           <StatusLine>S2 — Archive: Review persisted sessions and export JSON bundles.</StatusLine>

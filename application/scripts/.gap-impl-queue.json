@@ -1,0 +1,19 @@
+{
+  "maxIterations": 13,
+  "index": 13,
+  "queue": [
+    { "id": "gap-1", "label": "P1 upload size limits", "status": "done" },
+    { "id": "gap-2", "label": "P1 CI gates", "status": "done" },
+    { "id": "gap-3", "label": "P2 reportError + logErrors", "status": "done" },
+    { "id": "gap-4", "label": "P2 python-lint inference job", "status": "done" },
+    { "id": "gap-5", "label": "P2 API_SPEC + session exports", "status": "done" },
+    { "id": "gap-6", "label": "P3 session-gate + @Qualifier", "status": "done" },
+    { "id": "gap-7", "label": "P3 ApiExceptionHandler", "status": "done" },
+    { "id": "gap-8", "label": "P2 in-flight guard", "status": "done" },
+    { "id": "gap-9", "label": "P1 session list filtered frame aggregate SQL", "status": "done" },
+    { "id": "gap-10", "label": "P2 visualOverlays → VideoStage", "status": "done" },
+    { "id": "gap-11", "label": "P2 tsc fixes + CI typecheck gate", "status": "done" },
+    { "id": "gap-12", "label": "P3 densityLimit settings UI", "status": "done" },
+    { "id": "gap-13", "label": "P3 getSession single aggregate query + webrtc honesty", "status": "done" }
+  ]
+}

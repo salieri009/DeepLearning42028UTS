@@ -78,7 +78,7 @@ function renderArchiveSection(input: ArchiveReportInput): string {
       <tr><th>Started</th><td>${escapeHtml(s.started_at)}</td></tr>
       <tr><th>Ended</th><td>${escapeHtml(s.ended_at ?? "active")}</td></tr>
       <tr><th>Frames</th><td>${s.frame_count}</td></tr>
-      <tr><th>Worst Risk</th><td>${escapeHtml(s.worst_risk)}</td></tr>
+      <tr><th>Worst Risk</th><td>${escapeHtml(s.worst_risk ?? "—")}</td></tr>
       <tr><th>Max Density</th><td>${input.stats?.maxCrowdDensity ?? "—"}</td></tr>
       <tr><th>Anomalies</th><td>${input.stats?.anomalies ?? 0}</td></tr>
     </table>

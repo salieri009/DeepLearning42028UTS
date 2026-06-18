@@ -1,6 +1,8 @@
 export type {
   DetectionItem,
   DetectionListResponse,
+  FrameItem,
+  FrameListResponse,
   ProximityRisk,
   SessionDetailResponse,
   SessionListResponse,

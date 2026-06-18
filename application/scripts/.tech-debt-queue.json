@@ -1,6 +1,6 @@
 ﻿{
     "maxIterations":  10,
-    "index":  2,
+    "index":  10,
     "reportPath":  "docs/reports/technical_debt_review.md",
     "queue":  [
                   {
@@ -33,7 +33,7 @@
                       "id":  "td-3",
                       "section":  3,
                       "label":  "Scalability",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "DB growth, API throughput, concurrency, caching, async, resource utilization",
                       "paths":  [
                                     "application/backend/crowdnav-api/src/main/java/com/crowdnav/api/persistence",
@@ -45,7 +45,7 @@
                       "id":  "td-4",
                       "section":  4,
                       "label":  "Cloud \u0026 Infrastructure",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "availability, DR, monitoring, observability, logging, cost, cloud-native patterns",
                       "paths":  [
                                     "application/docker-compose.yml",
@@ -60,7 +60,7 @@
                       "id":  "td-5",
                       "section":  5,
                       "label":  "Security Debt",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "auth, authorization, secrets, encryption, dependency vulns, API security",
                       "paths":  [
                                     "application/backend/crowdnav-api/src/main/java/com/crowdnav/api/controller",
@@ -74,7 +74,7 @@
                       "id":  "td-6",
                       "section":  6,
                       "label":  "DevOps \u0026 Delivery",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "CI/CD, deployment, test coverage, release management, IaC",
                       "paths":  [
                                     ".github/workflows",
@@ -86,7 +86,7 @@
                       "id":  "td-7",
                       "section":  7,
                       "label":  "Knowledge Debt",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "documentation gaps, runbooks, diagrams, onboarding, bus factor",
                       "paths":  [
                                     "docs/REQUIREMENTS.md",
@@ -101,7 +101,7 @@
                       "id":  "td-8",
                       "section":  8,
                       "label":  "Prioritization Table",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "synthesize sections 1-7 into Debt Item table with P1/P2/P3",
                       "paths":  [
                                     "docs/reports/technical_debt_review.md"
@@ -111,7 +111,7 @@
                       "id":  "td-9",
                       "section":  9,
                       "label":  "Technical Debt Heatmap",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "classify all findings into Critical/High/Medium/Low buckets",
                       "paths":  [
                                     "docs/reports/technical_debt_review.md"
@@ -121,7 +121,7 @@
                       "id":  "td-10",
                       "section":  10,
                       "label":  "Executive Summary",
-                      "status":  "pending",
+                      "status":  "done",
                       "focus":  "top 5 risks, consequences if ignored, 30/90/180-day remediation roadmap",
                       "paths":  [
                                     "docs/reports/technical_debt_review.md"

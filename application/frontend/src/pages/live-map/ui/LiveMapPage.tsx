@@ -5,7 +5,7 @@ import { BottomNav } from "@/widgets/bottom-nav";
 import { LiveMapStage } from "@/widgets/live-map-stage";
 import { SideNav } from "@/widgets/side-nav";
 import { TopNav } from "@/widgets/top-nav";
-import { ChromeText, GlassPanel } from "@/shared/ui";
+import { GlassPanel, LiveStatusDot, PageChromeTitle } from "@/shared/ui";
 
 const Header = styled.div`
   display: flex;
@@ -35,27 +35,7 @@ const Badge = styled(GlassPanel)<{ $live?: boolean }>`
   color: ${({ theme, $live }) => ($live ? theme.color.success : theme.color.textSecondary)};
 `;
 
-const LiveDot = styled.span<{ $live?: boolean }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${({ theme, $live }) => ($live ? theme.color.success : theme.color.textSecondary)};
-  animation: ${({ $live }) => ($live ? "pulse 2s ease-in-out infinite" : "none")};
-
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`;
+const LiveDot = LiveStatusDot;
 
 export function LiveMapPage() {
   const mapData = useMapMarkers();
@@ -68,9 +48,7 @@ export function LiveMapPage() {
     >
       <Header>
         <div>
-          <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
-            Live Map
-          </ChromeText>
+          <PageChromeTitle as="h1">Live Map</PageChromeTitle>
           <Subtitle>
             GPS position plus zone risk from the last 24h of session telemetry
             {mapData.loading ? " · syncing…" : ""}

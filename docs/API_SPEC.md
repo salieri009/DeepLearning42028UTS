@@ -28,7 +28,8 @@ Formal contract for the **public** API (Spring Boot, port 8080) and the **intern
 | Casing | Response/request bodies: `snake_case`. Java DTOs map via `@JsonProperty`. |
 | Transport | Backend→inference pinned to **HTTP/1.1** (uvicorn lacks h2c; HTTP/2 drops the body). |
 | CORS | `app.cors.allowed-origins` — `http://localhost:5173,3000,8081` (dev), `http://localhost` (Docker). |
-| Auth | None (local demo). Do not expose port 9000 publicly. |
+| Auth | None (local demo). Session IDs are enumerable — treat as **IDOR risk** if port 8080 is public. Planned: session-scoped token (ADR tracker). Do not expose port 9000 publicly. |
+| Upload limits | JSON `frame_base64` and multipart `image` capped at **5 MB** decoded (`app.upload.max-frame-bytes`, default 5242880). Oversize → **413**. |
 
 ## 2. Shared Schemas
 

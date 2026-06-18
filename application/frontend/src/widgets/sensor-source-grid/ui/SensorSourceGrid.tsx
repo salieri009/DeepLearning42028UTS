@@ -39,6 +39,27 @@ const AddLink = styled.button`
   &:hover {
     color: ${({ theme }) => theme.color.primary};
   }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+    border-radius: ${({ theme }) => theme.radius.sm};
+  }
+`;
+
+const EmptyHint = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+`;
+
+const CheckboxRow = styled.label`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing[2]};
+  align-items: center;
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  color: ${({ theme }) => theme.color.textPrimary};
 `;
 
 const Grid = styled.div`
@@ -103,7 +124,9 @@ export function SensorSourceGrid({ sources, onAddSource, onUpdateSource }: Senso
       </Header>
       <Grid>
         {sources.length === 0 ? (
-          <p style={{ margin: 0, opacity: 0.7 }}>No active webcam sessions yet. Start the dashboard camera to register a source.</p>
+          <EmptyHint>
+            No active webcam sessions yet. Start the dashboard camera to register a source.
+          </EmptyHint>
         ) : null}
         {sources.map((source) => (
           <SensorCard
@@ -182,7 +205,7 @@ export function SensorSourceGrid({ sources, onAddSource, onUpdateSource }: Senso
                 }
               />
             </Field>
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <CheckboxRow>
               <input
                 type="checkbox"
                 checked={settingsSource.connected}
@@ -191,7 +214,7 @@ export function SensorSourceGrid({ sources, onAddSource, onUpdateSource }: Senso
                 }
               />
               Connected
-            </label>
+            </CheckboxRow>
             <Button type="submit" $variant="primary">
               Save
             </Button>

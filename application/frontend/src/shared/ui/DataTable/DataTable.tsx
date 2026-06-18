@@ -32,6 +32,7 @@ function handleRowKeyDown<T>(
 
 const Panel = styled(GlassPanel)`
   overflow: hidden;
+  box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
 const Table = styled.table`
@@ -59,6 +60,15 @@ const Tr = styled.tr<{ $selected?: boolean }>`
 
   &:hover {
     background: ${({ theme }) => theme.color.glass.border};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: -2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

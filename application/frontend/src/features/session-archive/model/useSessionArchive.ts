@@ -59,7 +59,7 @@ export function useSessionArchive() {
         });
       } catch (err) {
         if (signal.aborted || loadVersionRef.current !== loadVersion) return;
-        reportError(err);
+        reportError("Load session archive error", err);
         setSessions([]);
         setTotal(0);
         setSelectedId(null);

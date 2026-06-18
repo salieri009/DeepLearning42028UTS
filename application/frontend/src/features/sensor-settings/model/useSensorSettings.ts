@@ -16,7 +16,7 @@ import {
   loadSensorSettings,
   saveSensorSettings,
 } from "@/shared/lib/sensorSettingsStorage";
-import { reportError } from "@/shared/lib/reportError";
+import { reportError, setLogErrorsEnabled } from "@/shared/lib/reportError";
 
 function sessionsToSources(sessions: SessionResponse[]): SensorSource[] {
   return sessions
@@ -78,13 +78,15 @@ export function useSensorSettings() {
         setSettings(normalized);
         setDraft(normalized);
         saveSensorSettings(normalized);
+        setLogErrorsEnabled(normalized.logErrors);
         setDirty(false);
       } catch (err) {
         if (controller.signal.aborted) return;
-        reportError(err);
+        reportError("Load sensor settings error", err);
         const local = loadSensorSettings();
         setSettings(local);
         setDraft(local);
+        setLogErrorsEnabled(local.logErrors);
         setSources(mergeSources([]));
         setError("Using local settings; backend unavailable.");
       } finally {
@@ -110,6 +112,7 @@ export function useSensorSettings() {
 
   const setModel = (model: DetectionModel) => updateDraft("model", model);
   const setConfidence = (confidence: number) => updateDraft("confidence", confidence);
+  const setDensityLimit = (densityLimit: number) => updateDraft("densityLimit", densityLimit);
   const setVisualOverlays = (visualOverlays: boolean) => updateDraft("visualOverlays", visualOverlays);
   const setLogErrors = (logErrors: boolean) => updateDraft("logErrors", logErrors);
   const setWebrtcAccess = (webrtcAccess: boolean) => updateDraft("webrtcAccess", webrtcAccess);
@@ -129,7 +132,7 @@ export function useSensorSettings() {
         setDirty(false);
         setError(null);
       } catch (err) {
-        reportError(err);
+        reportError("Save sensor settings error", err);
         setSettings(draft);
         saveSensorSettings(draft);
         setDirty(false);
@@ -169,6 +172,7 @@ export function useSensorSettings() {
     error,
     setModel,
     setConfidence,
+    setDensityLimit,
     setVisualOverlays,
     setLogErrors,
     setWebrtcAccess,

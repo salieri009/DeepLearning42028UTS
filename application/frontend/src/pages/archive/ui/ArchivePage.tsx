@@ -21,7 +21,7 @@ import { SideNav } from "@/widgets/side-nav";
 import { TopNav } from "@/widgets/top-nav";
 import { listDetections, listSessionFrames } from "@/shared/api";
 import { reportError } from "@/shared/lib/reportError";
-import { AquaPillButton, ChromeText, Icon } from "@/shared/ui";
+import { AquaPillButton, Icon, PageChromeTitle } from "@/shared/ui";
 
 const Header = styled.div`
   display: flex;
@@ -42,7 +42,7 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.spacing[6]};
 
-  @media (min-width: 1024px) {
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     grid-template-columns: 2fr 1fr;
   }
 `;
@@ -54,7 +54,7 @@ const TableCol = styled.div`
 const PreviewCol = styled.div`
   grid-column: 1;
 
-  @media (min-width: 1024px) {
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     grid-column: 2;
     grid-row: 2;
   }
@@ -117,9 +117,7 @@ export function ArchivePage() {
     >
       <Header>
         <div>
-          <ChromeText as="h1" style={{ fontSize: "32px", textTransform: "uppercase" }}>
-            Analysis Archive
-          </ChromeText>
+          <PageChromeTitle as="h1">Analysis Archive</PageChromeTitle>
           <Subtitle>RETRIEVING HISTORICAL TELEMETRY DATA...</Subtitle>
         </div>
         <AquaPillButton

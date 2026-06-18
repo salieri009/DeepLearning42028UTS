@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components -- context provider exports companion hooks */
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { formatAlertMetaLine } from "@/features/alert-history/lib/formatAlertMeta";
-import type { AlertEntry } from "@/features/alert-history";
+import type { AlertEntry } from "@/features/alert-history/model/types";
 
 const MAX_ALERTS = 10;
 

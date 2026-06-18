@@ -1,6 +1,6 @@
 ﻿{
-    "index":  5,
-    "lastTarget":  "pages/archive",
+    "index":  0,
+    "lastTarget":  "shared/ui",
     "queue":  [
                   {
                       "id":  "s1-video",

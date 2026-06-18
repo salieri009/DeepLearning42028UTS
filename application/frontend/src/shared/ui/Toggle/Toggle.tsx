@@ -5,15 +5,17 @@ type ToggleProps = {
   onChange: (checked: boolean) => void;
   label: string;
   id?: string;
+  disabled?: boolean;
 };
 
-const Row = styled.label`
+const Row = styled.label<{ $disabled?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: ${({ theme }) => `${theme.spacing[2]} 0`};
   border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.55 : 1)};
 `;
 
 const Label = styled.span`
@@ -62,17 +64,18 @@ const Track = styled.div<{ $checked: boolean }>`
   flex-shrink: 0;
 `;
 
-export function Toggle({ checked, onChange, label, id }: ToggleProps) {
+export function Toggle({ checked, onChange, label, id, disabled = false }: ToggleProps) {
   const inputId = id ?? label.replace(/\s+/g, "-").toLowerCase();
 
   return (
-    <Row htmlFor={inputId}>
+    <Row htmlFor={inputId} $disabled={disabled}>
       <Label>{label}</Label>
       <Track $checked={checked}>
         <HiddenInput
           id={inputId}
           type="checkbox"
           checked={checked}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
         <Thumb $checked={checked} />

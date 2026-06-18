@@ -50,4 +50,6 @@ def crowd_density(person_count: int, worst: str, density_limit: int = 64) -> str
 
 
 def recommendation(worst: str) -> str:
-    return {"SAFE": "PROCEED", "WARNING": "CAUTION", "DANGER": "STOP"}.get(worst, "PROCEED")
+    return {"SAFE": "PROCEED", "WARNING": "CAUTION", "DANGER": "STOP"}.get(
+        worst, "PROCEED"
+    )

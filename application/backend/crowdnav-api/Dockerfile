@@ -20,7 +20,7 @@ RUN gradle --no-daemon dependencies > /dev/null 2>&1 || true
 
 # Copy sources and build the executable bootJar
 COPY src ./src
-RUN gradle --no-daemon clean bootJar -x test
+RUN gradle --no-daemon clean build
 
 # ----- Stage 2: runtime -----
 FROM eclipse-temurin:21-jre-alpine AS runtime

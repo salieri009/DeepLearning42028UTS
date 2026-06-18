@@ -15,7 +15,7 @@ const opaqueStyles = css`
 
 const glassStyles = css`
   background: ${({ theme }) => theme.color.glass.fill};
-  backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
   border: 1px solid ${({ theme }) => theme.color.glass.border};
   border-radius: ${({ theme }) => theme.radius.xl};
   box-shadow: ${({ theme }) => theme.shadow.glass}, inset 0 1px 0 ${({ theme }) => theme.color.glass.highlight};
