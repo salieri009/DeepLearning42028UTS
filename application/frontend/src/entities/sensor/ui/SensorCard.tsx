@@ -59,7 +59,7 @@ const StatusBadge = styled.span`
   line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.color.success};
-  color: ${({ theme }) => theme.color.onSuccess};
+  color: ${({ theme }) => theme.color.neutral[100]};
   font-size: ${({ theme }) => theme.typography.size[1]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
 `;

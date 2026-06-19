@@ -1,39 +1,37 @@
-import { Icon, RadioGroup } from "@/shared/ui";
+import { Icon, PanelTitle, PanelTitleRow, RadioGroup, UnsavedBadge } from "@/shared/ui";
 import type { DetectionModel } from "@/entities/sensor";
 import { GlassPanel } from "@/shared/ui";
 import styled from "styled-components";
 
 type DetectionModelPanelProps = {
   model: DetectionModel;
+  dirty?: boolean;
   onChange: (model: DetectionModel) => void;
 };
 
 const Panel = styled(GlassPanel)`
   padding: ${({ theme }) => theme.spacing[6]};
   box-shadow: ${({ theme }) => theme.shadow.glow};
-`;
-
-const Title = styled.h2`
-  margin: 0 0 ${({ theme }) => theme.spacing[6]};
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
-  font-size: ${({ theme }) => theme.typography.size[4]};
-  color: ${({ theme }) => theme.color.primary};
+  height: 100%;
 `;
 
 const Description = styled.p`
   margin: 0 0 ${({ theme }) => theme.spacing[4]};
   color: ${({ theme }) => theme.color.textSecondary};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.normal};
 `;
 
-export function DetectionModelPanel({ model, onChange }: DetectionModelPanelProps) {
+export function DetectionModelPanel({ model, dirty = false, onChange }: DetectionModelPanelProps) {
   return (
     <Panel>
-      <Title id="detection-model-heading">
-        <Icon name="neurology" size={22} />
-        Detection Model
-      </Title>
+      <PanelTitleRow>
+        <PanelTitle id="detection-model-heading">
+          <Icon name="neurology" size={20} />
+          Detection Model
+        </PanelTitle>
+        {dirty ? <UnsavedBadge>Unsaved</UnsavedBadge> : null}
+      </PanelTitleRow>
       <Description>Select the neural engine for real-time inference.</Description>
       <RadioGroup
         name="detection-model"

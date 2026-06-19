@@ -67,6 +67,12 @@ const MapHud = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing[2]};
   z-index: 3;
+
+  @media (max-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
+    bottom: calc(
+      ${({ theme }) => theme.layout.mobileBottomNavHeight} + ${({ theme }) => theme.spacing[6]}
+    );
+  }
 `;
 
 const pulse = keyframes`

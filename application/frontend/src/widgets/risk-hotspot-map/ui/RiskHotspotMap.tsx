@@ -66,8 +66,8 @@ const LegendItem = styled.div`
 `;
 
 const Dot = styled.span<{ $variant: "danger" | "warning" }>`
-  width: 8px;
-  height: 8px;
+  width: ${({ theme }) => theme.spacing[2]};
+  height: ${({ theme }) => theme.spacing[2]};
   border-radius: 50%;
   background: ${({ theme, $variant }) =>
     $variant === "danger" ? theme.color.danger : theme.color.warning};
@@ -85,6 +85,25 @@ const Attribution = styled.div`
   border-radius: ${({ theme }) => theme.radius.sm};
 `;
 
+const EmptyOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing[3]};
+  padding: ${({ theme }) => theme.spacing[6]};
+  text-align: center;
+  background: ${({ theme }) => theme.color.glass.scrim};
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.typography.family.mono};
+  font-size: ${({ theme }) => theme.typography.size[2]};
+  line-height: ${({ theme }) => theme.typography.lineHeight.normal};
+  pointer-events: none;
+`;
+
 const ping = keyframes`
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
@@ -92,8 +111,8 @@ const ping = keyframes`
 
 const MarkerShell = styled.div`
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: ${({ theme }) => theme.layout.mapMarkerHotspot};
+  height: ${({ theme }) => theme.layout.mapMarkerHotspot};
 `;
 
 const Ping = styled.div<{ $color: string }>`
@@ -109,8 +128,8 @@ const Ping = styled.div<{ $color: string }>`
 `;
 
 const MarkerCore = styled.div<{ $color: string }>`
-  width: 48px;
-  height: 48px;
+  width: ${({ theme }) => theme.layout.mapMarkerHotspot};
+  height: ${({ theme }) => theme.layout.mapMarkerHotspot};
   border-radius: 50%;
   border: 2px solid ${({ $color }) => $color};
   background: ${({ $color }) => `${$color}66`};
@@ -156,6 +175,14 @@ export function RiskHotspotMap({ hotspots }: RiskHotspotMapProps) {
           </LegendItem>
         </LegendRow>
       </Legend>
+
+      {hotspots.length === 0 ? (
+        <EmptyOverlay role="status">
+          <Icon name="map" size={32} decorative />
+          No elevated-risk hotspots in the last 24 hours. The map shows the UTS campus anchor
+          until telemetry aggregates DANGER or WARNING frames by zone.
+        </EmptyOverlay>
+      ) : null}
 
       <Map
         ref={mapRef}

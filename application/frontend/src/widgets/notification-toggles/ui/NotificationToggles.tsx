@@ -1,10 +1,12 @@
+import { useId } from "react";
 import styled from "styled-components";
-import { GlassPanel, Icon, Toggle } from "@/shared/ui";
+import { GlassPanel, PanelTitleRow, Toggle, UnsavedBadge } from "@/shared/ui";
 
 type NotificationTogglesProps = {
   visualOverlays: boolean;
   logErrors: boolean;
   webrtcAccess: boolean;
+  dirty?: boolean;
   onVisualOverlaysChange: (v: boolean) => void;
   onLogErrorsChange: (v: boolean) => void;
   onWebrtcAccessChange: (v: boolean) => void;
@@ -15,13 +17,9 @@ const Panel = styled(GlassPanel)`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 `;
 
-const Title = styled.h2`
-  margin: 0 0 ${({ theme }) => theme.spacing[6]};
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
-  font-size: ${({ theme }) => theme.typography.size[4]};
-  color: ${({ theme }) => theme.color.primary};
+const UnsavedRow = styled(PanelTitleRow)`
+  margin-bottom: ${({ theme }) => theme.spacing[4]};
+  justify-content: flex-end;
 `;
 
 const Grid = styled.div`
@@ -29,7 +27,7 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.spacing[4]};
 
-  @media (min-width: 768px) {
+  @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     grid-template-columns: 1fr 1fr;
     column-gap: ${({ theme }) => theme.spacing[6]};
   }
@@ -45,35 +43,43 @@ const Hint = styled.p`
   margin: 0;
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
-  line-height: 1.4;
+  line-height: ${({ theme }) => theme.typography.lineHeight.normal};
 `;
 
 export function NotificationToggles({
   visualOverlays,
   logErrors,
+  dirty = false,
   onVisualOverlaysChange,
   onLogErrorsChange,
 }: NotificationTogglesProps) {
+  const webrtcHintId = useId();
+
   return (
-    <Panel>
-      <Title>
-        <Icon name="campaign" size={22} />
-        System Notifications
-      </Title>
+    <Panel aria-labelledby="settings-notifications-heading">
+      {dirty ? (
+        <UnsavedRow>
+          <UnsavedBadge>Unsaved</UnsavedBadge>
+        </UnsavedRow>
+      ) : null}
       <Grid>
         <Field>
           <Toggle label="Visual UI Overlays" checked={visualOverlays} onChange={onVisualOverlaysChange} />
           <Hint>When off, dashboard hides bbox overlays and alert chips during monitoring.</Hint>
         </Field>
-        <Toggle label="Log Background Task Errors" checked={logErrors} onChange={onLogErrorsChange} />
+        <Field>
+          <Toggle label="Log Background Task Errors" checked={logErrors} onChange={onLogErrorsChange} />
+          <Hint>Writes client errors to the browser console for debugging.</Hint>
+        </Field>
         <Field>
           <Toggle
             label="WebRTC Remote Access"
             checked={false}
             onChange={() => undefined}
             disabled
+            describedBy={webrtcHintId}
           />
-          <Hint>Not available in v2.6 — stored preference is ignored at runtime (PRD §9).</Hint>
+          <Hint id={webrtcHintId}>Not available in v2.6 — stored preference is ignored at runtime.</Hint>
         </Field>
       </Grid>
     </Panel>

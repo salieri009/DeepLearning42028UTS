@@ -6,6 +6,7 @@ type ToggleProps = {
   label: string;
   id?: string;
   disabled?: boolean;
+  describedBy?: string;
 };
 
 const Row = styled.label<{ $disabled?: boolean }>`
@@ -64,7 +65,7 @@ const Track = styled.div<{ $checked: boolean }>`
   flex-shrink: 0;
 `;
 
-export function Toggle({ checked, onChange, label, id, disabled = false }: ToggleProps) {
+export function Toggle({ checked, onChange, label, id, disabled = false, describedBy }: ToggleProps) {
   const inputId = id ?? label.replace(/\s+/g, "-").toLowerCase();
 
   return (
@@ -76,6 +77,7 @@ export function Toggle({ checked, onChange, label, id, disabled = false }: Toggl
           type="checkbox"
           checked={checked}
           disabled={disabled}
+          aria-describedby={describedBy}
           onChange={(e) => onChange(e.target.checked)}
         />
         <Thumb $checked={checked} />

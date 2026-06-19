@@ -51,6 +51,27 @@ Keep a small, consistent scale.
   - top: fixed glass header with status pill
 - Sidebar collapses below 1024px; core monitoring remains via video + bottom controls.
 
+#### Padding tiers (internal surfaces)
+
+Use three consistent padding tiers across cards, lists, and tables:
+
+| Tier | Token | Use |
+|------|-------|-----|
+| **Compact** | `spacing[3]` (12px) | Alert list rows, compact `StatCard`, slider field gaps |
+| **Comfortable** | `spacing[4]` (16px) | Glass panels, disclaimer bars, table cells (mobile) |
+| **Spacious** | `spacing[6]` (24px) | Settings/analysis panel outer padding, table cells (desktop horizontal) |
+
+**Rule**: page `SectionTitle` = section boundary; `PanelTitle` (`size[3]`) = inside-panel heading; `PageChromeTitle` = route H1 only.
+
+#### Shadow tiers (glass surfaces)
+
+| Tier | Token | Use |
+|------|-------|-----|
+| **Subtle** | `shadow.sm` | Disclaimer bars, density legends, informational callouts |
+| **Elevated** | `shadow.glow` | Primary data panels, settings cards, chart containers |
+
+**Rule**: informational one-liners use `shadow.sm`; interactive or data-heavy panels use `shadow.glow`.
+
 ### Feature-Sliced Design (FSD)
 
 The frontend follows [Feature-Sliced Design](https://feature-sliced.design/) with strict import boundaries:
@@ -88,7 +109,7 @@ The frontend follows [Feature-Sliced Design](https://feature-sliced.design/) wit
 - `VideoStage` bbox overlays use `entities/detection` risk tokens (no hardcoded hex).
 - Placeholder controls (Record, Export, Generate Report) are disabled with `title="Coming soon"`.
 - Five routes: `/`, `/analytics`, `/live-map`, `/archive`, `/settings` via `AppRouter`.
-- Mobile `BottomNav` exposes all five routes (Home, Stats, Map, Logs, Sensors → `/settings`).
+- Mobile `BottomNav` exposes all five routes (Home, Stats, Map, Archive, Setup → `/settings`; full labels on wider mobile).
 - Interaction states: hover/focus/disabled are consistent and accessible.
 
 ### Component standards (minimum set)

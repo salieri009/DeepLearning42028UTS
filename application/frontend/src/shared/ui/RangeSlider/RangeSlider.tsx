@@ -1,15 +1,26 @@
 import { useId } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 type RangeSliderProps = {
   label: string;
   value: number;
   min: number;
   max: number;
+  step?: number;
   displayValue: string;
   hint?: string;
   onChange: (value: number) => void;
 };
+
+const thumbStyles = css`
+  width: calc(${({ theme }) => theme.spacing[4]} + 2px);
+  height: calc(${({ theme }) => theme.spacing[4]} + 2px);
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.textInverse};
+  border: 2px solid ${({ theme }) => theme.color.primary};
+  box-shadow: 0 0 ${({ theme }) => theme.spacing[3]} ${({ theme }) => theme.color.primary};
+  cursor: pointer;
+`;
 
 const Wrapper = styled.div`
   display: flex;
@@ -19,7 +30,10 @@ const Wrapper = styled.div`
 
 const Header = styled.div`
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  align-items: baseline;
+  gap: ${({ theme }) => theme.spacing[2]};
   font-family: ${({ theme }) => theme.typography.family.mono};
   font-size: ${({ theme }) => theme.typography.size[2]};
   color: ${({ theme }) => theme.color.textPrimary};
@@ -27,32 +41,46 @@ const Header = styled.div`
 
 const Value = styled.span`
   color: ${({ theme }) => theme.color.primary};
+  flex-shrink: 0;
 `;
 
 const Input = styled.input`
   width: 100%;
   appearance: none;
-  height: 6px;
+  height: ${({ theme }) => theme.spacing[2]};
   border-radius: ${({ theme }) => theme.radius.full};
-  background: ${({ theme }) => theme.color.glass.border};
+  background: transparent;
   cursor: pointer;
 
   &::-webkit-slider-runnable-track {
-    height: 6px;
+    height: ${({ theme }) => theme.spacing[2]};
     border-radius: ${({ theme }) => theme.radius.full};
     background: ${({ theme }) => theme.gradient.aqua};
   }
 
   &::-webkit-slider-thumb {
     appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.color.textInverse};
-    border: 2px solid ${({ theme }) => theme.color.primary};
-    box-shadow: 0 0 10px ${({ theme }) => theme.color.primary};
-    margin-top: -6px;
-    cursor: pointer;
+    ${thumbStyles}
+    margin-top: calc(
+      (${({ theme }) => theme.spacing[2]} - ${({ theme }) => theme.spacing[4]} - 2px) / 2
+    );
+  }
+
+  &::-moz-range-track {
+    height: ${({ theme }) => theme.spacing[2]};
+    border-radius: ${({ theme }) => theme.radius.full};
+    background: ${({ theme }) => theme.color.glass.border};
+    border: none;
+  }
+
+  &::-moz-range-progress {
+    height: ${({ theme }) => theme.spacing[2]};
+    border-radius: ${({ theme }) => theme.radius.full};
+    background: ${({ theme }) => theme.gradient.aqua};
+  }
+
+  &::-moz-range-thumb {
+    ${thumbStyles}
   }
 `;
 
@@ -60,6 +88,7 @@ const Hint = styled.p`
   margin: 0;
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.textSecondary};
+  line-height: ${({ theme }) => theme.typography.lineHeight.normal};
 `;
 
 export function RangeSlider({
@@ -67,6 +96,7 @@ export function RangeSlider({
   value,
   min,
   max,
+  step = 1,
   displayValue,
   hint,
   onChange,
@@ -85,6 +115,7 @@ export function RangeSlider({
         type="range"
         min={min}
         max={max}
+        step={step}
         value={value}
         aria-labelledby={labelId}
         aria-valuemin={min}

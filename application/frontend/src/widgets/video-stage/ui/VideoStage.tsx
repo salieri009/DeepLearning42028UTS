@@ -87,7 +87,11 @@ const AlertChip = styled(GlassPanel)<{ $tone: "warning" | "danger" }>`
   box-shadow: ${({ theme }) => theme.shadow.glow};
 
   @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
-    top: calc(${({ theme }) => theme.layout.headerHeight} + ${({ theme }) => theme.spacing[4]});
+    top: calc(
+      ${({ theme }) => theme.layout.headerHeight} +
+        ${({ theme }) => theme.layout.mobileStatsBarHeight} +
+        ${({ theme }) => theme.spacing[4]}
+    );
     right: ${({ theme }) => theme.spacing[4]};
     position: fixed;
   }

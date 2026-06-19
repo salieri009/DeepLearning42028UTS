@@ -11,10 +11,19 @@ type MobileStatsBarProps = {
   data: AnalyzeFrameResponse | null;
 };
 
+const Stat = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[1]};
+  min-width: ${({ theme }) => theme.layout.mobileStatMinWidth};
+  scroll-snap-align: start;
+`;
+
 const Bar = styled.div`
   display: none;
+  position: relative;
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     display: flex;
     position: fixed;
     top: ${({ theme }) => theme.layout.headerHeight};
@@ -23,24 +32,43 @@ const Bar = styled.div`
     z-index: ${({ theme }) => theme.layout.zIndex.sidebar - 1};
     gap: ${({ theme }) => theme.spacing[3]};
     padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[4]};
+    min-height: ${({ theme }) => theme.layout.mobileStatsBarHeight};
+    align-items: center;
     background: ${({ theme }) => theme.color.glass.scrim};
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur})
+      saturate(${({ theme }) => theme.effects.glassSaturation});
     border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
     overflow-x: auto;
-  }
-`;
+    scroll-snap-type: x proximity;
 
-const Stat = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 72px;
+    &::after {
+      content: "";
+      position: sticky;
+      right: 0;
+      flex-shrink: 0;
+      width: ${({ theme }) => theme.spacing[6]};
+      margin-left: calc(-1 * ${({ theme }) => theme.spacing[6]});
+      background: linear-gradient(
+        to left,
+        ${({ theme }) => theme.color.glass.scrim},
+        transparent
+      );
+      pointer-events: none;
+    }
+  }
 `;
 
 const StatValue = styled.span`
   font-size: ${({ theme }) => theme.typography.size[3]};
   font-weight: ${({ theme }) => theme.typography.weight.bold};
   color: ${({ theme }) => theme.color.textPrimary};
+`;
+
+const StatValueCompact = styled(StatValue)`
+  max-width: ${({ theme }) => theme.spacing[7]};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export function MobileStatsBar({ data }: MobileStatsBarProps) {
@@ -67,7 +95,7 @@ export function MobileStatsBar({ data }: MobileStatsBarProps) {
       </Stat>
       <Stat>
         <Label $tone="secondary">Action</Label>
-        <StatValue>{recommendation}</StatValue>
+        <StatValueCompact title={recommendation}>{recommendation}</StatValueCompact>
       </Stat>
     </Bar>
   );

@@ -13,6 +13,7 @@ type StatCardProps = {
   badgeVariant?: StatBadgeVariant;
   accent?: boolean;
   valueTone?: StatBadgeVariant;
+  compact?: boolean;
 };
 
 const badgeStyles = {
@@ -34,8 +35,8 @@ const badgeStyles = {
   `,
 } satisfies Record<StatBadgeVariant, ReturnType<typeof css>>;
 
-const Card = styled(GlassPanel)<{ $accent?: boolean }>`
-  padding: ${({ theme }) => theme.spacing[4]};
+const Card = styled(GlassPanel)<{ $accent?: boolean; $compact?: boolean }>`
+  padding: ${({ theme, $compact }) => ($compact ? theme.spacing[3] : theme.spacing[4])};
   cursor: default;
   transition: background 120ms ease, box-shadow 120ms ease;
   ${({ $accent, theme }) =>
@@ -78,8 +79,9 @@ const Label = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const Value = styled.p<{ $tone?: StatBadgeVariant }>`
-  font-size: ${({ theme }) => theme.typography.size[5]};
+const Value = styled.p<{ $tone?: StatBadgeVariant; $compact?: boolean }>`
+  font-size: ${({ theme, $compact }) =>
+    $compact ? theme.typography.size[4] : theme.typography.size[5]};
   font-weight: ${({ theme }) => theme.typography.weight.semibold};
   color: ${({ theme, $tone = "neutral" }) =>
     $tone === "safe"
@@ -108,15 +110,16 @@ export function StatCard({
   badgeVariant = "neutral",
   accent,
   valueTone,
+  compact = false,
 }: StatCardProps) {
   return (
-    <Card $accent={accent}>
+    <Card $accent={accent} $compact={compact}>
       <Header>
         <Icon name={icon} size={20} />
         {badge && <Badge $variant={badgeVariant}>{badge}</Badge>}
       </Header>
       <Label>{label}</Label>
-      <Value $tone={valueTone ?? badgeVariant}>
+      <Value $tone={valueTone ?? badgeVariant} $compact={compact}>
         {value} {unit && <span>{unit}</span>}
       </Value>
     </Card>

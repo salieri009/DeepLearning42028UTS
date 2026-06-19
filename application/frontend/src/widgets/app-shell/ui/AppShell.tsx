@@ -52,6 +52,7 @@ const GlowBottom = styled.div`
 const Main = styled.main`
   padding-top: calc(${({ theme }) => theme.layout.headerHeight} + ${({ theme }) => theme.spacing[5]});
   padding-bottom: calc(${({ theme }) => theme.layout.mobileBottomNavHeight} + ${({ theme }) => theme.spacing[7]});
+  padding-left: ${({ theme }) => theme.spacing[4]};
   padding-right: ${({ theme }) => theme.spacing[4]};
   min-height: 100vh;
 

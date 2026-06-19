@@ -10,8 +10,14 @@ import { GlassPanel, LiveStatusDot, PageChromeTitle } from "@/shared/ui";
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[2]};
   margin-bottom: ${({ theme }) => theme.spacing[6]};
+
+  @media (max-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -19,10 +25,14 @@ const Subtitle = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const Disclaimer = styled.p`
-  margin: ${({ theme }) => theme.spacing[1]} 0 0;
+const Disclaimer = styled(GlassPanel)`
+  margin: ${({ theme }) => theme.spacing[2]} 0 0;
+  padding: ${({ theme }) => theme.spacing[4]};
+  box-shadow: ${({ theme }) => theme.shadow.sm};
+  border-left: ${({ theme }) => theme.spacing[1]} solid ${({ theme }) => theme.color.warning};
   font-size: ${({ theme }) => theme.typography.size[1]};
   color: ${({ theme }) => theme.color.warning};
+  line-height: ${({ theme }) => theme.typography.lineHeight.normal};
 `;
 
 const Badge = styled(GlassPanel)<{ $live?: boolean }>`

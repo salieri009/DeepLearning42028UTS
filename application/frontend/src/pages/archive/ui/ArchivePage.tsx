@@ -26,7 +26,8 @@ import { AquaPillButton, Icon, PageChromeTitle } from "@/shared/ui";
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[2]};
   margin-bottom: ${({ theme }) => theme.spacing[6]};
 `;
 
@@ -49,6 +50,11 @@ const Grid = styled.div`
 
 const TableCol = styled.div`
   grid-column: 1;
+
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
+    grid-row: 2;
+    align-self: start;
+  }
 `;
 
 const PreviewCol = styled.div`
@@ -57,6 +63,9 @@ const PreviewCol = styled.div`
   @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
     grid-column: 2;
     grid-row: 2;
+    align-self: start;
+    position: sticky;
+    top: calc(${({ theme }) => theme.layout.headerHeight} + ${({ theme }) => theme.spacing[5]});
   }
 `;
 

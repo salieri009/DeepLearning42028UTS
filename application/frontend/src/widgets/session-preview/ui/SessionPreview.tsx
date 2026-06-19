@@ -70,13 +70,12 @@ const PlayButton = styled.div`
   width: ${({ theme }) => theme.spacing[7]};
   height: ${({ theme }) => theme.spacing[7]};
   border-radius: 50%;
-  background: ${({ theme }) => theme.gradient.aqua};
+  background: ${({ theme }) => theme.color.glass.fillStrong};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.color.textInverse};
-  box-shadow: ${({ theme }) => theme.shadow.glow};
-  border: 1px solid ${({ theme }) => theme.color.primary};
+  color: ${({ theme }) => theme.color.textSecondary};
+  border: 1px solid ${({ theme }) => theme.color.glass.border};
 `;
 
 const SegmentBadge = styled.span`
@@ -289,8 +288,8 @@ export function SessionPreview({
 
       <PreviewArea>
         <Thumbnail>
-          <PlayButton>
-            <Icon name="play_arrow" size={24} />
+          <PlayButton aria-hidden="true">
+            <Icon name="videocam" size={24} decorative />
           </PlayButton>
           <SegmentBadge>{segmentLabel}</SegmentBadge>
         </Thumbnail>

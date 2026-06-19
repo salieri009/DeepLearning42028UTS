@@ -41,7 +41,7 @@ const Table = styled.table`
 `;
 
 const Th = styled.th<{ $align?: string }>`
-  padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[6]}`};
+  padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[4]}`};
   text-align: ${({ $align }) => $align ?? "left"};
   font-family: ${({ theme }) => theme.typography.family.mono};
   font-size: ${({ theme }) => theme.typography.size[2]};
@@ -50,6 +50,10 @@ const Th = styled.th<{ $align?: string }>`
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.color.textPrimary};
   border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
+
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
+    padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[6]}`};
+  }
 `;
 
 const Tr = styled.tr<{ $selected?: boolean }>`
@@ -73,12 +77,16 @@ const Tr = styled.tr<{ $selected?: boolean }>`
 `;
 
 const Td = styled.td<{ $align?: string }>`
-  padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[6]}`};
+  padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[4]}`};
   text-align: ${({ $align }) => $align ?? "left"};
   font-family: ${({ theme }) => theme.typography.family.mono};
   font-size: ${({ theme }) => theme.typography.size[2]};
   color: ${({ theme }) => theme.color.textPrimary};
   border-bottom: 1px solid ${({ theme }) => theme.color.glass.border};
+
+  @media (min-width: ${({ theme }) => theme.layout.gridBreakpointLg}) {
+    padding: ${({ theme }) => `${theme.spacing[4]} ${theme.spacing[6]}`};
+  }
 `;
 
 const Empty = styled.div`

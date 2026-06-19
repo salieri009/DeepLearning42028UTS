@@ -11,7 +11,9 @@ const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing[4]};
-  margin-top: ${({ theme }) => theme.spacing[6]};
+  margin-top: ${({ theme }) => theme.spacing[4]};
+  padding-top: ${({ theme }) => theme.spacing[4]};
+  border-top: 1px solid ${({ theme }) => theme.color.glass.border};
 `;
 
 export function SettingsActions({ dirty, onSave, onDiscard }: SettingsActionsProps) {

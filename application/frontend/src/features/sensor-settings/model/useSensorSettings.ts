@@ -43,7 +43,6 @@ export function useSensorSettings() {
   const [sources, setSources] = useState<SensorSource[]>([]);
   const [settings, setSettings] = useState<SensorSettingsState>(() => loadSensorSettings());
   const [draft, setDraft] = useState<SensorSettingsState>(() => loadSensorSettings());
-  const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +78,6 @@ export function useSensorSettings() {
         setDraft(normalized);
         saveSensorSettings(normalized);
         setLogErrorsEnabled(normalized.logErrors);
-        setDirty(false);
       } catch (err) {
         if (controller.signal.aborted) return;
         reportError("Load sensor settings error", err);
@@ -103,16 +101,15 @@ export function useSensorSettings() {
     key: K,
     value: SensorSettingsState[K],
   ) => {
-    setDraft((prev) => {
-      const next = { ...prev, [key]: value };
-      setDirty(JSON.stringify(next) !== JSON.stringify(settings));
-      return next;
-    });
-  }, [settings]);
+    setDraft((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   const setModel = (model: DetectionModel) => updateDraft("model", model);
   const setConfidence = (confidence: number) => updateDraft("confidence", confidence);
-  const setDensityLimit = (densityLimit: number) => updateDraft("densityLimit", densityLimit);
+  const setDensityLimit = (densityLimit: number) => {
+    const snapped = Math.max(5, Math.min(500, Math.round(densityLimit / 5) * 5));
+    updateDraft("densityLimit", snapped);
+  };
   const setVisualOverlays = (visualOverlays: boolean) => updateDraft("visualOverlays", visualOverlays);
   const setLogErrors = (logErrors: boolean) => updateDraft("logErrors", logErrors);
   const setWebrtcAccess = (webrtcAccess: boolean) => updateDraft("webrtcAccess", webrtcAccess);
@@ -129,13 +126,11 @@ export function useSensorSettings() {
         setSettings(normalized);
         setDraft(normalized);
         saveSensorSettings(normalized);
-        setDirty(false);
         setError(null);
       } catch (err) {
         reportError("Save sensor settings error", err);
         setSettings(draft);
         saveSensorSettings(draft);
-        setDirty(false);
         setError("Saved locally; backend sync failed.");
       }
     })();
@@ -143,8 +138,16 @@ export function useSensorSettings() {
 
   const discard = () => {
     setDraft(settings);
-    setDirty(false);
   };
+
+  const dirtyModel = draft.model !== settings.model;
+  const dirtyThresholds =
+    draft.confidence !== settings.confidence || draft.densityLimit !== settings.densityLimit;
+  const dirtyNotifications =
+    draft.visualOverlays !== settings.visualOverlays ||
+    draft.logErrors !== settings.logErrors ||
+    draft.webrtcAccess !== settings.webrtcAccess;
+  const dirty = dirtyModel || dirtyThresholds || dirtyNotifications;
 
   const addSource = (name: string, ip: string, feedLabel: string) => {
     const created = addCustomSource({
@@ -168,6 +171,9 @@ export function useSensorSettings() {
     sources,
     draft,
     dirty,
+    dirtyModel,
+    dirtyThresholds,
+    dirtyNotifications,
     loading,
     error,
     setModel,

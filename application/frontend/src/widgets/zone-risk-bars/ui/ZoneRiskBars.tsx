@@ -95,7 +95,7 @@ export function ZoneRiskBars({ zones }: ZoneRiskBarsProps) {
   return (
     <Card>
       <Header>
-        <Title>Session Source Breakdown</Title>
+        <Title>Zone Risk Distribution</Title>
         <Icon name="info" size={20} />
       </Header>
       {hasSynthetic ? (

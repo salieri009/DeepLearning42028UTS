@@ -197,15 +197,6 @@ const EmptyNote = styled.p`
   font-size: ${({ theme }) => theme.typography.size[2]};
 `;
 
-const Avatar = styled.div`
-  width: ${({ theme }) => theme.spacing[6]};
-  height: ${({ theme }) => theme.spacing[6]};
-  border-radius: 50%;
-  border: 1px solid ${({ theme }) => theme.color.glass.border};
-  background: ${({ theme }) => theme.color.glass.fillStrong};
-  overflow: hidden;
-`;
-
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/analytics", label: "Analytics", end: false },
@@ -261,7 +252,6 @@ export function TopNav({ running = false }: TopNavProps) {
         <IconLink to="/settings" aria-label="Settings">
           <Icon name="settings" size={22} />
         </IconLink>
-        <Avatar aria-hidden />
       </Actions>
     </Header>
   );

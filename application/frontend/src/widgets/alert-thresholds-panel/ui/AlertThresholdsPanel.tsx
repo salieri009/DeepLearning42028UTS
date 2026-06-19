@@ -1,9 +1,10 @@
 import styled from "styled-components";
-import { GlassPanel, Icon, RangeSlider } from "@/shared/ui";
+import { GlassPanel, Icon, PanelTitle, PanelTitleRow, RangeSlider, UnsavedBadge } from "@/shared/ui";
 
 type AlertThresholdsPanelProps = {
   confidence: number;
   densityLimit: number;
+  dirty?: boolean;
   onConfidenceChange: (v: number) => void;
   onDensityLimitChange: (v: number) => void;
 };
@@ -11,42 +12,33 @@ type AlertThresholdsPanelProps = {
 const Panel = styled(GlassPanel)`
   padding: ${({ theme }) => theme.spacing[6]};
   box-shadow: ${({ theme }) => theme.shadow.glow};
-`;
-
-const Title = styled.h2`
-  margin: 0 0 ${({ theme }) => theme.spacing[6]};
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
-  font-size: ${({ theme }) => theme.typography.size[4]};
-  color: ${({ theme }) => theme.color.primary};
+  height: 100%;
 `;
 
 const Sliders = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[6]};
-`;
-
-const DensityNote = styled.p`
-  margin: 0;
-  font-size: ${({ theme }) => theme.typography.size[2]};
-  color: ${({ theme }) => theme.color.textSecondary};
-  line-height: 1.5;
+  gap: ${({ theme }) => theme.spacing[5]};
 `;
 
 export function AlertThresholdsPanel({
   confidence,
   densityLimit,
+  dirty = false,
   onConfidenceChange,
   onDensityLimitChange,
 }: AlertThresholdsPanelProps) {
+  const normalizedDensity = Math.max(5, Math.min(500, Math.round(densityLimit / 5) * 5));
+
   return (
     <Panel>
-      <Title>
-        <Icon name="tune" size={22} />
-        Alert Thresholds
-      </Title>
+      <PanelTitleRow>
+        <PanelTitle>
+          <Icon name="tune" size={20} />
+          Alert Thresholds
+        </PanelTitle>
+        {dirty ? <UnsavedBadge>Unsaved</UnsavedBadge> : null}
+      </PanelTitleRow>
       <Sliders>
         <RangeSlider
           label="Detection Confidence"
@@ -59,17 +51,14 @@ export function AlertThresholdsPanel({
         />
         <RangeSlider
           label="Crowd Density Limit"
-          value={densityLimit}
-          min={1}
+          value={normalizedDensity}
+          min={5}
           max={500}
-          displayValue={`${densityLimit} people`}
-          hint="Forwarded to inference via backend settings (FR-15). Scales density classification."
+          step={5}
+          displayValue={`${normalizedDensity} ppl`}
+          hint="Adjusts when crowd density is classified as HIGH on the dashboard."
           onChange={onDensityLimitChange}
         />
-        <DensityNote>
-          Crowd density (PRD §8): ≤2 people LOW · ≤5 MEDIUM · 6+ HIGH. Proximity risk may elevate
-          severity (FR-2).
-        </DensityNote>
       </Sliders>
     </Panel>
   );

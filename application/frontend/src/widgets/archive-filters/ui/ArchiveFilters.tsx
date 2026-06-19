@@ -115,6 +115,12 @@ const ClearLink = styled.button`
   color: ${({ theme }) => theme.color.info[60]};
   text-decoration: underline;
   cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+    border-radius: ${({ theme }) => theme.radius.sm};
+  }
 `;
 
 export function ArchiveFilters({

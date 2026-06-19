@@ -2,7 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import type { SensorSource } from "@/entities/sensor";
 import { SensorCard } from "@/entities/sensor";
-import { Button, Icon, Modal } from "@/shared/ui";
+import { Button, Modal } from "@/shared/ui";
 
 type SensorSourceGridProps = {
   sources: SensorSource[];
@@ -14,18 +14,9 @@ const Section = styled.section``;
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing[4]};
-`;
-
-const Title = styled.h2`
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
-  font-size: ${({ theme }) => theme.typography.size[4]};
-  color: ${({ theme }) => theme.color.primary};
 `;
 
 const AddLink = styled.button`
@@ -67,7 +58,7 @@ const Grid = styled.div`
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.spacing[4]};
 
-  @media (min-width: 768px) {
+  @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     grid-template-columns: 1fr 1fr;
   }
 `;
@@ -114,10 +105,6 @@ export function SensorSourceGrid({ sources, onAddSource, onUpdateSource }: Senso
   return (
     <Section>
       <Header>
-        <Title>
-          <Icon name="videocam" size={22} />
-          Sensor Sources
-        </Title>
         <AddLink type="button" onClick={() => setAddOpen(true)} aria-label="Add source">
           Add Source
         </AddLink>

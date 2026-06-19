@@ -1,6 +1,7 @@
 export { LiveRegion, SkipLink, VisuallyHidden } from "./A11y";
 export { LiveStatusDot } from "./LiveStatusDot";
 export { Modal } from "./Modal";
+export { PanelTitle, PanelTitleRow, UnsavedBadge } from "./PanelTitle";
 export { PageChromeTitle } from "./PageChromeTitle";
 export { Button, type ButtonSize, type ButtonVariant } from "./Button";
 export { AquaPillButton } from "./AquaPillButton";

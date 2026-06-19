@@ -10,7 +10,7 @@ import {
   getRiskBadgeVariant,
 } from "@/entities/crowd-stats";
 import type { AlertEntry } from "@/features/alert-history";
-import { Button, ChromeText, Icon, Label, LiveStatusDot, Text } from "@/shared/ui";
+import { Button, Icon, Label, LiveStatusDot, SectionTitle, Text } from "@/shared/ui";
 
 type StatsSidebarProps = {
   data: AnalyzeFrameResponse | null;
@@ -58,7 +58,7 @@ const ScrollArea = styled.div`
   padding-right: ${({ theme }) => theme.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[4]};
+  gap: ${({ theme }) => theme.spacing[3]};
 
   &::-webkit-scrollbar {
     width: ${({ theme }) => theme.spacing[1]};
@@ -89,7 +89,7 @@ const AlertsHeader = styled.div`
 const AlertItem = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing[3]};
-  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
+  padding: ${({ theme }) => theme.spacing[3]};
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid transparent;
   transition: background 120ms ease, border-color 120ms ease;
@@ -116,8 +116,14 @@ const AlertBar = styled.div<{ $risk: string }>`
         : theme.color.textSecondary};
 `;
 
+const FooterAction = styled.div`
+  margin-top: ${({ theme }) => theme.spacing[4]};
+  padding-top: ${({ theme }) => theme.spacing[4]};
+  border-top: 1px solid ${({ theme }) => theme.color.glass.border};
+`;
+
 const ReportButton = styled(Button)`
-  margin-top: ${({ theme }) => theme.spacing[5]};
+  width: 100%;
 `;
 
 const EmptyText = styled.p`
@@ -125,10 +131,12 @@ const EmptyText = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const SectionTitle = styled(ChromeText)`
-  font-size: ${({ theme }) => theme.typography.size[4]};
+const PanelHeading = styled(SectionTitle)`
+  font-size: ${({ theme }) => theme.typography.size[3]};
+  font-weight: ${({ theme }) => theme.typography.weight.semibold};
   line-height: ${({ theme }) => theme.typography.lineHeight.tight};
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 export function StatsSidebar({
@@ -147,7 +155,7 @@ export function StatsSidebar({
   return (
     <Aside aria-label="Crowd statistics and alerts">
       <Header>
-        <SectionTitle as="h2">Crowd Tracking Statistics</SectionTitle>
+        <PanelHeading>Crowd Tracking Statistics</PanelHeading>
         <Subtitle>
           <LiveStatusDot $tone="primary" aria-hidden="true" />
           <Label $tone="secondary">Precision Mode Active</Label>
@@ -158,11 +166,13 @@ export function StatsSidebar({
         {data ? (
           <>
             <StatCard
+              compact
               icon="person"
               label="People Count"
               value={String(data.persons?.length ?? 0)}
             />
             <StatCard
+              compact
               icon="groups"
               label="Crowd Density"
               value={density}
@@ -171,6 +181,7 @@ export function StatsSidebar({
               valueTone={getDensityBadgeVariant(data.crowd_density)}
             />
             <StatCard
+              compact
               icon="distance"
               label="Max Proximity Risk"
               value={String(risk)}
@@ -180,6 +191,7 @@ export function StatsSidebar({
               accent={data.max_proximity_risk === "WARNING" || data.max_proximity_risk === "DANGER"}
             />
             <StatCard
+              compact
               icon="speed"
               label="Session Latency"
               value={latencyMs !== null ? String(latencyMs) : "—"}
@@ -188,6 +200,7 @@ export function StatsSidebar({
               badgeVariant={latencyBadge?.variant ?? "neutral"}
             />
             <StatCard
+              compact
               icon="summarize"
               label="Recommendation"
               value={recommendation}
@@ -222,18 +235,19 @@ export function StatsSidebar({
         </AlertsSection>
       </ScrollArea>
 
-      <ReportButton
-        type="button"
-        $variant="primary"
-        $fullWidth
-        disabled={reportDisabled}
-        onClick={onGenerateReport}
-        aria-label="Generate live session report"
-        title={reportDisabled ? "Start monitoring to generate a report" : "Download HTML report"}
-      >
-        <Icon name="summarize" size={18} />
-        Generate Report
-      </ReportButton>
+      <FooterAction>
+        <ReportButton
+          type="button"
+          $variant="primary"
+          disabled={reportDisabled}
+          onClick={onGenerateReport}
+          aria-label="Generate live session report"
+          title={reportDisabled ? "Start monitoring to generate a report" : "Download HTML report"}
+        >
+          <Icon name="summarize" size={18} />
+          Generate Report
+        </ReportButton>
+      </FooterAction>
     </Aside>
   );
 }

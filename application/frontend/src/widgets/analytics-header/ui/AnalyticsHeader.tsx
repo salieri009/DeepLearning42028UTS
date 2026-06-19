@@ -4,8 +4,14 @@ import { GlassPanel, Icon, LiveStatusDot, PageChromeTitle } from "@/shared/ui";
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[2]};
   margin-bottom: ${({ theme }) => theme.spacing[6]};
+
+  @media (max-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -15,6 +21,7 @@ const Subtitle = styled.p`
 
 const Badges = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing[3]};
 `;
 

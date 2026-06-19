@@ -3,11 +3,11 @@ import styled from "styled-components";
 import { Icon } from "@/shared/ui";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: "home", end: true },
-  { to: "/analytics", label: "Analytics", icon: "analytics", end: false },
-  { to: "/live-map", label: "Live Map", icon: "map", end: false },
-  { to: "/archive", label: "Archive", icon: "history", end: false },
-  { to: "/settings", label: "Settings", icon: "tune", end: false },
+  { to: "/", label: "Dashboard", shortLabel: "Home", icon: "home", end: true },
+  { to: "/analytics", label: "Analytics", shortLabel: "Stats", icon: "analytics", end: false },
+  { to: "/live-map", label: "Live Map", shortLabel: "Map", icon: "map", end: false },
+  { to: "/archive", label: "Archive", shortLabel: "Archive", icon: "history", end: false },
+  { to: "/settings", label: "Settings", shortLabel: "Setup", icon: "tune", end: false },
 ] as const;
 
 const Nav = styled.nav`
@@ -17,7 +17,7 @@ const Nav = styled.nav`
   left: 50%;
   transform: translateX(-50%);
   z-index: ${({ theme }) => theme.layout.zIndex.chrome};
-  min-width: min(100%, 360px);
+  min-width: min(100%, ${({ theme }) => theme.layout.mobileNavMaxWidth});
   max-width: calc(100vw - ${({ theme }) => theme.spacing[6]});
   padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[6]}`};
   border-radius: ${({ theme }) => theme.radius.full};
@@ -28,6 +28,11 @@ const Nav = styled.nav`
   justify-content: space-around;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[4]};
+
+  @media (max-width: ${({ theme }) => theme.layout.mobileNavCompactBreakpoint}) {
+    padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
+    gap: ${({ theme }) => theme.spacing[2]};
+  }
 
   @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     display: none;
@@ -42,7 +47,7 @@ const NavLinkItem = styled(NavLink)`
   padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[4]}`};
   min-height: ${({ theme }) => theme.spacing[7]};
   min-width: ${({ theme }) => theme.spacing[7]};
-  border: none;
+  border: 1px solid transparent;
   border-radius: ${({ theme }) => theme.radius.full};
   background: transparent;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -51,10 +56,16 @@ const NavLinkItem = styled(NavLink)`
   text-decoration: none;
   transition: background 120ms ease, color 120ms ease;
 
+  @media (max-width: ${({ theme }) => theme.layout.mobileNavCompactBreakpoint}) {
+    padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[2]}`};
+    min-width: ${({ theme }) => theme.spacing[6]};
+  }
+
   &.active {
-    background: ${({ theme }) => theme.gradient.aqua};
-    color: ${({ theme }) => theme.color.textInverse};
-    box-shadow: ${({ theme }) => theme.shadow.md};
+    color: ${({ theme }) => theme.color.primary};
+    background: ${({ theme }) => theme.color.glass.fillStrong};
+    border: 1px solid ${({ theme }) => theme.color.primary};
+    box-shadow: none;
   }
 
   &:focus-visible {
@@ -67,12 +78,26 @@ const NavLinkItem = styled(NavLink)`
   }
 `;
 
+const LongLabel = styled.span`
+  @media (max-width: ${({ theme }) => theme.layout.mobileNavCompactBreakpoint}) {
+    display: none;
+  }
+`;
+
+const ShortLabel = styled.span`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.layout.mobileNavCompactBreakpoint}) {
+    display: inline;
+  }
+`;
+
 export function BottomNav() {
   const location = useLocation();
 
   return (
     <Nav aria-label="Mobile page navigation">
-      {NAV_ITEMS.map(({ to, label, icon, end }) => (
+      {NAV_ITEMS.map(({ to, label, shortLabel, icon, end }) => (
         <NavLinkItem
           key={to}
           to={to}
@@ -80,7 +105,8 @@ export function BottomNav() {
           aria-current={location.pathname === to || (!end && location.pathname.startsWith(to)) ? "page" : undefined}
         >
           <Icon name={icon} size={22} filled={location.pathname === to} />
-          {label}
+          <LongLabel>{label}</LongLabel>
+          <ShortLabel>{shortLabel}</ShortLabel>
         </NavLinkItem>
       ))}
     </Nav>

@@ -9,7 +9,7 @@ import { SettingsActions } from "@/widgets/settings-actions";
 import { SideNav } from "@/widgets/side-nav";
 import { SystemNotificationsPanel } from "@/widgets/system-notifications-panel";
 import { TopNav } from "@/widgets/top-nav";
-import { PageChromeTitle } from "@/shared/ui";
+import { Caption, GlassPanel, PageChromeTitle, SectionTitle } from "@/shared/ui";
 
 const Content = styled.div`
   display: flex;
@@ -17,14 +17,33 @@ const Content = styled.div`
   gap: ${({ theme }) => theme.spacing[6]};
 `;
 
+const Section = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[4]};
+`;
+
+const SectionHeading = styled(SectionTitle)`
+  margin: 0;
+  font-weight: ${({ theme }) => theme.typography.weight.semibold};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
 const TwoCol = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: ${({ theme }) => theme.spacing[6]};
+  align-items: start;
 
-  @media (min-width: 768px) {
+  @media (min-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
     grid-template-columns: 1fr 1fr;
   }
+`;
+
+const DensityLegend = styled(GlassPanel)`
+  padding: ${({ theme }) => theme.spacing[4]};
+  box-shadow: ${({ theme }) => theme.shadow.sm};
 `;
 
 const Notice = styled.p`
@@ -57,30 +76,51 @@ export function SettingsPage() {
           </Notice>
         ) : null}
 
-        <SensorSourcesGrid
-          sources={settings.sources}
-          onAddSource={settings.addSource}
-          onUpdateSource={settings.updateSource}
-        />
-
-        <TwoCol>
-          <DetectionModelPanel model={settings.draft.model} onChange={settings.setModel} />
-          <AlertThresholdsPanel
-            confidence={settings.draft.confidence}
-            densityLimit={settings.draft.densityLimit}
-            onConfidenceChange={settings.setConfidence}
-            onDensityLimitChange={settings.setDensityLimit}
+        <Section aria-labelledby="settings-sources-heading">
+          <SectionHeading id="settings-sources-heading">Input Sources</SectionHeading>
+          <SensorSourcesGrid
+            sources={settings.sources}
+            onAddSource={settings.addSource}
+            onUpdateSource={settings.updateSource}
           />
-        </TwoCol>
+        </Section>
 
-        <SystemNotificationsPanel
-          visualOverlays={settings.draft.visualOverlays}
-          logErrors={settings.draft.logErrors}
-          webrtcAccess={settings.draft.webrtcAccess}
-          onVisualOverlaysChange={settings.setVisualOverlays}
-          onLogErrorsChange={settings.setLogErrors}
-          onWebrtcAccessChange={settings.setWebrtcAccess}
-        />
+        <Section aria-labelledby="settings-tuning-heading">
+          <SectionHeading id="settings-tuning-heading">Detection Tuning</SectionHeading>
+          <TwoCol>
+            <DetectionModelPanel
+              model={settings.draft.model}
+              dirty={settings.dirtyModel}
+              onChange={settings.setModel}
+            />
+            <AlertThresholdsPanel
+              confidence={settings.draft.confidence}
+              densityLimit={settings.draft.densityLimit}
+              dirty={settings.dirtyThresholds}
+              onConfidenceChange={settings.setConfidence}
+              onDensityLimitChange={settings.setDensityLimit}
+            />
+          </TwoCol>
+          <DensityLegend>
+            <Caption $tone="secondary">
+              Crowd density bands: ≤2 LOW · ≤5 MEDIUM · 6+ HIGH. Proximity risk can elevate
+              severity on the dashboard.
+            </Caption>
+          </DensityLegend>
+        </Section>
+
+        <Section aria-labelledby="settings-notifications-heading">
+          <SectionHeading id="settings-notifications-heading">Notifications</SectionHeading>
+          <SystemNotificationsPanel
+            visualOverlays={settings.draft.visualOverlays}
+            logErrors={settings.draft.logErrors}
+            webrtcAccess={settings.draft.webrtcAccess}
+            dirty={settings.dirtyNotifications}
+            onVisualOverlaysChange={settings.setVisualOverlays}
+            onLogErrorsChange={settings.setLogErrors}
+            onWebrtcAccessChange={settings.setWebrtcAccess}
+          />
+        </Section>
 
         <SettingsActions
           dirty={settings.dirty}

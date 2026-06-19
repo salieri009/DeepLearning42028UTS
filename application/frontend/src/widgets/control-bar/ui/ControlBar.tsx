@@ -21,13 +21,21 @@ const Toolbar = styled.div`
   justify-content: center;
   padding: 0 ${({ theme }) => theme.spacing[4]};
   pointer-events: none;
+
+  @media (max-width: ${({ theme }) => theme.layout.tabletBreakpoint}) {
+    bottom: calc(
+      ${({ theme }) => theme.layout.mobileBottomNavHeight} +
+        ${({ theme }) => theme.spacing[6]} +
+        ${({ theme }) => theme.spacing[4]}
+    );
+  }
 `;
 
 const Bar = styled(GlassPanel)`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
-  padding: ${({ theme }) => theme.spacing[2]} ${({ theme }) => theme.spacing[3]};
+  gap: ${({ theme }) => theme.spacing[3]};
+  padding: ${({ theme }) => theme.spacing[3]} ${({ theme }) => theme.spacing[4]};
   border-radius: ${({ theme }) => theme.radius.full};
   box-shadow: ${({ theme }) => theme.shadow.glow};
   backdrop-filter: blur(${({ theme }) => theme.effects.glassBlur}) saturate(${({ theme }) => theme.effects.glassSaturation});
@@ -41,8 +49,10 @@ const Bar = styled(GlassPanel)`
 `;
 
 const Divider = styled.span`
+  align-self: stretch;
   width: 1px;
-  height: ${({ theme }) => theme.layout.controlBarHeight};
+  min-height: ${({ theme }) => theme.spacing[6]};
+  max-height: ${({ theme }) => theme.spacing[7]};
   margin: 0 ${({ theme }) => theme.spacing[1]};
   background: ${({ theme }) => theme.color.glass.border};
   flex-shrink: 0;

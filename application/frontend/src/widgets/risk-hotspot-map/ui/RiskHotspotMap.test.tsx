@@ -30,4 +30,10 @@ describe("RiskHotspotMap", () => {
       screen.getByRole("img", { name: /Zone A-4 Congestion, DANGER risk, 12 danger frames/i }),
     ).toBeInTheDocument();
   });
+
+  it("shows empty state when no hotspots", () => {
+    renderWithProviders(<RiskHotspotMap hotspots={[]} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(/No elevated-risk hotspots/i);
+  });
 });
